@@ -18,6 +18,8 @@ workspaces: []         # jj workspaces where local work on the issue has happene
 agent-session:         # AI agent session id of the current agent working on the issue, if available.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
+depends-on: []           # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example ["[[faster-startup]]"].
+remote:                # Optional. A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.
 ---
 
 # <Title>

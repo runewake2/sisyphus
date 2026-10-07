@@ -41,7 +41,11 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 		newCommand(findRoot),
 		updateCommand(findRoot),
 		parentCommand(findRoot),
+		remoteCommand(findRoot),
+		dependsOnCommand(findRoot),
 		showCommand(findRoot),
+		listCommand(findRoot),
+		searchCommand(findRoot),
 		resolveCommand(findRoot),
 		linksCommand(findRoot),
 		initCommand(),
@@ -51,7 +55,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 
 func newCommand(findRoot func() (string, error)) *cobra.Command {
 	var title, state, resolution, priority, effort, tags, bookmark, deferredFrom, parent string
-	var owner, approver, workspace, agentSession string
+	var owner, approver, workspace, agentSession, remote, dependsOn string
 	cmd := &cobra.Command{
 		Use:   "new <name>",
 		Short: "Create an issue from issues/TEMPLATE.md in the directory of its state.",
@@ -81,6 +85,8 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 					approver:     optional(cmd, "approver", approver),
 					workspace:    optional(cmd, "workspace", workspace),
 					agentSession: optional(cmd, "agent-session", agentSession),
+					remote:       optional(cmd, "remote", remote),
+					dependsOn:    optional(cmd, "depends-on", dependsOn),
 				}, warnings)
 			})
 		},
@@ -99,11 +105,13 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&approver, "approver", "", "The person or agent who accepts the issue when it closes.")
 	flags.StringVar(&workspace, "workspace", "", "The jj workspace where local work on the issue is happening. Appended to the issue's workspace history.")
 	flags.StringVar(&agentSession, "agent-session", "", "The AI agent session id working on the issue, if available.")
+	flags.StringVar(&remote, "remote", "", "A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.")
+	flags.StringVar(&dependsOn, "depends-on", "", "An issue that must close before this one can start. The issue must exist.")
 	return cmd
 }
 
 func updateCommand(findRoot func() (string, error)) *cobra.Command {
-	var resolution, bookmark, owner, approver, workspace, agentSession string
+	var resolution, bookmark, owner, approver, workspace, agentSession, priority, effort, tags string
 	cmd := &cobra.Command{
 		Use:   "update <name> <state>",
 		Short: "Change the state of an issue and move it to the directory of the new state.",
@@ -123,6 +131,9 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 					approver:     optional(cmd, "approver", approver),
 					workspace:    optional(cmd, "workspace", workspace),
 					agentSession: optional(cmd, "agent-session", agentSession),
+					priority:     optional(cmd, "priority", priority),
+					effort:       optional(cmd, "effort", effort),
+					tags:         optional(cmd, "tags", tags),
 				}, warnings)
 			})
 		},
@@ -134,6 +145,9 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&approver, "approver", "", "The person or agent who accepts the issue when it closes.")
 	flags.StringVar(&workspace, "workspace", "", "The jj workspace where local work on the issue is happening. Appended to the issue's workspace history.")
 	flags.StringVar(&agentSession, "agent-session", "", "The AI agent session id working on the issue, if available.")
+	flags.StringVar(&priority, "priority", "", "Change the priority: "+strings.Join(priorities, ", ")+".")
+	flags.StringVar(&effort, "effort", "", "Change the effort: "+strings.Join(efforts, ", ")+".")
+	flags.StringVar(&tags, "tags", "", `Replace the tags, comma-separated, for example "scheduler,plan".`)
 	return cmd
 }
 
@@ -157,6 +171,56 @@ func parentCommand(findRoot func() (string, error)) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&clear, "clear", false, "Remove the parent of the issue.")
+	return cmd
+}
+
+func remoteCommand(findRoot func() (string, error)) *cobra.Command {
+	var clear bool
+	cmd := &cobra.Command{
+		Use:   "remote <name> [<url>]",
+		Short: "Set or remove the remote reference (a GitHub issue or Jira ticket URL) of an issue.",
+		Args:  cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if (len(args) == 2) == clear {
+				return errors.New("Give a remote URL or --clear, but not both.")
+			}
+			var remoteURL *string
+			if len(args) == 2 {
+				remoteURL = &args[1]
+			}
+			return printPath(cmd, findRoot, func(root string, warnings io.Writer) (string, error) {
+				return setRemote(root, args[0], remoteURL, warnings)
+			})
+		},
+	}
+	cmd.Flags().BoolVar(&clear, "clear", false, "Remove the remote reference of the issue.")
+	return cmd
+}
+
+func dependsOnCommand(findRoot func() (string, error)) *cobra.Command {
+	var clear bool
+	cmd := &cobra.Command{
+		Use:   "depends-on <name> [<blocking-issue>]",
+		Short: "Add or remove an issue that must close before <name> can start.",
+		Long: "Add or remove an issue that must close before <name> can start.\n\n" +
+			"With a <blocking-issue> and no --clear, adds it (the blocking issue must exist, and the " +
+			"dependency cannot be or create a cycle). With a <blocking-issue> and --clear, removes just " +
+			"that one. With --clear alone, removes every dependency of <name>.",
+		Args: cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 1 && !clear {
+				return errors.New("Give a blocking issue to add, or --clear to remove one or all.")
+			}
+			var blocking *string
+			if len(args) == 2 {
+				blocking = &args[1]
+			}
+			return printPath(cmd, findRoot, func(root string, warnings io.Writer) (string, error) {
+				return setDependsOn(root, args[0], blocking, clear, warnings)
+			})
+		},
+	}
+	cmd.Flags().BoolVar(&clear, "clear", false, "Remove one dependency (with a <blocking-issue>) or every dependency (without one).")
 	return cmd
 }
 
@@ -188,6 +252,132 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the issue as JSON instead of readable text.")
+	return cmd
+}
+
+func listCommand(findRoot func() (string, error)) *cobra.Command {
+	var state, priority, tags, owner, parent string
+	var asJSON, blocked bool
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List and filter the issues in issues/.",
+		Long: "List and filter the issues in issues/, sorted by state, then priority, then name.\n\n" +
+			"Without --state, only open and in-progress issues are listed. --state and --priority accept a " +
+			"comma-separated list and match any of the given values. --tags matches an issue that has any of " +
+			"the given tags. Every given flag narrows the list together (AND).",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			stateValues := parseList(state)
+			priorityValues := parseList(priority)
+			if err := firstError(
+				validateEach("state", stateValues, states),
+				validateEach("priority", priorityValues, priorities),
+			); err != nil {
+				return err
+			}
+			root, err := findRoot()
+			if err != nil {
+				return err
+			}
+			rows := listIssues(root, listOptions{
+				states:      stateValues,
+				priorities:  priorityValues,
+				tags:        parseList(tags),
+				owner:       owner,
+				parent:      parent,
+				blockedOnly: blocked,
+			})
+			if asJSON {
+				encoder := json.NewEncoder(cmd.OutOrStdout())
+				encoder.SetEscapeHTML(false)
+				encoder.SetIndent("", "  ")
+				return encoder.Encode(rows)
+			}
+			cells := make([][]string, len(rows))
+			for i, row := range rows {
+				cells[i] = []string{row.Name, row.Title, row.State, row.Priority, row.Owner, strings.Join(row.Tags, ", ")}
+			}
+			writeTable(cmd.OutOrStdout(), []string{"name", "title", "state", "priority", "owner", "tags"}, cells)
+			return nil
+		},
+	}
+	flags := cmd.Flags()
+	flags.StringVarP(&state, "state", "s", "", "Comma-separated states to include: "+strings.Join(states, ", ")+". Default: open, in-progress.")
+	flags.StringVarP(&priority, "priority", "p", "", "Comma-separated priorities to include: "+strings.Join(priorities, ", ")+".")
+	flags.StringVar(&tags, "tags", "", "Comma-separated tags; matches an issue with any of them.")
+	flags.StringVar(&owner, "owner", "", "Only issues with exactly this owner.")
+	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
+	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
+	flags.BoolVar(&asJSON, "json", false, "Print JSON instead of a table.")
+	return cmd
+}
+
+func searchCommand(findRoot func() (string, error)) *cobra.Command {
+	var state, priority, tags, owner, parent, section string
+	var asJSON, blocked bool
+	cmd := &cobra.Command{
+		Use:   "search [<query>]",
+		Short: "Search issues by frontmatter filters and content.",
+		Long: "Search issues by frontmatter filters and content, sorted by state, then priority, then name.\n\n" +
+			"<query> matches case-insensitively against the title and body. The frontmatter filters are " +
+			"the same as sisyphus list's, and combine with the query and with each other using AND. " +
+			"--section restricts the query, when one is given, and the content returned for each match, " +
+			"to one section of the body, matched the same way a wikilink's #heading is.",
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var query string
+			if len(args) == 1 {
+				query = args[0]
+			}
+			stateValues := parseList(state)
+			priorityValues := parseList(priority)
+			if err := firstError(
+				validateEach("state", stateValues, states),
+				validateEach("priority", priorityValues, priorities),
+			); err != nil {
+				return err
+			}
+			root, err := findRoot()
+			if err != nil {
+				return err
+			}
+			rows := searchIssues(root, searchOptions{
+				filters: listOptions{
+					states:      stateValues,
+					priorities:  priorityValues,
+					tags:        parseList(tags),
+					owner:       owner,
+					parent:      parent,
+					blockedOnly: blocked,
+				},
+				query:   query,
+				section: section,
+			})
+			if asJSON {
+				encoder := json.NewEncoder(cmd.OutOrStdout())
+				encoder.SetEscapeHTML(false)
+				encoder.SetIndent("", "  ")
+				return encoder.Encode(rows)
+			}
+			for i, row := range rows {
+				if i > 0 {
+					fmt.Fprintln(cmd.OutOrStdout())
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", row.Name, row.Title)
+				fmt.Fprintln(cmd.OutOrStdout(), row.Content)
+			}
+			return nil
+		},
+	}
+	flags := cmd.Flags()
+	flags.StringVarP(&state, "state", "s", "", "Comma-separated states to include: "+strings.Join(states, ", ")+". Default: open, in-progress.")
+	flags.StringVarP(&priority, "priority", "p", "", "Comma-separated priorities to include: "+strings.Join(priorities, ", ")+".")
+	flags.StringVar(&tags, "tags", "", "Comma-separated tags; matches an issue with any of them.")
+	flags.StringVar(&owner, "owner", "", "Only issues with exactly this owner.")
+	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
+	flags.StringVar(&section, "section", "", `Restrict the query and the returned content to one section, for example "summary".`)
+	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
+	flags.BoolVar(&asJSON, "json", false, "Print JSON instead of readable text.")
 	return cmd
 }
 
@@ -247,7 +437,11 @@ func linksCommand(findRoot func() (string, error)) *cobra.Command {
 			case len(rows) == 0:
 				fmt.Fprintf(cmd.ErrOrStderr(), "No wikilinks in %s.\n", file)
 			default:
-				writeTable(cmd.OutOrStdout(), rows)
+				cells := make([][]string, len(rows))
+				for i, row := range rows {
+					cells[i] = []string{strconv.Itoa(row.Line), row.Link, row.Status, row.Resolved}
+				}
+				writeTable(cmd.OutOrStdout(), []string{"line", "link", "status", "resolved"}, cells)
 			}
 			return nil
 		},
@@ -325,16 +519,14 @@ func writeIssueText(out io.Writer, doc *document) {
 	fmt.Fprintln(out, strings.TrimLeft(strings.Join(doc.body, "\n"), "\n"))
 }
 
-func writeTable(out io.Writer, rows []linkRow) {
-	header := []string{"line", "link", "status", "resolved"}
-	cells := make([][]string, len(rows))
+// writeTable prints cells as a table with header, padding every column to its widest cell.
+func writeTable(out io.Writer, header []string, cells [][]string) {
 	widths := make([]int, len(header))
 	for i, h := range header {
 		widths[i] = utf8.RuneCountInString(h)
 	}
-	for r, row := range rows {
-		cells[r] = []string{strconv.Itoa(row.Line), row.Link, row.Status, row.Resolved}
-		for i, cell := range cells[r] {
+	for _, row := range cells {
+		for i, cell := range row {
 			widths[i] = max(widths[i], utf8.RuneCountInString(cell))
 		}
 	}
@@ -385,4 +577,13 @@ func oneOf(what, value string, choices []string) error {
 		return nil
 	}
 	return fmt.Errorf("Invalid %s '%s'. Use one of: %s.", what, value, strings.Join(choices, ", "))
+}
+
+func validateEach(what string, values, choices []string) error {
+	for _, value := range values {
+		if err := oneOf(what, value, choices); err != nil {
+			return err
+		}
+	}
+	return nil
 }

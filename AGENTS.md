@@ -63,13 +63,14 @@ Base a workspace on another unmerged bookmark only when the new work needs that 
 ### 4. Take an issue only if no other agent has it
 
 ```bash
-jj log -r 'main..bookmarks(glob:"samw/ai/*")' --summary --no-graph | grep '<issue-name>'
+sisyphus list --state in-progress
 ```
 
-If this prints a result, another agent has the issue. Select a different issue. Otherwise, start it:
+If `<issue-name>` appears in the output, another agent already has the issue. Select a different
+issue. Otherwise, start it:
 
 ```bash
-sisyphus update <issue-name> in-progress --bookmark samw/ai/<workspace-name>
+sisyphus update <issue-name> in-progress --bookmark samw/ai/<workspace-name> --owner <you> --workspace <workspace-name>
 ```
 
 ### 5. Remove your workspace when the work is complete

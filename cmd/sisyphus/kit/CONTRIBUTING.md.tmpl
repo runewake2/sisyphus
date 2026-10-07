@@ -166,6 +166,8 @@ issues/
 | `agent-session` | An AI agent session id | The agent session currently working on the issue, if any. Cleared when work stops. |
 | `deferred-from` | `"[[<issue-name>]]"` or a bookmark | Optional. The work that deferred this issue. |
 | `parent` | `"[[<issue-name>]]"` | Optional. The issue that this sub-issue is part of. |
+| `depends-on` | List of `"[[<issue-name>]]"` | Optional. Issues that must close before this one can start. |
+| `remote` | A URL | Optional. The GitHub issue or Jira ticket that tracks this issue outside the repo. |
 
 ### The sisyphus command
 
@@ -176,8 +178,14 @@ sisyphus new <issue-name> --title "<title>" --priority high --effort small --tag
 sisyphus update <issue-name> in-progress --bookmark <bookmark> --owner <owner> --workspace <workspace> --agent-session <id>
 sisyphus update <issue-name> closed --resolution completed   # or: abandoned
 sisyphus update <issue-name> open                            # stop work without closing
+sisyphus update <issue-name> in-progress --priority high --effort small --tags "<component>"  # reprioritize
 sisyphus new <sub-issue-name> --parent <issue-name>
 sisyphus parent <issue-name> <parent-issue-name>
+sisyphus remote <issue-name> <url>                   # pin it to a GitHub issue or Jira ticket
+sisyphus depends-on <issue-name> <blocking-issue-name>   # cannot start until that issue closes
+sisyphus list --blocked                               # issues with an open dependency
+sisyphus list --state open,in-progress --priority critical,high
+sisyphus search "timeout" --section summary          # search (and return) just the Summary
 sisyphus resolve "[[CONTRIBUTING#Issues]]"
 sisyphus links "[[<issue-name>]]"
 ```

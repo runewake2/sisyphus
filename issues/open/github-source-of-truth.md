@@ -44,7 +44,7 @@ always flows sisyphus -> GitHub, never the other way, once a repo is initialized
 
 ## Acceptance criteria
 
-- [ ] A sisyphus issue can record a remote reference ([[pin-issue-to-remote-reference]]).
+- [x] A sisyphus issue can record a remote reference ([[pin-issue-to-remote-reference]]).
 - [ ] Filing a GitHub issue results in a PR that adds a matching, pinned sisyphus issue
       ([[github-action-issue-to-pr]]).
 - [ ] Merging to `main` creates or updates GitHub issues for sisyphus issues that need one

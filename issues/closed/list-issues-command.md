@@ -1,17 +1,17 @@
 ---
 title: "Add \"sisyphus list\" to list and filter issues from the CLI"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: high         # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [cli]            # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-07
-closed:                # YYYY-MM-DD. Set this only when state is closed.
-owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
-approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
-agent-session:         # AI agent session id of the current agent working on the issue, if available.
+closed: 2026-10-07     # YYYY-MM-DD. Set this only when state is closed.
+owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
+approver: samw         # The person or agent who accepts the issue when it closes.
+bookmark: samw/ai/list-command # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: [sisyphus-list-command] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+agent-session:          # AI agent session id of the current agent working on the issue, if available.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent: "[[issue-manager-gaps]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 ---
@@ -60,17 +60,20 @@ includes them explicitly.
 
 ## Out of scope
 
-- Free-text search over titles or bodies (a different, simpler feature: full-text grep already works
-  fine for that today; revisit only if filters above are not enough).
+- Free-text search over titles or bodies; see [[search-issues-command]].
 - A tree/hierarchical view of parent/sub-issue relationships; `--parent` on a flat list covers the
   common case of "children of X" without that complexity.
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+- 2026-10-07: Implemented as planned, in a new `list.go`. Generalized `writeTable` (`cli.go`) to take
+  an explicit header and `[][]string` cells instead of being hardcoded to `linkRow`, so `list` and
+  `links` share it. `--tags` matches any given tag (OR); combining different flags is AND, as the
+  issue specified. Used this as the occasion to also update [[AGENTS]]'s "take an issue only if no
+  other agent has it" check to `sisyphus list --state in-progress`, replacing the `jj log` + grep
+  search, since bookmark/owner/state now live in the issue's own frontmatter.
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example [[0.0.5]].
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed: `sisyphus list` filters by state, priority, tags, owner, and parent, as a table or JSON.
+See [[0.0.5]].

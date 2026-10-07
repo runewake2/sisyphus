@@ -77,20 +77,25 @@ func (d *document) get(key string) string {
 		if match == nil {
 			return ""
 		}
-		value := strings.TrimSpace(match[2])
-		if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
-			var unquoted string
-			if json.Unmarshal([]byte(value), &unquoted) != nil {
-				return ""
-			}
-			return unquoted
-		}
-		if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
-			return value[1 : len(value)-1]
-		}
-		return value
+		return unquote(strings.TrimSpace(match[2]))
 	}
 	return ""
+}
+
+// unquote reverses quote: it unwraps a double- or single-quoted frontmatter value, or returns value
+// unchanged if it is not quoted. An invalid double-quoted value becomes "", matching document.get.
+func unquote(value string) string {
+	if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
+		var unquoted string
+		if json.Unmarshal([]byte(value), &unquoted) != nil {
+			return ""
+		}
+		return unquoted
+	}
+	if len(value) >= 2 && value[0] == '\'' && value[len(value)-1] == '\'' {
+		return value[1 : len(value)-1]
+	}
+	return value
 }
 
 func (d *document) set(key, value string) {

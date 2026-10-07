@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -79,6 +80,16 @@ func (r *testRepo) read(relative string) string {
 		r.t.Fatal(err)
 	}
 	return string(content)
+}
+
+// git runs a git command in the test repo, for tests that need a real .git directory.
+func (r *testRepo) git(args ...string) {
+	r.t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = r.root
+	if output, err := cmd.CombinedOutput(); err != nil {
+		r.t.Fatalf("git %v failed: %s\n%s", args, err, output)
+	}
 }
 
 func (r *testRepo) exists(relative string) bool {

@@ -234,6 +234,37 @@ func headingsIn(lines []string) []string {
 	return result
 }
 
+// sectionIn returns the lines of the section named heading (matched case-insensitively, the same way
+// a wikilink's #heading is matched), from just after the heading line to just before the next heading
+// at the same or a shallower level, or the end of lines. ok is false when no heading matches.
+func sectionIn(lines []string, heading string) (section []string, ok bool) {
+	start, level := -1, 0
+	for _, index := range outsideCodeFences(lines) {
+		match := headingPattern.FindStringSubmatch(lines[index])
+		if match == nil {
+			continue
+		}
+		if start == -1 {
+			if strings.EqualFold(match[1], heading) {
+				start, level = index, headingLevel(lines[index])
+			}
+			continue
+		}
+		if headingLevel(lines[index]) <= level {
+			return lines[start+1 : index], true
+		}
+	}
+	if start == -1 {
+		return nil, false
+	}
+	return lines[start+1:], true
+}
+
+// headingLevel counts the leading '#' characters of a heading line, for example 2 for "## Summary".
+func headingLevel(line string) int {
+	return len(line) - len(strings.TrimLeft(line, "#"))
+}
+
 func outsideCodeFences(lines []string) []int {
 	var result []int
 	inFence := false

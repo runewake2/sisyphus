@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os/exec"
 	"slices"
 	"strings"
 	"testing"
@@ -127,6 +128,91 @@ func TestUpdateClearsOwnerAndAgentSessionButKeepsWorkspacesAndApproverWhenReopen
 	equal(t, "", doc.get("bookmark"))
 	equal(t, "runewake2", doc.get("approver"))
 	equal(t, "[sisyphus-work]", doc.get("workspaces"))
+}
+
+func TestUpdateMovesTheIssueWithGitMvInAGitRepo(t *testing.T) {
+	r := newTestRepo(t)
+	createUpdateTarget(r)
+	r.git("init", "-q")
+	r.git("add", "-A")
+	r.git("-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "initial")
+
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+
+	equal(t, 0, res.exit)
+	equal(t, "", res.error)
+	isTrue(t, !r.exists("issues/open/"+updateTarget+".md"), "the open file is gone")
+	isTrue(t, r.exists("issues/in-progress/"+updateTarget+".md"), "the issue moved")
+
+	cmd := exec.Command("git", "status", "--porcelain=v1")
+	cmd.Dir = r.root
+	raw, err := cmd.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := string(raw)
+	isTrue(t, !strings.Contains(output, "??"), "nothing is untracked: "+output)
+	isTrue(t, !strings.Contains(output, " D "), "nothing is an unstaged delete: "+output)
+	movedAsRename := strings.Contains(output, "issues/open/"+updateTarget+".md -> issues/in-progress/"+updateTarget+".md")
+	movedAsStagedDeleteAndAdd := strings.Contains(output, "D  issues/open/"+updateTarget+".md") &&
+		strings.Contains(output, "A  issues/in-progress/"+updateTarget+".md")
+	isTrue(t, movedAsRename || movedAsStagedDeleteAndAdd, "the move is staged in the git index: "+output)
+}
+
+func TestUpdateMovesTheIssueWithPlainRenameWithoutGit(t *testing.T) {
+	r := newTestRepo(t)
+	createUpdateTarget(r)
+
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+
+	equal(t, 0, res.exit)
+	isTrue(t, !r.exists("issues/open/"+updateTarget+".md"), "the open file is gone")
+	isTrue(t, r.exists("issues/in-progress/"+updateTarget+".md"), "the issue moved")
+}
+
+func TestUpdateChangesPriorityEffortAndTags(t *testing.T) {
+	r := newTestRepo(t)
+	createUpdateTarget(r)
+
+	res := r.run("update", updateTarget, "open", "--priority", "critical", "--effort", "large", "--tags", "plan, widget-scheduler ,,repo")
+
+	equal(t, 0, res.exit)
+	equal(t, "", res.error)
+	doc := r.frontmatter("issues/open/" + updateTarget + ".md")
+	equal(t, "critical", doc.get("priority"))
+	equal(t, "large", doc.get("effort"))
+	equal(t, "[plan, widget-scheduler, repo]", doc.get("tags"))
+}
+
+func TestUpdateKeepsPriorityEffortAndTagsWhenNotGiven(t *testing.T) {
+	r := newTestRepo(t)
+	createUpdateTarget(r, "--priority", "high", "--effort", "large", "--tags", "plan")
+
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+
+	equal(t, 0, res.exit)
+	doc := r.frontmatter("issues/in-progress/" + updateTarget + ".md")
+	equal(t, "high", doc.get("priority"))
+	equal(t, "large", doc.get("effort"))
+	equal(t, "[plan]", doc.get("tags"))
+}
+
+func TestUpdateRejectsAnInvalidPriorityOrEffort(t *testing.T) {
+	cases := []struct{ flag, value string }{
+		{"--priority", "urgent"},
+		{"--effort", "huge"},
+	}
+	for _, c := range cases {
+		t.Run(c.flag, func(t *testing.T) {
+			r := newTestRepo(t)
+			createUpdateTarget(r)
+
+			res := r.run("update", updateTarget, "open", c.flag, c.value)
+
+			equal(t, 1, res.exit)
+			contains(t, res.error, "Invalid "+strings.TrimPrefix(c.flag, "--"))
+		})
+	}
 }
 
 func TestUpdateWarnsWhenAnInProgressIssueHasNoBookmark(t *testing.T) {

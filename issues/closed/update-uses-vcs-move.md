@@ -1,17 +1,17 @@
 ---
 title: "Use git/jj move commands when an issue changes state"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [cli]            # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-07
-closed:                # YYYY-MM-DD. Set this only when state is closed.
-owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
-approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
-agent-session:         # AI agent session id of the current agent working on the issue, if available.
+closed: 2026-10-07     # YYYY-MM-DD. Set this only when state is closed.
+owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
+approver: samw         # The person or agent who accepts the issue when it closes.
+bookmark: samw/ai/vcs-move # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: [sisyphus-vcs-move] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+agent-session:          # AI agent session id of the current agent working on the issue, if available.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 ---
@@ -62,10 +62,12 @@ See [[AGENTS]] and [[CONTRIBUTING]] for how this repo itself uses jj bookmarks a
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+- 2026-10-07: Implemented as planned. `saveIssue` (`issues.go`) now takes `root` and checks
+  `usesGit(root)` (a plain `os.Stat` of `root/.git`, so it works whether `.git` is a directory or a
+  worktree file) to choose between `gitMove` (`git mv`, run with `cmd.Dir = root`) and the existing
+  `os.Rename`. jj needed no change, confirming the issue's assumption.
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example [[0.0.5]].
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed: `saveIssue` moves issue files with `git mv` when the repo has a `.git` directory, and
+with a plain rename otherwise. See [[0.0.2]].

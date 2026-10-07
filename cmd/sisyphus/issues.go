@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -31,6 +33,7 @@ type newOptions struct {
 	name, state, resolution, priority, effort, tags string
 	title, bookmark, deferredFrom, parent           *string
 	owner, approver, workspace, agentSession        *string
+	remote, dependsOn                               *string
 }
 
 type issueFile struct {
@@ -68,6 +71,14 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 		}
 		parentValue = value
 	}
+	var dependsOnValue []string
+	if o.dependsOn != nil {
+		value, err := dependsOnValueFor(root, *o.dependsOn, o.name, warnings)
+		if err != nil {
+			return "", err
+		}
+		dependsOnValue = []string{value}
+	}
 
 	doc, err := loadDocument(filepath.Join(root, "issues", "TEMPLATE.md"))
 	if err != nil {
@@ -81,22 +92,24 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	if o.title != nil {
 		title = *o.title
 	}
-	var tags []string
-	for _, tag := range strings.Split(o.tags, ",") {
-		if tag = strings.TrimSpace(tag); tag != "" {
-			tags = append(tags, tag)
-		}
-	}
 	deferred := ""
 	if o.deferredFrom != nil {
 		deferred = deferredValue(*o.deferredFrom)
+	}
+	remoteField := ""
+	if o.remote != nil {
+		value, err := remoteValue(*o.remote)
+		if err != nil {
+			return "", err
+		}
+		remoteField = value
 	}
 
 	doc.set("title", quote(title))
 	applyState(doc, o.state, o.resolution)
 	doc.set("priority", o.priority)
 	doc.set("effort", o.effort)
-	doc.set("tags", "["+strings.Join(tags, ", ")+"]")
+	doc.set("tags", formatTags(o.tags))
 	doc.set("created", today())
 	doc.set("owner", valueOrEmpty(o.owner))
 	doc.set("approver", valueOrEmpty(o.approver))
@@ -107,6 +120,10 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	doc.set("agent-session", valueOrEmpty(o.agentSession))
 	doc.set("deferred-from", deferred)
 	doc.set("parent", parentValue)
+	doc.set("remote", remoteField)
+	if o.dependsOn != nil {
+		doc.set("depends-on", formatDependsOn(dependsOnValue))
+	}
 	for i, line := range doc.body {
 		if line == "# <Title>" {
 			doc.body[i] = "# " + title
@@ -114,7 +131,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	}
 
 	destination := issuePath(root, o.state, o.name)
-	if err := saveIssue(doc, destination, destination); err != nil {
+	if err := saveIssue(root, doc, destination, destination); err != nil {
 		return "", err
 	}
 	if o.state == "in-progress" && o.bookmark == nil {
@@ -130,6 +147,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 type updateOptions struct {
 	resolution                                         string
 	bookmark, owner, approver, workspace, agentSession *string
+	priority, effort, tags                             *string
 }
 
 func updateIssue(root, reference, state string, o updateOptions, warnings io.Writer) (string, error) {
@@ -171,6 +189,21 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	if o.approver != nil {
 		doc.set("approver", *o.approver)
 	}
+	if o.priority != nil {
+		if err := oneOf("priority", *o.priority, priorities); err != nil {
+			return "", err
+		}
+		doc.set("priority", *o.priority)
+	}
+	if o.effort != nil {
+		if err := oneOf("effort", *o.effort, efforts); err != nil {
+			return "", err
+		}
+		doc.set("effort", *o.effort)
+	}
+	if o.tags != nil {
+		doc.set("tags", formatTags(*o.tags))
+	}
 	if state == "in-progress" && doc.get("bookmark") == "" {
 		warn(warnings, noBookmarkWarning)
 	}
@@ -184,10 +217,19 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 		if len(open) > 0 {
 			warn(warnings, fmt.Sprintf("Issue '%s' has sub-issues that are not closed: %s.", name, strings.Join(open, ", ")))
 		}
+		var blocked []string
+		for _, dep := range dependents(root, name) {
+			if dep.state != "closed" {
+				blocked = append(blocked, dep.name)
+			}
+		}
+		if len(blocked) > 0 {
+			warn(warnings, fmt.Sprintf("Issue '%s' is closing, but these issues still depend on it: %s.", name, strings.Join(blocked, ", ")))
+		}
 	}
 
 	destination := issuePath(root, state, name)
-	if err := saveIssue(doc, current.path, destination); err != nil {
+	if err := saveIssue(root, doc, current.path, destination); err != nil {
 		return "", err
 	}
 	return relative(root, destination), nil
@@ -209,6 +251,34 @@ func setParent(root, reference string, parent *string, warnings io.Writer) (stri
 		return "", err
 	}
 	return relative(root, issue.path), nil
+}
+
+func setRemote(root, reference string, remote *string, warnings io.Writer) (string, error) {
+	_, issue, doc, err := loadIssue(root, reference)
+	if err != nil {
+		return "", err
+	}
+	value := ""
+	if remote != nil {
+		if value, err = remoteValue(*remote); err != nil {
+			return "", err
+		}
+	}
+	doc.set("remote", value)
+	if err := doc.save(issue.path); err != nil {
+		return "", err
+	}
+	return relative(root, issue.path), nil
+}
+
+// remoteValue loosely validates and quotes a remote reference: it must be a URL with a scheme and a host.
+func remoteValue(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return "", fmt.Errorf("'%s' is not a URL.", raw)
+	}
+	return quote(raw), nil
 }
 
 // applyState sets the fields that follow from the state: only a closed issue has a resolution and a closed date.
@@ -281,6 +351,121 @@ func subIssues(root, name string) []subIssue {
 	return result
 }
 
+// parseDependsOn reads a depends-on frontmatter value, for example `["[[a]]", "[[b]]"]`, into issue
+// names, for example ["a", "b"].
+func parseDependsOn(value string) []string {
+	var names []string
+	for _, item := range parseList(value) {
+		if name := issueName(unquote(item)); name != "" {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// formatDependsOn writes issue names back as a depends-on frontmatter value of quoted wikilinks.
+func formatDependsOn(names []string) string {
+	items := make([]string, len(names))
+	for i, name := range names {
+		items[i] = quote("[[" + name + "]]")
+	}
+	return formatList(items)
+}
+
+func setDependsOn(root, reference string, blocking *string, clear bool, warnings io.Writer) (string, error) {
+	name, issue, doc, err := loadIssue(root, reference)
+	if err != nil {
+		return "", err
+	}
+	current := parseDependsOn(doc.get("depends-on"))
+	switch {
+	case blocking == nil: // clear is guaranteed true by the caller: clear every dependency
+		current = nil
+	case clear:
+		target := issueName(*blocking)
+		current = slices.DeleteFunc(current, func(n string) bool { return n == target })
+	default:
+		added, err := dependsOnValueFor(root, *blocking, name, warnings)
+		if err != nil {
+			return "", err
+		}
+		if !slices.Contains(current, added) {
+			current = append(current, added)
+		}
+	}
+	doc.set("depends-on", formatDependsOn(current))
+	if err := doc.save(issue.path); err != nil {
+		return "", err
+	}
+	return relative(root, issue.path), nil
+}
+
+// dependsOnValueFor validates that child can depend on reference: it must name an existing issue,
+// not be child itself, and not already (directly or transitively) depend on child, which would form
+// a cycle.
+func dependsOnValueFor(root, reference, child string, warnings io.Writer) (string, error) {
+	blocking := issueName(reference)
+	if blocking == "" {
+		return "", fmt.Errorf("'%s' does not name an issue.", reference)
+	}
+	if blocking == child {
+		return "", fmt.Errorf("Issue '%s' cannot depend on itself.", child)
+	}
+	matches := issueMatches(root, blocking)
+	if len(matches) == 0 {
+		return "", fmt.Errorf("The issue '%s' does not exist in %s.", blocking, stateDirectoryList)
+	}
+	if dependsOnReaches(root, blocking, child, map[string]bool{}) {
+		return "", fmt.Errorf("Issue '%s' already depends on '%s'. Adding this dependency would create a cycle.", blocking, child)
+	}
+	if matches[0].state == "closed" {
+		warn(warnings, fmt.Sprintf("The issue '%s' is closed.", blocking))
+	}
+	return blocking, nil
+}
+
+// dependsOnReaches reports whether target is reachable from start by following depends-on edges.
+func dependsOnReaches(root, start, target string, seen map[string]bool) bool {
+	if start == target {
+		return true
+	}
+	if seen[start] {
+		return false
+	}
+	seen[start] = true
+	matches := issueMatches(root, start)
+	if len(matches) != 1 {
+		return false
+	}
+	doc, err := loadDocument(matches[0].path)
+	if err != nil {
+		return false
+	}
+	for _, next := range parseDependsOn(doc.get("depends-on")) {
+		if dependsOnReaches(root, next, target, seen) {
+			return true
+		}
+	}
+	return false
+}
+
+// dependents returns every issue whose depends-on list includes name.
+func dependents(root, name string) []subIssue {
+	var result []subIssue
+	for _, state := range states {
+		files, _ := filepath.Glob(filepath.Join(root, "issues", state, "*.md"))
+		for _, file := range files {
+			doc, err := loadDocument(file)
+			if err != nil || !slices.Contains(parseDependsOn(doc.get("depends-on")), name) {
+				continue
+			}
+			result = append(result, subIssue{name: trimMarkdownExtension(filepath.Base(file)), state: state})
+		}
+	}
+	slices.SortFunc(result, func(a, b subIssue) int { return strings.Compare(a.name, b.name) })
+	return result
+}
+
 func issuePath(root, state, name string) string {
 	return filepath.Join(root, "issues", state, name+".md")
 }
@@ -321,16 +506,37 @@ func loadIssue(root, reference string) (string, issueFile, *document, error) {
 	return name, issue, doc, err
 }
 
-// saveIssue writes the document to "from" and moves it to "to", the directory of its state.
-func saveIssue(doc *document, from, to string) error {
+// saveIssue writes the document to "from" and moves it to "to", the directory of its state. It
+// moves the file through git when the repo has a .git directory, so the move lands in the git
+// index as a rename instead of as an untracked delete-and-add. jj needs no such step: it detects a
+// rename from content when it next snapshots the working copy, so a plain rename is already correct.
+func saveIssue(root string, doc *document, from, to string) error {
 	if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
 		return err
 	}
 	if err := doc.save(from); err != nil {
 		return err
 	}
-	if from != to {
-		return os.Rename(from, to)
+	if from == to {
+		return nil
+	}
+	if usesGit(root) {
+		return gitMove(root, from, to)
+	}
+	return os.Rename(from, to)
+}
+
+// usesGit reports whether root is the root of a git repo (colocated git+jj, or git alone).
+func usesGit(root string) bool {
+	_, err := os.Stat(filepath.Join(root, ".git"))
+	return err == nil
+}
+
+func gitMove(root, from, to string) error {
+	cmd := exec.Command("git", "mv", from, to)
+	cmd.Dir = root
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("git mv %s %s: %w: %s", relative(root, from), relative(root, to), err, strings.TrimSpace(string(output)))
 	}
 	return nil
 }
@@ -349,6 +555,12 @@ func parseList(value string) []string {
 
 func formatList(items []string) string {
 	return "[" + strings.Join(items, ", ") + "]"
+}
+
+// formatTags parses a comma-separated list into the frontmatter's bracketed form, for example
+// "plan, widget-scheduler ,,repo" -> "[plan, widget-scheduler, repo]".
+func formatTags(raw string) string {
+	return formatList(parseList(raw))
 }
 
 // addToList appends value to the frontmatter list field key, unless it is already there.

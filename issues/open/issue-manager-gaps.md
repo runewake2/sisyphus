@@ -32,7 +32,9 @@ hand. The sub-issues below each cover one missing piece:
 
 - [[list-issues-command]]: list and filter issues from the CLI (no way to answer "what is open and
   high priority" today without `grep`).
-- [[show-issue-command]]: print one issue without finding and opening its file by hand.
+- [[show-issue-command]]: print one issue without finding and opening its file by hand. Done.
+- [[search-issues-command]]: find issues by frontmatter filters and free-text content, with results
+  optionally scoped to one section (for example only the `## Summary`).
 - [[update-editable-metadata]]: `priority`, `effort`, and `tags` can only be set at creation; there
   is no way to change them afterward except by hand-editing the frontmatter.
 - [[issue-dependencies]]: `parent` only expresses a hierarchy (sub-issue of); there is no way to say
@@ -43,10 +45,12 @@ hand. The sub-issues below each cover one missing piece:
 
 ## Acceptance criteria
 
-- [ ] `sisyphus list` can filter and display issues ([[list-issues-command]]).
-- [ ] `sisyphus show` can print one issue ([[show-issue-command]]).
+- [x] `sisyphus list` can filter and display issues ([[list-issues-command]]).
+- [x] `sisyphus show` can print one issue ([[show-issue-command]]).
+- [x] `sisyphus search` can find issues by filter and content, with section-scoped results
+      ([[search-issues-command]]).
 - [ ] `sisyphus update` can change priority, effort, and tags ([[update-editable-metadata]]).
-- [ ] Issues can express depends-on/blocks relationships ([[issue-dependencies]]).
+- [x] Issues can express depends-on/blocks relationships ([[issue-dependencies]]).
 - [ ] `sisyphus lint` validates the whole `issues/` tree ([[lint-issues-command]]).
 
 ## Out of scope
