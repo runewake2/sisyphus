@@ -44,6 +44,8 @@ hand. The sub-issues below each cover one missing piece:
   against the one issue a command touches.
 - [[graph-view-command]]: no way to see a large task's whole family tree (an epic and its
   sub-issues, with state and depends-on edges) at a glance; only one issue at a time via `show`.
+- [[migrate-command]]: a schema change means hand-editing every issue file; nothing upgrades
+  existing issues to the installed sisyphus version's template.
 
 ## Acceptance criteria
 
@@ -55,6 +57,7 @@ hand. The sub-issues below each cover one missing piece:
 - [x] Issues can express depends-on/blocks relationships ([[issue-dependencies]]).
 - [ ] `sisyphus lint` validates the whole `issues/` tree ([[lint-issues-command]]).
 - [x] `sisyphus graph` shows a large task's family tree in the terminal ([[graph-view-command]]).
+- [ ] `sisyphus migrate` upgrades every issue to the current schema ([[migrate-command]]).
 
 ## Out of scope
 
