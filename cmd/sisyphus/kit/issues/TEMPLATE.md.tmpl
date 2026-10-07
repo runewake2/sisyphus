@@ -1,7 +1,7 @@
 ---
 # Copy this file to issues/open/<issue-name>.md to create an issue.
 # The file name without ".md" is the issue name. It must be unique across all Markdown files in the repo.
-# Markdown files link to the issue as [[<issue-name>]]. Change descriptions and code comments use #<issue-name>.
+# Markdown files link to the issue as `[[<issue-name>]]`. Change descriptions and code comments use `#<issue-name>`.
 # Do not rename an issue after you create it.
 title: <Short imperative title, for example "Add explicit step dependencies">
 state: open            # open | in-progress | closed. Must match the directory of the file.
@@ -18,7 +18,7 @@ workspaces: []         # jj workspaces where local work on the issue has happene
 agent-session:         # AI agent session id of the current agent working on the issue, if available.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
-depends-on: []           # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example ["[[faster-startup]]"].
+depends-on: []           # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example `["[[faster-startup]]"]`.
 remote:                # Optional. A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.
 ---
 
@@ -31,8 +31,8 @@ remote:                # Optional. A URL: the GitHub issue or Jira ticket that t
 ## Context
 
 <Give the background that an agent needs to start the work without other help.
-Link to design docs and other issues with wikilinks, for example [[widget-scheduler]],
-[[widget-scheduler#Status API]], or [[<issue-name>]]. Do not use paths.>
+Link to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,
+`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>
 
 ## Acceptance criteria
 
@@ -51,5 +51,5 @@ Link to design docs and other issues with wikilinks, for example [[widget-schedu
 ## Resolution
 
 <Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example [[0.0.5]].
+- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
 - Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
