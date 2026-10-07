@@ -26,7 +26,7 @@ func (r result) lines() []string {
 	return lines
 }
 
-// testRepo is a temporary repo with the real issues/TEMPLATE.md. Each test gets its own, so tests do not change the real repo.
+// testRepo is a temporary repo with the issues/TEMPLATE.md that sisyphus init writes. Each test gets its own, so tests do not change the real repo.
 type testRepo struct {
 	t    *testing.T
 	root string
@@ -35,7 +35,7 @@ type testRepo struct {
 func newTestRepo(t *testing.T) *testRepo {
 	t.Helper()
 	r := &testRepo{t: t, root: t.TempDir()}
-	r.write("issues/TEMPLATE.md", readSourceFile(t, "issues/TEMPLATE.md"))
+	r.write("issues/TEMPLATE.md", kitTemplate(t))
 	r.write("README.md", "# Readme\n")
 	r.write("changelog/0.0.0.md", "# 0.0.0\n")
 	r.write("design/widget-scheduler.md", "# Widget Scheduler\n\n## Plan Components\n\n## Status API\n\nText.\n")
@@ -44,14 +44,11 @@ func newTestRepo(t *testing.T) *testRepo {
 	return r
 }
 
-// readSourceFile reads a file of the real repo that contains the tests.
-func readSourceFile(t *testing.T, relative string) string {
+// kitTemplate returns the issues/TEMPLATE.md embedded in the binary, the same file sisyphus init
+// writes, so the tests do not depend on the repo they happen to run in.
+func kitTemplate(t *testing.T) string {
 	t.Helper()
-	root, err := findRoot()
-	if err != nil {
-		t.Fatal(err)
-	}
-	content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(relative)))
+	content, err := kit.ReadFile("kit/issues/TEMPLATE.md.tmpl")
 	if err != nil {
 		t.Fatal(err)
 	}

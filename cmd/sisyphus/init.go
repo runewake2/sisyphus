@@ -10,7 +10,8 @@ import (
 	"strings"
 )
 
-// The kit files end in .tmpl, so that the copy of issues/TEMPLATE.md does not take part in the wikilinks of this repo.
+// The kit files end in .tmpl, so that sisyphus (and Obsidian) never mistake the kit for a real issues/TEMPLATE.md
+// in whatever repo holds this source.
 // Everything else a project needs (CONTRIBUTING.md, AGENTS.md, versioning, CI, GitHub Actions, and so on) is a
 // separate concern of a project-scaffolding template, not of sisyphus: init only sets up issue tracking.
 //

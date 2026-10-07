@@ -9,13 +9,13 @@ import (
 func TestNewCreatesAnOpenIssueFromTheTemplate(t *testing.T) {
 	r := newTestRepo(t)
 
-	res := r.run("new", "explicit-step-dependencies")
+	res := r.run("new", "retry-backoff")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
-	equal(t, "issues/open/explicit-step-dependencies.md", strings.TrimSpace(res.output))
-	doc := r.frontmatter("issues/open/explicit-step-dependencies.md")
-	equal(t, "Explicit step dependencies", doc.get("title"))
+	equal(t, "issues/open/retry-backoff.md", strings.TrimSpace(res.output))
+	doc := r.frontmatter("issues/open/retry-backoff.md")
+	equal(t, "Retry backoff", doc.get("title"))
 	equal(t, "open", doc.get("state"))
 	equal(t, "", doc.get("resolution"))
 	equal(t, "medium", doc.get("priority"))
@@ -29,14 +29,14 @@ func TestNewCreatesAnOpenIssueFromTheTemplate(t *testing.T) {
 	equal(t, "", doc.get("approver"))
 	equal(t, "[]", doc.get("workspaces"))
 	equal(t, "{}", doc.get("metadata"))
-	isTrue(t, slices.ContainsFunc(doc.body, func(l string) bool { return l == "# Explicit step dependencies" }), "the body has the title")
+	isTrue(t, slices.ContainsFunc(doc.body, func(l string) bool { return l == "# Retry backoff" }), "the body has the title")
 }
 
 func TestNewRemovesTemplateInstructionsAndKeepsInlineComments(t *testing.T) {
 	r := newTestRepo(t)
-	r.mustRun("new", "explicit-step-dependencies")
+	r.mustRun("new", "retry-backoff")
 
-	doc := r.frontmatter("issues/open/explicit-step-dependencies.md")
+	doc := r.frontmatter("issues/open/retry-backoff.md")
 
 	isTrue(t, !slices.ContainsFunc(doc.front, func(l string) bool { return strings.HasPrefix(strings.TrimSpace(l), "#") }), "no instruction lines")
 	isTrue(t, slices.ContainsFunc(doc.front, func(l string) bool { return strings.HasPrefix(l, "state: open ") && strings.Contains(l, " # ") }), "the state line keeps its comment")
@@ -45,29 +45,29 @@ func TestNewRemovesTemplateInstructionsAndKeepsInlineComments(t *testing.T) {
 func TestNewSetsTheGivenOptions(t *testing.T) {
 	r := newTestRepo(t)
 
-	res := r.run("new", "explicit-step-dependencies",
-		"--title", "Add explicit step dependencies",
+	res := r.run("new", "retry-backoff",
+		"--title", "Add retry backoff",
 		"--state", "in-progress",
 		"--priority", "high",
 		"--effort", "large",
 		"--tags", "plan, widget-scheduler ,,repo",
-		"--bookmark", "samw/ai/work",
-		"--owner", "samw",
-		"--approver", "samw",
-		"--workspace", "sisyphus-explicit-steps",
+		"--bookmark", "ai/work",
+		"--owner", "alice",
+		"--approver", "alice",
+		"--workspace", "retry-backoff-work",
 		"--metadata", "session-id=session-123")
 
 	equal(t, 0, res.exit)
-	doc := r.frontmatter("issues/in-progress/explicit-step-dependencies.md")
-	equal(t, "Add explicit step dependencies", doc.get("title"))
+	doc := r.frontmatter("issues/in-progress/retry-backoff.md")
+	equal(t, "Add retry backoff", doc.get("title"))
 	equal(t, "high", doc.get("priority"))
 	equal(t, "large", doc.get("effort"))
 	equal(t, "[plan, widget-scheduler, repo]", doc.get("tags"))
-	equal(t, "samw", doc.get("owner"))
-	equal(t, "samw", doc.get("approver"))
-	equal(t, "[sisyphus-explicit-steps]", doc.get("workspaces"))
+	equal(t, "alice", doc.get("owner"))
+	equal(t, "alice", doc.get("approver"))
+	equal(t, "[retry-backoff-work]", doc.get("workspaces"))
 	equal(t, `{session-id: "session-123"}`, doc.get("metadata"))
-	isTrue(t, slices.ContainsFunc(doc.body, func(l string) bool { return l == "# Add explicit step dependencies" }), "the body has the title")
+	isTrue(t, slices.ContainsFunc(doc.body, func(l string) bool { return l == "# Add retry backoff" }), "the body has the title")
 }
 
 func TestNewSetsMultipleMetadataEntries(t *testing.T) {
@@ -96,7 +96,7 @@ func TestNewWritesDeferredFromAsAQuotedValue(t *testing.T) {
 		{"other-thing", "[[other-thing]]"},
 		{"#other-thing", "[[other-thing]]"},
 		{"[[other-thing]]", "[[other-thing]]"},
-		{"samw/ai/other-work", "samw/ai/other-work"},
+		{"ai/other-work", "ai/other-work"},
 	}
 	for _, c := range cases {
 		t.Run(c.input, func(t *testing.T) {
@@ -194,11 +194,11 @@ func TestNewWarnsWhenAnInProgressIssueHasNoBookmark(t *testing.T) {
 func TestNewDoesNotWarnWhenAnInProgressIssueHasABookmark(t *testing.T) {
 	r := newTestRepo(t)
 
-	res := r.run("new", "started-issue-test", "--state", "in-progress", "--bookmark", "samw/ai/work")
+	res := r.run("new", "started-issue-test", "--state", "in-progress", "--bookmark", "ai/work")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
-	equal(t, "samw/ai/work", r.frontmatter("issues/in-progress/started-issue-test.md").get("bookmark"))
+	equal(t, "ai/work", r.frontmatter("issues/in-progress/started-issue-test.md").get("bookmark"))
 }
 
 func TestNewSetsContextReplacingThePlaceholder(t *testing.T) {

@@ -76,9 +76,9 @@ func TestDocumentSetKeepsTheCommentColumn(t *testing.T) {
 func TestDocumentSetKeepsOneSpaceBeforeACommentWhenTheValueIsLong(t *testing.T) {
 	doc, _ := parseDocument("---\nbookmark: # comment\n---\n")
 
-	doc.set("bookmark", "samw/ai/a-long-workspace-name")
+	doc.set("bookmark", "ai/a-long-workspace-name")
 
-	equalSlices(t, []string{"bookmark: samw/ai/a-long-workspace-name # comment"}, doc.front)
+	equalSlices(t, []string{"bookmark: ai/a-long-workspace-name # comment"}, doc.front)
 }
 
 func TestDocumentSetClearsAValue(t *testing.T) {
@@ -92,18 +92,18 @@ func TestDocumentSetClearsAValue(t *testing.T) {
 func TestDocumentSetAddsAMissingKey(t *testing.T) {
 	doc, _ := parseDocument("---\nstate: open\n---\n")
 
-	doc.set("bookmark", "samw/ai/work")
+	doc.set("bookmark", "ai/work")
 
-	equalSlices(t, []string{"state: open", "bookmark: samw/ai/work"}, doc.front)
+	equalSlices(t, []string{"state: open", "bookmark: ai/work"}, doc.front)
 }
 
 func TestDocumentSetAddsKeysWithoutChangingTheBody(t *testing.T) {
 	doc, _ := parseDocument("---\nstate: open\n---\nfirst body line\nsecond body line\n")
 
-	doc.set("bookmark", "samw/ai/work")
+	doc.set("bookmark", "ai/work")
 	doc.set("parent", `"[[parent-issue]]"`)
 
-	equal(t, "---\nstate: open\nbookmark: samw/ai/work\nparent: \"[[parent-issue]]\"\n---\nfirst body line\nsecond body line\n", doc.render())
+	equal(t, "---\nstate: open\nbookmark: ai/work\nparent: \"[[parent-issue]]\"\n---\nfirst body line\nsecond body line\n", doc.render())
 }
 
 func TestDocumentRenderRoundTrips(t *testing.T) {
@@ -139,7 +139,6 @@ func TestVersionPrintsTheCompiledVersion(t *testing.T) {
 	equal(t, 0, res.exit)
 	isTrue(t, sisyphus.Version() != "", "the compiled version is not empty")
 	equal(t, sisyphus.Version(), strings.TrimSpace(res.output))
-	equal(t, strings.TrimSpace(readSourceFile(t, "VERSION")), strings.TrimSpace(res.output))
 }
 
 func TestVersionWorksOutsideARepo(t *testing.T) {

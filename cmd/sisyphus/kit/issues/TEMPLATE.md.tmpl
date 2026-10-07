@@ -3,7 +3,7 @@
 # The file name without ".md" is the issue name. It must be unique across all Markdown files in the repo.
 # Markdown files link to the issue as `[[<issue-name>]]`. Change descriptions and code comments use `#<issue-name>`.
 # Do not rename an issue after you create it.
-title: <Short imperative title, for example "Add explicit step dependencies">
+title: <Short imperative title, for example "Add retry backoff">
 state: open            # open | in-progress | closed. Must match the directory of the file.
 resolution:            # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
@@ -13,8 +13,8 @@ created: YYYY-MM-DD
 closed:                # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+bookmark:              # The jj bookmark of the work on the issue. Set this when work starts.
+workspaces: []         # jj workspaces where local work on the issue has happened, for example [fix-login-bug].
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.

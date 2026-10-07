@@ -145,7 +145,7 @@ func TestToolsUpdateParentRemoteDependsOn(t *testing.T) {
 
 	callTool(t, session, "sisyphus_update", map[string]any{
 		"dir": dir, "name": "main-issue-test", "state": "in-progress",
-		"bookmark": "samw/ai/work", "owner": "samw",
+		"bookmark": "ai/work", "owner": "alice",
 		"metadata": map[string]any{"session-id": "abc123"},
 	})
 	callTool(t, session, "sisyphus_parent", map[string]any{"dir": dir, "name": "main-issue-test", "parent": "parent-issue-test"})
@@ -157,8 +157,8 @@ func TestToolsUpdateParentRemoteDependsOn(t *testing.T) {
 	if err := json.Unmarshal([]byte(show), &shown); err != nil {
 		t.Fatalf("show did not return JSON: %v\n%s", err, show)
 	}
-	equalField(t, shown, "owner", "samw")
-	equalField(t, shown, "bookmark", "samw/ai/work")
+	equalField(t, shown, "owner", "alice")
+	equalField(t, shown, "bookmark", "ai/work")
 	equalField(t, shown, "parent", "[[parent-issue-test]]")
 	equalField(t, shown, "remote", "https://github.com/acme/widgets/issues/1")
 	if deps, _ := shown["depends-on"].([]any); len(deps) != 1 || deps[0] != "blocking-issue-test" {

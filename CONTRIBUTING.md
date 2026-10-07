@@ -197,6 +197,8 @@ sisyphus links "[[<issue-name>]]"
 
 Install it with `go install github.com/runewake2/sisyphus/cmd/sisyphus@latest`. Run `sisyphus <command> --help` for all options. `cmd/sisyphus-mcp` gives an agent every command above as an MCP tool over stdio; see the README's "MCP server" section.
 
+sisyphus itself must not know about any particular repo or issue, including this one. Its code, its embedded `issues/TEMPLATE.md`, its help text, and its tests use only generic examples (for example `fix-login-bug`, `alice`, `ai/work`), and its tests run against the embedded template, never against this repo's own files.
+
 ### Issue lifecycle
 
 1. **Create** an issue in `issues/open/` when you find work that you will not do now. Create it in the same change that defers the work. Do not leave untracked `TODO` comments: write `TODO(#<issue-name>)`.

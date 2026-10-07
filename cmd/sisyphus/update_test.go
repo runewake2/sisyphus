@@ -18,7 +18,7 @@ func TestUpdateStartsAnIssue(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r)
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
@@ -26,14 +26,14 @@ func TestUpdateStartsAnIssue(t *testing.T) {
 	isTrue(t, !r.exists("issues/open/"+updateTarget+".md"), "the open file is gone")
 	doc := r.frontmatter("issues/in-progress/" + updateTarget + ".md")
 	equal(t, "in-progress", doc.get("state"))
-	equal(t, "samw/ai/work", doc.get("bookmark"))
+	equal(t, "ai/work", doc.get("bookmark"))
 	equal(t, "", doc.get("resolution"))
 	equal(t, "", doc.get("closed"))
 }
 
 func TestUpdateClosesAnIssueAsCompletedAndKeepsTheBookmark(t *testing.T) {
 	r := newTestRepo(t)
-	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work")
+	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "ai/work")
 
 	res := r.run("update", updateTarget, "closed", "--resolution", "completed")
 
@@ -44,7 +44,7 @@ func TestUpdateClosesAnIssueAsCompletedAndKeepsTheBookmark(t *testing.T) {
 	equal(t, "closed", doc.get("state"))
 	equal(t, "completed", doc.get("resolution"))
 	equal(t, today(), doc.get("closed"))
-	equal(t, "samw/ai/work", doc.get("bookmark"))
+	equal(t, "ai/work", doc.get("bookmark"))
 }
 
 func TestUpdateClosesAnOpenIssueAsAbandoned(t *testing.T) {
@@ -59,7 +59,7 @@ func TestUpdateClosesAnOpenIssueAsAbandoned(t *testing.T) {
 
 func TestUpdateStopsWorkAndClearsTheBookmark(t *testing.T) {
 	r := newTestRepo(t)
-	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work")
+	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "ai/work")
 
 	res := r.run("update", updateTarget, "open")
 
@@ -74,13 +74,13 @@ func TestUpdateStopsWorkAndClearsTheBookmark(t *testing.T) {
 
 func TestUpdateKeepsAnExistingBookmarkWhenNoneIsGiven(t *testing.T) {
 	r := newTestRepo(t)
-	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work")
+	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "ai/work")
 
 	res := r.run("update", updateTarget, "in-progress")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
-	equal(t, "samw/ai/work", r.frontmatter("issues/in-progress/"+updateTarget+".md").get("bookmark"))
+	equal(t, "ai/work", r.frontmatter("issues/in-progress/"+updateTarget+".md").get("bookmark"))
 }
 
 func TestUpdateSetsOwnerApproverWorkspaceAndMetadata(t *testing.T) {
@@ -88,25 +88,25 @@ func TestUpdateSetsOwnerApproverWorkspaceAndMetadata(t *testing.T) {
 	createUpdateTarget(r)
 
 	res := r.run("update", updateTarget, "in-progress",
-		"--bookmark", "samw/ai/work",
-		"--owner", "samw",
-		"--approver", "runewake2",
+		"--bookmark", "ai/work",
+		"--owner", "alice",
+		"--approver", "bob",
 		"--workspace", "sisyphus-work",
 		"--metadata", "session-id=session-123")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
 	doc := r.frontmatter("issues/in-progress/" + updateTarget + ".md")
-	equal(t, "samw", doc.get("owner"))
-	equal(t, "runewake2", doc.get("approver"))
+	equal(t, "alice", doc.get("owner"))
+	equal(t, "bob", doc.get("approver"))
 	equal(t, "[sisyphus-work]", doc.get("workspaces"))
 	equal(t, `{session-id: "session-123"}`, doc.get("metadata"))
 }
 
 func TestUpdateMergesMetadataAndKeepsItWhenClosed(t *testing.T) {
 	r := newTestRepo(t)
-	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work",
-		"--owner", "samw", "--metadata", "session-id=session-123")
+	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "ai/work",
+		"--owner", "alice", "--metadata", "session-id=session-123")
 
 	r.mustRun("update", updateTarget, "in-progress", "--metadata", "note=half-done")
 	res := r.run("update", updateTarget, "closed", "--resolution", "completed")
@@ -114,13 +114,13 @@ func TestUpdateMergesMetadataAndKeepsItWhenClosed(t *testing.T) {
 	equal(t, 0, res.exit)
 	doc := r.frontmatter("issues/closed/" + updateTarget + ".md")
 	equal(t, `{note: "half-done", session-id: "session-123"}`, doc.get("metadata"))
-	equal(t, "samw", doc.get("owner"))
-	equal(t, "samw/ai/work", doc.get("bookmark"))
+	equal(t, "alice", doc.get("owner"))
+	equal(t, "ai/work", doc.get("bookmark"))
 }
 
 func TestUpdateAppendsToWorkspacesWithoutDuplicating(t *testing.T) {
 	r := newTestRepo(t)
-	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work", "--workspace", "sisyphus-work")
+	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "ai/work", "--workspace", "sisyphus-work")
 
 	r.mustRun("update", updateTarget, "in-progress", "--workspace", "sisyphus-work-2")
 	r.mustRun("update", updateTarget, "in-progress", "--workspace", "sisyphus-work")
@@ -131,8 +131,8 @@ func TestUpdateAppendsToWorkspacesWithoutDuplicating(t *testing.T) {
 
 func TestUpdateClearsOwnerButKeepsWorkspacesApproverAndMetadataWhenReopened(t *testing.T) {
 	r := newTestRepo(t)
-	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work",
-		"--owner", "samw", "--approver", "runewake2", "--workspace", "sisyphus-work", "--metadata", "session-id=session-123")
+	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "ai/work",
+		"--owner", "alice", "--approver", "bob", "--workspace", "sisyphus-work", "--metadata", "session-id=session-123")
 
 	res := r.run("update", updateTarget, "open")
 
@@ -140,7 +140,7 @@ func TestUpdateClearsOwnerButKeepsWorkspacesApproverAndMetadataWhenReopened(t *t
 	doc := r.frontmatter("issues/open/" + updateTarget + ".md")
 	equal(t, "", doc.get("owner"))
 	equal(t, "", doc.get("bookmark"))
-	equal(t, "runewake2", doc.get("approver"))
+	equal(t, "bob", doc.get("approver"))
 	equal(t, "[sisyphus-work]", doc.get("workspaces"))
 	equal(t, `{session-id: "session-123"}`, doc.get("metadata"))
 }
@@ -152,7 +152,7 @@ func TestUpdateMovesTheIssueWithGitMvInAGitRepo(t *testing.T) {
 	r.git("add", "-A")
 	r.git("-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "initial")
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
@@ -178,7 +178,7 @@ func TestUpdateMovesTheIssueWithPlainRenameWithoutGit(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r)
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
 
 	equal(t, 0, res.exit)
 	isTrue(t, !r.exists("issues/open/"+updateTarget+".md"), "the open file is gone")
@@ -203,7 +203,7 @@ func TestUpdateKeepsPriorityEffortAndTagsWhenNotGiven(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r, "--priority", "high", "--effort", "large", "--tags", "plan")
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
 
 	equal(t, 0, res.exit)
 	doc := r.frontmatter("issues/in-progress/" + updateTarget + ".md")
@@ -247,7 +247,7 @@ func TestUpdateAcceptsEveryFormOfTheName(t *testing.T) {
 			r := newTestRepo(t)
 			createUpdateTarget(r)
 
-			res := r.run("update", reference, "in-progress", "--bookmark", "samw/ai/work")
+			res := r.run("update", reference, "in-progress", "--bookmark", "ai/work")
 
 			equal(t, 0, res.exit)
 			isTrue(t, r.exists("issues/in-progress/"+updateTarget+".md"), "the issue moved")
@@ -307,7 +307,7 @@ func TestUpdateReportsAnIssueInMoreThanOneDirectory(t *testing.T) {
 	createUpdateTarget(r)
 	r.write("issues/closed/"+updateTarget+".md", r.read("issues/open/"+updateTarget+".md"))
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
 
 	equal(t, 1, res.exit)
 	contains(t, res.error, "more than one state directory")
@@ -319,7 +319,7 @@ func TestUpdateCorrectsAStateFieldThatDoesNotMatchTheDirectory(t *testing.T) {
 	path := "issues/open/" + updateTarget + ".md"
 	r.write(path, strings.Replace(r.read(path), "state: open ", "state: closed ", 1))
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
 
 	equal(t, 0, res.exit)
 	contains(t, res.error, "its state field was 'closed'")
@@ -331,7 +331,7 @@ func TestUpdateKeepsInlineCommentsAndTheBody(t *testing.T) {
 	createUpdateTarget(r)
 	before := r.frontmatter("issues/open/" + updateTarget + ".md")
 
-	r.mustRun("update", updateTarget, "in-progress", "--bookmark", "samw/ai/work")
+	r.mustRun("update", updateTarget, "in-progress", "--bookmark", "ai/work")
 
 	after := r.frontmatter("issues/in-progress/" + updateTarget + ".md")
 	isTrue(t, slices.ContainsFunc(after.front, func(l string) bool { return strings.HasPrefix(l, "state: in-progress ") && strings.Contains(l, " # ") }), "the state line keeps its comment")

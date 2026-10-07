@@ -39,7 +39,7 @@ func TestDependsOnAddsAndRemovesOneDependency(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "blocking-issue-test")
 	r.mustRun("new", "other-blocking-issue-test")
-	r.mustRun("new", "depends-on-test", "--state", "in-progress", "--bookmark", "samw/ai/work")
+	r.mustRun("new", "depends-on-test", "--state", "in-progress", "--bookmark", "ai/work")
 
 	add := r.run("depends-on", "depends-on-test", "blocking-issue-test")
 	equal(t, 0, add.exit)

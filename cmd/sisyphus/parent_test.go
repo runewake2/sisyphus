@@ -54,7 +54,7 @@ func TestParentNewWarnsWhenTheParentIsClosed(t *testing.T) {
 func TestParentSetsAndClearsTheParent(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "parent-issue-test")
-	r.mustRun("new", "child-issue-test", "--state", "in-progress", "--bookmark", "samw/ai/work")
+	r.mustRun("new", "child-issue-test", "--state", "in-progress", "--bookmark", "ai/work")
 
 	set := r.run("parent", "child-issue-test", "[[parent-issue-test]]")
 
@@ -150,7 +150,7 @@ func TestParentClosingAnIssueWarnsAboutSubIssuesThatAreNotClosed(t *testing.T) {
 			r := newTestRepo(t)
 			r.mustRun("new", "parent-issue-test")
 			r.mustRun("new", "open-child-test", "--parent", "parent-issue-test")
-			r.mustRun("new", "started-child-test", "--parent", "parent-issue-test", "--state", "in-progress", "--bookmark", "samw/ai/work")
+			r.mustRun("new", "started-child-test", "--parent", "parent-issue-test", "--state", "in-progress", "--bookmark", "ai/work")
 			r.mustRun("new", "closed-child-test", "--parent", "parent-issue-test", "--state", "closed", "--resolution", "completed")
 
 			res := r.run("update", "parent-issue-test", "closed", "--resolution", resolution)

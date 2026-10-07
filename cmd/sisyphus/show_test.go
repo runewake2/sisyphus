@@ -8,36 +8,36 @@ import (
 
 func TestShowPrintsFieldsAndBody(t *testing.T) {
 	r := newTestRepo(t)
-	r.mustRun("new", "explicit-step-dependencies", "--title", "Add explicit step dependencies", "--priority", "high", "--tags", "plan")
+	r.mustRun("new", "retry-backoff", "--title", "Add retry backoff", "--priority", "high", "--tags", "plan")
 
-	res := r.run("show", "explicit-step-dependencies")
+	res := r.run("show", "retry-backoff")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
-	contains(t, res.output, "title:      Add explicit step dependencies")
+	contains(t, res.output, "title:      Add retry backoff")
 	contains(t, res.output, "state:      open")
 	contains(t, res.output, "priority:   high")
 	contains(t, res.output, "effort:     medium")
 	contains(t, res.output, "tags:       [plan]")
-	contains(t, res.output, "# Add explicit step dependencies")
+	contains(t, res.output, "# Add retry backoff")
 	contains(t, res.output, "## Summary")
 }
 
 func TestShowAcceptsEveryFormOfTheName(t *testing.T) {
 	r := newTestRepo(t)
-	r.mustRun("new", "explicit-step-dependencies")
+	r.mustRun("new", "retry-backoff")
 
 	for _, reference := range []string{
-		"explicit-step-dependencies",
-		"[[explicit-step-dependencies]]",
-		"#explicit-step-dependencies",
-		"issues/open/explicit-step-dependencies.md",
+		"retry-backoff",
+		"[[retry-backoff]]",
+		"#retry-backoff",
+		"issues/open/retry-backoff.md",
 	} {
 		t.Run(reference, func(t *testing.T) {
 			res := r.run("show", reference)
 
 			equal(t, 0, res.exit)
-			contains(t, res.output, "title:      Explicit step dependencies")
+			contains(t, res.output, "title:      Retry backoff")
 		})
 	}
 }
@@ -45,21 +45,21 @@ func TestShowAcceptsEveryFormOfTheName(t *testing.T) {
 func TestShowPrintsJSON(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "blocking-issue-test")
-	r.mustRun("new", "explicit-step-dependencies",
-		"--title", "Add explicit step dependencies",
+	r.mustRun("new", "retry-backoff",
+		"--title", "Add retry backoff",
 		"--tags", "plan, repo",
 		"--remote", "https://github.com/acme/widgets/issues/42",
 		"--depends-on", "blocking-issue-test")
 
-	res := r.run("show", "--json", "explicit-step-dependencies")
+	res := r.run("show", "--json", "retry-backoff")
 
 	equal(t, 0, res.exit)
 	var view issueView
 	if err := json.Unmarshal([]byte(res.output), &view); err != nil {
 		t.Fatalf("invalid JSON: %s\n%s", err, res.output)
 	}
-	equal(t, "explicit-step-dependencies", view.Name)
-	equal(t, "Add explicit step dependencies", view.Title)
+	equal(t, "retry-backoff", view.Name)
+	equal(t, "Add retry backoff", view.Title)
 	equal(t, "open", view.State)
 	equalSlices(t, []string{"plan", "repo"}, view.Tags)
 	equal(t, "https://github.com/acme/widgets/issues/42", view.Remote)
@@ -78,10 +78,10 @@ func TestShowReportsAMissingIssue(t *testing.T) {
 
 func TestShowReportsAnIssueInMoreThanOneDirectory(t *testing.T) {
 	r := newTestRepo(t)
-	r.mustRun("new", "explicit-step-dependencies")
-	r.write("issues/closed/explicit-step-dependencies.md", r.read("issues/open/explicit-step-dependencies.md"))
+	r.mustRun("new", "retry-backoff")
+	r.write("issues/closed/retry-backoff.md", r.read("issues/open/retry-backoff.md"))
 
-	res := r.run("show", "explicit-step-dependencies")
+	res := r.run("show", "retry-backoff")
 
 	equal(t, 1, res.exit)
 	contains(t, res.error, "more than one state directory")

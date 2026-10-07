@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.14]] - 2026-10-07
+- Make sisyphus itself independent of any particular repo or issue: generic template, error
+  examples, and tests.
+
 ## [[0.0.13]] - 2026-10-07
 - `sisyphus --version` prints the version the binary was compiled from, in any directory.
 

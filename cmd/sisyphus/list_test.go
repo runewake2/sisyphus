@@ -10,7 +10,7 @@ func setUpListIssues(t *testing.T) *testRepo {
 	r := newTestRepo(t)
 	r.mustRun("new", "open-low-test", "--priority", "low", "--tags", "plan")
 	r.mustRun("new", "open-critical-test", "--priority", "critical", "--tags", "scheduler")
-	r.mustRun("new", "in-progress-test", "--state", "in-progress", "--bookmark", "samw/ai/work", "--owner", "samw", "--priority", "high")
+	r.mustRun("new", "in-progress-test", "--state", "in-progress", "--bookmark", "ai/work", "--owner", "alice", "--priority", "high")
 	r.mustRun("new", "closed-test", "--state", "closed", "--resolution", "completed")
 	r.mustRun("new", "sub-issue-test", "--parent", "open-low-test")
 	return r
@@ -62,7 +62,7 @@ func TestListFiltersByTags(t *testing.T) {
 func TestListFiltersByOwner(t *testing.T) {
 	r := setUpListIssues(t)
 
-	res := r.run("list", "--owner", "samw")
+	res := r.run("list", "--owner", "alice")
 
 	equal(t, 0, res.exit)
 	equalSlices(t, []string{"in-progress-test"}, namesOf(t, res.output))

@@ -45,7 +45,7 @@ type issueFile struct {
 
 func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	if !namePattern.MatchString(o.name) {
-		return "", fmt.Errorf("Invalid issue name '%s'. Use 2-6 lowercase words in kebab-case, for example explicit-step-dependencies.", o.name)
+		return "", fmt.Errorf("Invalid issue name '%s'. Use 2-6 lowercase words in kebab-case, for example fix-login-bug.", o.name)
 	}
 	resolution := resolveResolution(o.state, o.resolution)
 	if err := checkResolution(o.state, resolution, "Set --resolution only when the state is closed."); err != nil {

@@ -78,7 +78,7 @@ func TestResolvePrintsAbsolutePaths(t *testing.T) {
 func TestResolveFindsAnIssueAfterItChangesState(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "moving-issue-test")
-	r.mustRun("update", "moving-issue-test", "in-progress", "--bookmark", "samw/ai/work")
+	r.mustRun("update", "moving-issue-test", "in-progress", "--bookmark", "ai/work")
 
 	res := r.run("resolve", "[[moving-issue-test]]")
 

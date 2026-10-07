@@ -39,7 +39,7 @@ func TestNewRejectsARemoteThatIsNotAURL(t *testing.T) {
 
 func TestRemoteSetsAndClearsTheRemote(t *testing.T) {
 	r := newTestRepo(t)
-	r.mustRun("new", "remote-issue-test", "--state", "in-progress", "--bookmark", "samw/ai/work")
+	r.mustRun("new", "remote-issue-test", "--state", "in-progress", "--bookmark", "ai/work")
 
 	set := r.run("remote", "remote-issue-test", "https://github.com/acme/widgets/issues/42")
 
