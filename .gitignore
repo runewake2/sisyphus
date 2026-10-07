@@ -2,3 +2,4 @@
 *.test
 .jj/
 .DS_Store
+.obsidian/
