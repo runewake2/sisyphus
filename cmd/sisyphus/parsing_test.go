@@ -1,8 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/runewake2/sisyphus"
 )
 
 func TestLinkTargetFindsTheTargetOfALink(t *testing.T) {
@@ -126,12 +130,24 @@ func TestDocumentRejectsBadFrontmatter(t *testing.T) {
 	}
 }
 
-func TestVersionPrintsTheVersionFile(t *testing.T) {
+func TestVersionPrintsTheCompiledVersion(t *testing.T) {
 	r := newTestRepo(t)
+	r.write("VERSION", "9.9.9\n")
 
 	res := r.run("--version")
 
 	equal(t, 0, res.exit)
+	isTrue(t, sisyphus.Version() != "", "the compiled version is not empty")
+	equal(t, sisyphus.Version(), strings.TrimSpace(res.output))
 	equal(t, strings.TrimSpace(readSourceFile(t, "VERSION")), strings.TrimSpace(res.output))
-	equal(t, version(), strings.TrimSpace(res.output))
+}
+
+func TestVersionWorksOutsideARepo(t *testing.T) {
+	var output, errors bytes.Buffer
+	notARepo := func() (string, error) { return "", fmt.Errorf("not a repo") }
+
+	exit := run([]string{"--version"}, notARepo, &output, &errors)
+
+	equal(t, 0, exit)
+	equal(t, sisyphus.Version(), strings.TrimSpace(output.String()))
 }

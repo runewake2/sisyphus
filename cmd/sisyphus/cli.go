@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/runewake2/sisyphus"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +32,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "sisyphus",
 		Short:         "Manage the issues in issues/ and resolve wikilinks in the repo.",
-		Version:       version(),
+		Version:       sisyphus.Version(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}

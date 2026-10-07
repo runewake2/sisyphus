@@ -14,10 +14,11 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/runewake2/sisyphus"
 )
 
 func main() {
-	server := mcp.NewServer(&mcp.Implementation{Name: "sisyphus", Version: "0.0.1"}, nil)
+	server := mcp.NewServer(&mcp.Implementation{Name: "sisyphus", Version: sisyphus.Version()}, nil)
 	registerTools(server)
 	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatal(err)

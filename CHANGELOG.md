@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.13]] - 2026-10-07
+- `sisyphus --version` prints the version the binary was compiled from, in any directory.
+
 ## [[0.0.12]] - 2026-10-07
 - Add `sisyphus-mcp`: an MCP server giving an agent every `sisyphus` command as a tool.
 

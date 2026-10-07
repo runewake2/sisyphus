@@ -40,19 +40,6 @@ func findRoot() (string, error) {
 	return "", errors.New("Cannot find the repo root. Run sisyphus in a directory below the one that contains issues/TEMPLATE.md.")
 }
 
-// version reads the VERSION file at the repo root, written by `sisyphus init`. It returns "" if the repo has no VERSION file yet.
-func version() string {
-	root, err := findRoot()
-	if err != nil {
-		return ""
-	}
-	content, err := os.ReadFile(filepath.Join(root, "VERSION"))
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(content))
-}
-
 // relative uses "/" on every platform, because wikilinks use "/".
 func relative(root, file string) string {
 	rel, err := filepath.Rel(root, file)
