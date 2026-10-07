@@ -41,6 +41,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 		newCommand(findRoot),
 		updateCommand(findRoot),
 		parentCommand(findRoot),
+		showCommand(findRoot),
 		resolveCommand(findRoot),
 		linksCommand(findRoot),
 		initCommand(),
@@ -159,6 +160,37 @@ func parentCommand(findRoot func() (string, error)) *cobra.Command {
 	return cmd
 }
 
+func showCommand(findRoot func() (string, error)) *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "show <name>",
+		Short: "Print one issue: its key fields and its body.",
+		Long: "Print one issue: its key fields and its body, without first finding which state directory holds it.\n\n" +
+			"<name> is an issue name, [[issue-name]], #issue-name, or a path to the issue.",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			root, err := findRoot()
+			if err != nil {
+				return err
+			}
+			name, _, doc, err := loadIssue(root, args[0])
+			if err != nil {
+				return err
+			}
+			if asJSON {
+				encoder := json.NewEncoder(cmd.OutOrStdout())
+				encoder.SetEscapeHTML(false)
+				encoder.SetIndent("", "  ")
+				return encoder.Encode(newIssueView(name, doc))
+			}
+			writeIssueText(cmd.OutOrStdout(), doc)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the issue as JSON instead of readable text.")
+	return cmd
+}
+
 func resolveCommand(findRoot func() (string, error)) *cobra.Command {
 	var all, absolute bool
 	cmd := &cobra.Command{
@@ -266,6 +298,31 @@ func printPath(cmd *cobra.Command, findRoot func() (string, error), operation fu
 	}
 	fmt.Fprintln(cmd.OutOrStdout(), path)
 	return nil
+}
+
+// writeIssueText prints an issue's key fields, then its body.
+func writeIssueText(out io.Writer, doc *document) {
+	fields := [][2]string{
+		{"title", doc.get("title")},
+		{"state", doc.get("state")},
+		{"priority", doc.get("priority")},
+		{"effort", doc.get("effort")},
+		{"tags", doc.get("tags")},
+		{"owner", doc.get("owner")},
+		{"approver", doc.get("approver")},
+		{"bookmark", doc.get("bookmark")},
+		{"parent", doc.get("parent")},
+	}
+	width := 0
+	for _, f := range fields {
+		width = max(width, utf8.RuneCountInString(f[0]))
+	}
+	for _, f := range fields {
+		label, value := f[0], f[1]
+		fmt.Fprintf(out, "%s:%s %s\n", label, strings.Repeat(" ", width-utf8.RuneCountInString(label)), value)
+	}
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, strings.TrimLeft(strings.Join(doc.body, "\n"), "\n"))
 }
 
 func writeTable(out io.Writer, rows []linkRow) {

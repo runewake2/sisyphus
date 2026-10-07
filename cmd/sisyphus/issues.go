@@ -392,3 +392,46 @@ func valueOrEmpty(value *string) string {
 	}
 	return *value
 }
+
+// issueView is every frontmatter field of an issue, plus its body, for "sisyphus show".
+type issueView struct {
+	Name         string   `json:"name"`
+	Title        string   `json:"title"`
+	State        string   `json:"state"`
+	Resolution   string   `json:"resolution,omitempty"`
+	Priority     string   `json:"priority"`
+	Effort       string   `json:"effort"`
+	Tags         []string `json:"tags,omitempty"`
+	Created      string   `json:"created"`
+	Closed       string   `json:"closed,omitempty"`
+	Owner        string   `json:"owner,omitempty"`
+	Approver     string   `json:"approver,omitempty"`
+	Bookmark     string   `json:"bookmark,omitempty"`
+	Workspaces   []string `json:"workspaces,omitempty"`
+	AgentSession string   `json:"agent-session,omitempty"`
+	DeferredFrom string   `json:"deferred-from,omitempty"`
+	Parent       string   `json:"parent,omitempty"`
+	Body         string   `json:"body"`
+}
+
+func newIssueView(name string, doc *document) issueView {
+	return issueView{
+		Name:         name,
+		Title:        doc.get("title"),
+		State:        doc.get("state"),
+		Resolution:   doc.get("resolution"),
+		Priority:     doc.get("priority"),
+		Effort:       doc.get("effort"),
+		Tags:         parseList(doc.get("tags")),
+		Created:      doc.get("created"),
+		Closed:       doc.get("closed"),
+		Owner:        doc.get("owner"),
+		Approver:     doc.get("approver"),
+		Bookmark:     doc.get("bookmark"),
+		Workspaces:   parseList(doc.get("workspaces")),
+		AgentSession: doc.get("agent-session"),
+		DeferredFrom: doc.get("deferred-from"),
+		Parent:       doc.get("parent"),
+		Body:         strings.Join(doc.body, "\n"),
+	}
+}
