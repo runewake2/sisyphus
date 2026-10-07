@@ -197,7 +197,7 @@ sisyphus links "[[<issue-name>]]"
 
 Install it with `go install github.com/runewake2/sisyphus/cmd/sisyphus@latest`. Run `sisyphus <command> --help` for all options. `cmd/sisyphus-mcp` gives an agent every command above as an MCP tool over stdio; see the README's "MCP server" section.
 
-sisyphus itself must not know about any particular repo or issue, including this one. Its code, its embedded `issues/TEMPLATE.md`, its help text, and its tests use only generic examples (for example `fix-login-bug`, `alice`, `ai/work`), and its tests run against the embedded template, never against this repo's own files.
+sisyphus itself must not know about any particular repo or issue, including this one. Its code, its embedded `issues/TEMPLATE.md`, its help text, and its tests use only generic examples (for example `fix-login-bug`, `alice`, `ai/work`), and its tests run against the embedded template, never against this repo's own files. In the same way, sisyphus never talks to GitHub, Jira, GitLab, or any other tracker itself: each integration is a configured plugin that sisyphus runs as a separate child process, and the plugin translates between a sisyphus issue and the platform's (see [[integration-plugins]]).
 
 ### Issue lifecycle
 
