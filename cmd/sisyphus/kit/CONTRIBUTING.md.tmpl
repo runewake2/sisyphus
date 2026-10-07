@@ -154,7 +154,7 @@ issues/
 |---|---|---|
 | `title` | Short imperative text | |
 | `state` | `open`, `in-progress`, `closed` | Must always match the directory that holds the file. |
-| `resolution` | `completed`, `abandoned` | Empty until the issue is closed. |
+| `resolution` | `completed`, `abandoned` | Empty until the issue is closed. Defaults to `completed` when closing. |
 | `priority` | `critical`, `high`, `medium`, `low` | `critical`: blocks other work. `high`: do next. `medium`: the default. `low`: do when there is time. |
 | `effort` | `small`, `medium`, `large`, `x-large` | `x-large`: split it into sub-issues before you start. |
 | `tags` | List of component names | The components that the work touches. |
@@ -176,7 +176,8 @@ Use `sisyphus` to create issues and to change their state. It keeps the `state` 
 ```bash
 sisyphus new <issue-name> --title "<title>" --priority high --effort small --tags "<component>"
 sisyphus update <issue-name> in-progress --bookmark <bookmark> --owner <owner> --workspace <workspace> --agent-session <id>
-sisyphus update <issue-name> closed --resolution completed   # or: abandoned
+sisyphus update <issue-name> closed                           # resolution defaults to completed
+sisyphus update <issue-name> closed --resolution abandoned
 sisyphus update <issue-name> open                            # stop work without closing
 sisyphus update <issue-name> in-progress --priority high --effort small --tags "<component>"  # reprioritize
 sisyphus new <sub-issue-name> --parent <issue-name>

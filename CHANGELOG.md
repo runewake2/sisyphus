@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.8]] - 2026-10-07
+- Default a closed issue's resolution to `completed` instead of requiring `--resolution`.
+
 ## [[0.0.7]] - 2026-10-07
 - Add `depends-on` and `sisyphus depends-on`, with cycle detection and a close-time warning, plus
   `--blocked` on `list`/`search`.

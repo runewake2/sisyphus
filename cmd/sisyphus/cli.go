@@ -94,7 +94,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVarP(&title, "title", "t", "", "Issue title. The default is made from the name.")
 	flags.StringVarP(&state, "state", "s", "open", "The state of the new issue: "+strings.Join(states, ", ")+".")
-	flags.StringVarP(&resolution, "resolution", "r", "", "Required when the state is closed: "+strings.Join(resolutions, ", ")+".")
+	flags.StringVarP(&resolution, "resolution", "r", "", "When the state is closed: "+strings.Join(resolutions, ", ")+". Defaults to completed.")
 	flags.StringVarP(&priority, "priority", "p", "medium", "The priority of the issue: "+strings.Join(priorities, ", ")+".")
 	flags.StringVarP(&effort, "effort", "e", "medium", "The effort of the issue: "+strings.Join(efforts, ", ")+".")
 	flags.StringVar(&tags, "tags", "", `Comma-separated component names, for example "scheduler,plan".`)
@@ -139,7 +139,7 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 		},
 	}
 	flags := cmd.Flags()
-	flags.StringVarP(&resolution, "resolution", "r", "", "Required when the new state is closed: "+strings.Join(resolutions, ", ")+".")
+	flags.StringVarP(&resolution, "resolution", "r", "", "When the new state is closed: "+strings.Join(resolutions, ", ")+". Defaults to completed.")
 	flags.StringVarP(&bookmark, "bookmark", "b", "", "The jj bookmark of the work. Set it when work starts.")
 	flags.StringVar(&owner, "owner", "", "The person or agent working on the issue.")
 	flags.StringVar(&approver, "approver", "", "The person or agent who accepts the issue when it closes.")

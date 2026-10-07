@@ -136,14 +136,14 @@ func TestNewRejectsNamesThatAreNotUniqueAcrossAllMarkdownFiles(t *testing.T) {
 	}
 }
 
-func TestNewRequiresAResolutionForAClosedIssue(t *testing.T) {
+func TestNewDefaultsAClosedIssueToCompleted(t *testing.T) {
 	r := newTestRepo(t)
 
 	res := r.run("new", "closed-issue-test", "--state", "closed")
 
-	equal(t, 1, res.exit)
-	contains(t, res.error, "needs --resolution")
-	isTrue(t, !r.exists("issues/closed/closed-issue-test.md"), "no issue is created")
+	equal(t, 0, res.exit)
+	equal(t, "", res.error)
+	equal(t, "completed", r.frontmatter("issues/closed/closed-issue-test.md").get("resolution"))
 }
 
 func TestNewCreatesAClosedIssueWithAResolution(t *testing.T) {

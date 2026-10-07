@@ -45,9 +45,8 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	if !namePattern.MatchString(o.name) {
 		return "", fmt.Errorf("Invalid issue name '%s'. Use 2-6 lowercase words in kebab-case, for example explicit-step-dependencies.", o.name)
 	}
-	if err := checkResolution(o.state, o.resolution,
-		"A closed issue needs --resolution completed or --resolution abandoned.",
-		"Set --resolution only when the state is closed."); err != nil {
+	resolution := resolveResolution(o.state, o.resolution)
+	if err := checkResolution(o.state, resolution, "Set --resolution only when the state is closed."); err != nil {
 		return "", err
 	}
 
@@ -106,7 +105,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	}
 
 	doc.set("title", quote(title))
-	applyState(doc, o.state, o.resolution)
+	applyState(doc, o.state, resolution)
 	doc.set("priority", o.priority)
 	doc.set("effort", o.effort)
 	doc.set("tags", formatTags(o.tags))
@@ -158,16 +157,15 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	if current.state == "closed" && state != "closed" {
 		return "", fmt.Errorf("Issue '%s' is closed. Do not reopen a closed issue. Create a new issue and link to [[%s]].", name, name)
 	}
-	if err := checkResolution(state, o.resolution,
-		"To close an issue, give --resolution completed or --resolution abandoned.",
-		"Set --resolution only when the new state is closed."); err != nil {
+	resolution := resolveResolution(state, o.resolution)
+	if err := checkResolution(state, resolution, "Set --resolution only when the new state is closed."); err != nil {
 		return "", err
 	}
 	if recorded := doc.get("state"); recorded != current.state {
 		warn(warnings, fmt.Sprintf("The issue was in issues/%s/ but its state field was '%s'. The update corrects both.", current.state, recorded))
 	}
 
-	applyState(doc, state, o.resolution)
+	applyState(doc, state, resolution)
 	if state == "open" {
 		doc.set("bookmark", "")
 		doc.set("owner", "")
@@ -572,14 +570,20 @@ func addToList(doc *document, key, value string) {
 	doc.set(key, formatList(items))
 }
 
-func checkResolution(state, resolution, missingMessage, unexpectedMessage string) error {
-	if state == "closed" && resolution == "" {
-		return errors.New(missingMessage)
-	}
+func checkResolution(state, resolution, unexpectedMessage string) error {
 	if state != "closed" && resolution != "" {
 		return errors.New(unexpectedMessage)
 	}
 	return nil
+}
+
+// resolveResolution defaults an empty resolution to "completed" when closing, the common case, so
+// --resolution is only needed to mark an issue "abandoned". An explicit --resolution always wins.
+func resolveResolution(state, resolution string) string {
+	if state == "closed" && resolution == "" {
+		return "completed"
+	}
+	return resolution
 }
 
 func deferredValue(reference string) string {

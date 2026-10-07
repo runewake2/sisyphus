@@ -240,15 +240,15 @@ func TestUpdateAcceptsEveryFormOfTheName(t *testing.T) {
 	}
 }
 
-func TestUpdateRequiresAResolutionToClose(t *testing.T) {
+func TestUpdateDefaultsToCompletedWhenClosingWithoutAResolution(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r)
 
 	res := r.run("update", updateTarget, "closed")
 
-	equal(t, 1, res.exit)
-	contains(t, res.error, "give --resolution")
-	isTrue(t, r.exists("issues/open/"+updateTarget+".md"), "the issue did not move")
+	equal(t, 0, res.exit)
+	equal(t, "", res.error)
+	equal(t, "completed", r.frontmatter("issues/closed/"+updateTarget+".md").get("resolution"))
 }
 
 func TestUpdateRejectsAResolutionWhenTheNewStateIsNotClosed(t *testing.T) {
