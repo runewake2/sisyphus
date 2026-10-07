@@ -30,6 +30,7 @@ const (
 type newOptions struct {
 	name, state, resolution, priority, effort, tags string
 	title, bookmark, deferredFrom, parent           *string
+	owner, approver, workspace, agentSession        *string
 }
 
 type issueFile struct {
@@ -97,7 +98,13 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	doc.set("effort", o.effort)
 	doc.set("tags", "["+strings.Join(tags, ", ")+"]")
 	doc.set("created", today())
+	doc.set("owner", valueOrEmpty(o.owner))
+	doc.set("approver", valueOrEmpty(o.approver))
 	doc.set("bookmark", valueOrEmpty(o.bookmark))
+	if o.workspace != nil {
+		addToList(doc, "workspaces", *o.workspace)
+	}
+	doc.set("agent-session", valueOrEmpty(o.agentSession))
 	doc.set("deferred-from", deferred)
 	doc.set("parent", parentValue)
 	for i, line := range doc.body {
@@ -116,7 +123,16 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	return relative(root, destination), nil
 }
 
-func updateIssue(root, reference, state, resolution string, bookmark *string, warnings io.Writer) (string, error) {
+// updateOptions holds the values of "sisyphus update" that are not positional arguments. A nil pointer means the
+// flag was not given. owner, bookmark, and agent-session describe the current, active work on the issue: they are
+// cleared when the issue returns to open. workspaces is a history of every workspace that has worked on the issue,
+// so an entry is appended, never cleared. approver is not tied to active work and is only ever set explicitly.
+type updateOptions struct {
+	resolution                                         string
+	bookmark, owner, approver, workspace, agentSession *string
+}
+
+func updateIssue(root, reference, state string, o updateOptions, warnings io.Writer) (string, error) {
 	name, current, doc, err := loadIssue(root, reference)
 	if err != nil {
 		return "", err
@@ -124,7 +140,7 @@ func updateIssue(root, reference, state, resolution string, bookmark *string, wa
 	if current.state == "closed" && state != "closed" {
 		return "", fmt.Errorf("Issue '%s' is closed. Do not reopen a closed issue. Create a new issue and link to [[%s]].", name, name)
 	}
-	if err := checkResolution(state, resolution,
+	if err := checkResolution(state, o.resolution,
 		"To close an issue, give --resolution completed or --resolution abandoned.",
 		"Set --resolution only when the new state is closed."); err != nil {
 		return "", err
@@ -133,11 +149,27 @@ func updateIssue(root, reference, state, resolution string, bookmark *string, wa
 		warn(warnings, fmt.Sprintf("The issue was in issues/%s/ but its state field was '%s'. The update corrects both.", current.state, recorded))
 	}
 
-	applyState(doc, state, resolution)
+	applyState(doc, state, o.resolution)
 	if state == "open" {
 		doc.set("bookmark", "")
-	} else if bookmark != nil {
-		doc.set("bookmark", *bookmark)
+		doc.set("owner", "")
+		doc.set("agent-session", "")
+	} else {
+		if o.bookmark != nil {
+			doc.set("bookmark", *o.bookmark)
+		}
+		if o.owner != nil {
+			doc.set("owner", *o.owner)
+		}
+		if o.agentSession != nil {
+			doc.set("agent-session", *o.agentSession)
+		}
+	}
+	if o.workspace != nil {
+		addToList(doc, "workspaces", *o.workspace)
+	}
+	if o.approver != nil {
+		doc.set("approver", *o.approver)
 	}
 	if state == "in-progress" && doc.get("bookmark") == "" {
 		warn(warnings, noBookmarkWarning)
@@ -301,6 +333,31 @@ func saveIssue(doc *document, from, to string) error {
 		return os.Rename(from, to)
 	}
 	return nil
+}
+
+// parseList reads a frontmatter value such as "[a, b]" into its items. An empty or missing value is an empty list.
+func parseList(value string) []string {
+	value = strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(value), "["), "]")
+	var items []string
+	for _, item := range strings.Split(value, ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
+func formatList(items []string) string {
+	return "[" + strings.Join(items, ", ") + "]"
+}
+
+// addToList appends value to the frontmatter list field key, unless it is already there.
+func addToList(doc *document, key, value string) {
+	items := parseList(doc.get(key))
+	if !slices.Contains(items, value) {
+		items = append(items, value)
+	}
+	doc.set(key, formatList(items))
 }
 
 func checkResolution(state, resolution, missingMessage, unexpectedMessage string) error {

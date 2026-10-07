@@ -50,6 +50,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 
 func newCommand(findRoot func() (string, error)) *cobra.Command {
 	var title, state, resolution, priority, effort, tags, bookmark, deferredFrom, parent string
+	var owner, approver, workspace, agentSession string
 	cmd := &cobra.Command{
 		Use:   "new <name>",
 		Short: "Create an issue from issues/TEMPLATE.md in the directory of its state.",
@@ -75,6 +76,10 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 					bookmark:     optional(cmd, "bookmark", bookmark),
 					deferredFrom: optional(cmd, "deferred-from", deferredFrom),
 					parent:       optional(cmd, "parent", parent),
+					owner:        optional(cmd, "owner", owner),
+					approver:     optional(cmd, "approver", approver),
+					workspace:    optional(cmd, "workspace", workspace),
+					agentSession: optional(cmd, "agent-session", agentSession),
 				}, warnings)
 			})
 		},
@@ -89,11 +94,15 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVarP(&bookmark, "bookmark", "b", "", "The jj bookmark of the work on the issue.")
 	flags.StringVarP(&deferredFrom, "deferred-from", "d", "", "Issue name, wikilink, or bookmark that deferred this work.")
 	flags.StringVar(&parent, "parent", "", "The parent issue, if the new issue is a sub-issue. The parent must exist.")
+	flags.StringVar(&owner, "owner", "", "The person or agent working on the issue.")
+	flags.StringVar(&approver, "approver", "", "The person or agent who accepts the issue when it closes.")
+	flags.StringVar(&workspace, "workspace", "", "The jj workspace where local work on the issue is happening. Appended to the issue's workspace history.")
+	flags.StringVar(&agentSession, "agent-session", "", "The AI agent session id working on the issue, if available.")
 	return cmd
 }
 
 func updateCommand(findRoot func() (string, error)) *cobra.Command {
-	var resolution, bookmark string
+	var resolution, bookmark, owner, approver, workspace, agentSession string
 	cmd := &cobra.Command{
 		Use:   "update <name> <state>",
 		Short: "Change the state of an issue and move it to the directory of the new state.",
@@ -106,12 +115,24 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 				return err
 			}
 			return printPath(cmd, findRoot, func(root string, warnings io.Writer) (string, error) {
-				return updateIssue(root, args[0], args[1], resolution, optional(cmd, "bookmark", bookmark), warnings)
+				return updateIssue(root, args[0], args[1], updateOptions{
+					resolution:   resolution,
+					bookmark:     optional(cmd, "bookmark", bookmark),
+					owner:        optional(cmd, "owner", owner),
+					approver:     optional(cmd, "approver", approver),
+					workspace:    optional(cmd, "workspace", workspace),
+					agentSession: optional(cmd, "agent-session", agentSession),
+				}, warnings)
 			})
 		},
 	}
-	cmd.Flags().StringVarP(&resolution, "resolution", "r", "", "Required when the new state is closed: "+strings.Join(resolutions, ", ")+".")
-	cmd.Flags().StringVarP(&bookmark, "bookmark", "b", "", "The jj bookmark of the work. Set it when work starts.")
+	flags := cmd.Flags()
+	flags.StringVarP(&resolution, "resolution", "r", "", "Required when the new state is closed: "+strings.Join(resolutions, ", ")+".")
+	flags.StringVarP(&bookmark, "bookmark", "b", "", "The jj bookmark of the work. Set it when work starts.")
+	flags.StringVar(&owner, "owner", "", "The person or agent working on the issue.")
+	flags.StringVar(&approver, "approver", "", "The person or agent who accepts the issue when it closes.")
+	flags.StringVar(&workspace, "workspace", "", "The jj workspace where local work on the issue is happening. Appended to the issue's workspace history.")
+	flags.StringVar(&agentSession, "agent-session", "", "The AI agent session id working on the issue, if available.")
 	return cmd
 }
 

@@ -25,6 +25,10 @@ func TestNewCreatesAnOpenIssueFromTheTemplate(t *testing.T) {
 	equal(t, "", doc.get("closed"))
 	equal(t, "", doc.get("bookmark"))
 	equal(t, "", doc.get("deferred-from"))
+	equal(t, "", doc.get("owner"))
+	equal(t, "", doc.get("approver"))
+	equal(t, "[]", doc.get("workspaces"))
+	equal(t, "", doc.get("agent-session"))
 	isTrue(t, slices.ContainsFunc(doc.body, func(l string) bool { return l == "# Explicit step dependencies" }), "the body has the title")
 }
 
@@ -45,7 +49,11 @@ func TestNewSetsTheGivenOptions(t *testing.T) {
 		"--title", "Add explicit step dependencies",
 		"--priority", "high",
 		"--effort", "large",
-		"--tags", "plan, widget-scheduler ,,repo")
+		"--tags", "plan, widget-scheduler ,,repo",
+		"--owner", "samw",
+		"--approver", "samw",
+		"--workspace", "sisyphus-explicit-steps",
+		"--agent-session", "session-123")
 
 	equal(t, 0, res.exit)
 	doc := r.frontmatter("issues/open/explicit-step-dependencies.md")
@@ -53,6 +61,10 @@ func TestNewSetsTheGivenOptions(t *testing.T) {
 	equal(t, "high", doc.get("priority"))
 	equal(t, "large", doc.get("effort"))
 	equal(t, "[plan, widget-scheduler, repo]", doc.get("tags"))
+	equal(t, "samw", doc.get("owner"))
+	equal(t, "samw", doc.get("approver"))
+	equal(t, "[sisyphus-explicit-steps]", doc.get("workspaces"))
+	equal(t, "session-123", doc.get("agent-session"))
 	isTrue(t, slices.ContainsFunc(doc.body, func(l string) bool { return l == "# Add explicit step dependencies" }), "the body has the title")
 }
 

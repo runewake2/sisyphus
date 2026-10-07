@@ -82,6 +82,53 @@ func TestUpdateKeepsAnExistingBookmarkWhenNoneIsGiven(t *testing.T) {
 	equal(t, "samw/ai/work", r.frontmatter("issues/in-progress/"+updateTarget+".md").get("bookmark"))
 }
 
+func TestUpdateSetsOwnerApproverWorkspaceAndAgentSession(t *testing.T) {
+	r := newTestRepo(t)
+	createUpdateTarget(r)
+
+	res := r.run("update", updateTarget, "in-progress",
+		"--bookmark", "samw/ai/work",
+		"--owner", "samw",
+		"--approver", "runewake2",
+		"--workspace", "sisyphus-work",
+		"--agent-session", "session-123")
+
+	equal(t, 0, res.exit)
+	equal(t, "", res.error)
+	doc := r.frontmatter("issues/in-progress/" + updateTarget + ".md")
+	equal(t, "samw", doc.get("owner"))
+	equal(t, "runewake2", doc.get("approver"))
+	equal(t, "[sisyphus-work]", doc.get("workspaces"))
+	equal(t, "session-123", doc.get("agent-session"))
+}
+
+func TestUpdateAppendsToWorkspacesWithoutDuplicating(t *testing.T) {
+	r := newTestRepo(t)
+	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work", "--workspace", "sisyphus-work")
+
+	r.mustRun("update", updateTarget, "in-progress", "--workspace", "sisyphus-work-2")
+	r.mustRun("update", updateTarget, "in-progress", "--workspace", "sisyphus-work")
+
+	doc := r.frontmatter("issues/in-progress/" + updateTarget + ".md")
+	equal(t, "[sisyphus-work, sisyphus-work-2]", doc.get("workspaces"))
+}
+
+func TestUpdateClearsOwnerAndAgentSessionButKeepsWorkspacesAndApproverWhenReopened(t *testing.T) {
+	r := newTestRepo(t)
+	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work",
+		"--owner", "samw", "--approver", "runewake2", "--workspace", "sisyphus-work", "--agent-session", "session-123")
+
+	res := r.run("update", updateTarget, "open")
+
+	equal(t, 0, res.exit)
+	doc := r.frontmatter("issues/open/" + updateTarget + ".md")
+	equal(t, "", doc.get("owner"))
+	equal(t, "", doc.get("agent-session"))
+	equal(t, "", doc.get("bookmark"))
+	equal(t, "runewake2", doc.get("approver"))
+	equal(t, "[sisyphus-work]", doc.get("workspaces"))
+}
+
 func TestUpdateWarnsWhenAnInProgressIssueHasNoBookmark(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r)

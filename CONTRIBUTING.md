@@ -159,7 +159,11 @@ issues/
 | `effort` | `small`, `medium`, `large`, `x-large` | `x-large`: split it into sub-issues before you start. |
 | `tags` | List of component names | The components that the work touches. |
 | `created`, `closed` | `YYYY-MM-DD` | |
-| `bookmark` | A jj bookmark | The bookmark of the work on the issue. Set it when work starts. |
+| `owner` | A person or an agent | Who is working on the issue. Cleared when work stops (state returns to `open`). |
+| `approver` | A person or an agent | Who accepts the issue when it closes. Not cleared when work stops. |
+| `bookmark` | A jj bookmark | The bookmark of the work on the issue. Set it when work starts. Cleared when work stops. |
+| `workspaces` | List of jj workspace names | Every jj workspace that has done local work on the issue. Entries accumulate; never cleared. |
+| `agent-session` | An AI agent session id | The agent session currently working on the issue, if any. Cleared when work stops. |
 | `deferred-from` | `"[[<issue-name>]]"` or a bookmark | Optional. The work that deferred this issue. |
 | `parent` | `"[[<issue-name>]]"` | Optional. The issue that this sub-issue is part of. |
 
@@ -169,7 +173,7 @@ Use `sisyphus` to create issues and to change their state. It keeps the `state` 
 
 ```bash
 sisyphus new <issue-name> --title "<title>" --priority high --effort small --tags "<component>"
-sisyphus update <issue-name> in-progress --bookmark <bookmark>
+sisyphus update <issue-name> in-progress --bookmark <bookmark> --owner <owner> --workspace <workspace> --agent-session <id>
 sisyphus update <issue-name> closed --resolution completed   # or: abandoned
 sisyphus update <issue-name> open                            # stop work without closing
 sisyphus new <sub-issue-name> --parent <issue-name>
@@ -183,7 +187,7 @@ Install it with `go install github.com/runewake2/sisyphus/cmd/sisyphus@latest`. 
 ### Issue lifecycle
 
 1. **Create** an issue in `issues/open/` when you find work that you will not do now. Create it in the same change that defers the work. Do not leave untracked `TODO` comments: write `TODO(#<issue-name>)`.
-2. **Start** the issue in the first change of the work: move it to `issues/in-progress/`, and set `bookmark`. Make sure first that nobody else has started it.
+2. **Start** the issue in the first change of the work: move it to `issues/in-progress/`, and set `bookmark`, `owner`, `workspace`, and `agent-session` (if available). Make sure first that nobody else has started it.
 3. **Work**: add the trailer `Updates #<issue-name>` to each change, and record progress in `Notes`.
 4. **Close** the issue in the change that completes the work: move it to `issues/closed/` with `resolution: completed`, complete `Resolution`, and add the trailer `Fixes #<issue-name>`.
 5. **Abandon** an issue by moving it to `issues/closed/` with `resolution: abandoned`, and tell why in `Resolution`.

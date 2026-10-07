@@ -7,7 +7,11 @@ effort: medium         # small | medium | large | x-large
 tags: [cli]            # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-07
 closed:                # YYYY-MM-DD. Set this only when state is closed.
+owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
+approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+agent-session:         # AI agent session id of the current agent working on the issue, if available.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 ---
