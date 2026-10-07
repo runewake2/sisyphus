@@ -21,6 +21,8 @@ var (
 	resolutions = []string{"completed", "abandoned"}
 	priorities  = []string{"critical", "high", "medium", "low"}
 	efforts     = []string{"small", "medium", "large", "x-large"}
+	// builtinTags are suggested in the template and in --help. Tags stay free-form: these are not enforced.
+	builtinTags = []string{"bug", "feature"}
 	namePattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+){1,5}$`)
 )
 

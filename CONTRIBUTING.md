@@ -157,7 +157,7 @@ issues/
 | `resolution` | `completed`, `abandoned` | Empty until the issue is closed. Defaults to `completed` when closing. |
 | `priority` | `critical`, `high`, `medium`, `low` | `critical`: blocks other work. `high`: do next. `medium`: the default. `low`: do when there is time. |
 | `effort` | `small`, `medium`, `large`, `x-large` | `x-large`: split it into sub-issues before you start. |
-| `tags` | List of component names | The components that the work touches. |
+| `tags` | List of tags | Free-form. Built-in: `bug` and `feature`. Add the components the work touches too, for example `[bug, scheduler]`. |
 | `created`, `closed` | `YYYY-MM-DD` | |
 | `owner` | A person or an agent | Who is working on the issue. Cleared when work stops (state returns to `open`). |
 | `approver` | A person or an agent | Who accepts the issue when it closes. Not cleared when work stops. |

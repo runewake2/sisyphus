@@ -93,7 +93,7 @@ type newArgs struct {
 	Priority     string            `json:"priority,omitempty" jsonschema:"critical, high, medium, or low. Defaults to medium."`
 	Effort       string            `json:"effort,omitempty" jsonschema:"small, medium, large, or x-large. Defaults to medium."`
 	Resolution   string            `json:"resolution,omitempty" jsonschema:"completed or abandoned. Only valid when state is closed; defaults to completed."`
-	Tags         string            `json:"tags,omitempty" jsonschema:"Comma-separated component names, for example scheduler,plan."`
+	Tags         string            `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug,scheduler. Built-in: bug, feature; any other tag works too."`
 	Bookmark     string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark of the work on the issue."`
 	DeferredFrom string            `json:"deferredFrom,omitempty" jsonschema:"An issue name, wikilink, or bookmark that deferred this work."`
 	Parent       string            `json:"parent,omitempty" jsonschema:"The parent issue, if this is a sub-issue. Must already exist."`
@@ -142,7 +142,7 @@ type updateArgs struct {
 	Workspace  string            `json:"workspace,omitempty" jsonschema:"The jj workspace where local work is happening. Appended to the issue's workspace history."`
 	Priority   string            `json:"priority,omitempty" jsonschema:"Change the priority: critical, high, medium, or low."`
 	Effort     string            `json:"effort,omitempty" jsonschema:"Change the effort: small, medium, large, or x-large."`
-	Tags       string            `json:"tags,omitempty" jsonschema:"Replace the tags, comma-separated."`
+	Tags       string            `json:"tags,omitempty" jsonschema:"Replace the tags, comma-separated, for example bug,scheduler. Built-in: bug, feature; any other tag works too."`
 	Metadata   map[string]string `json:"metadata,omitempty" jsonschema:"Arbitrary key-value notes to add or update, for example a session id. Merged into the existing notes; never cleared automatically."`
 }
 
@@ -184,7 +184,7 @@ type listArgs struct {
 	Dir      string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
 	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed. Defaults to open and in-progress."`
 	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
-	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags; matches an issue with any of them."`
+	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
 	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
 	Parent   string `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
 	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
@@ -212,7 +212,7 @@ type searchArgs struct {
 	Query    string `json:"query,omitempty" jsonschema:"A case-insensitive query matched against title and body. Optional: filters alone also work."`
 	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed. Defaults to open and in-progress."`
 	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
-	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags; matches an issue with any of them."`
+	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
 	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
 	Parent   string `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
 	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`

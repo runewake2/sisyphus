@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.15]] - 2026-10-07
+- Suggest `bug` and `feature` as built-in tags in the template and in `--tags` help.
+
 ## [[0.0.14]] - 2026-10-07
 - Make sisyphus itself independent of any particular repo or issue: generic template, error
   examples, and tests.

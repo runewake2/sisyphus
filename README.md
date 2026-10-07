@@ -1,8 +1,6 @@
 # sisyphus
 
-> **DO NOT USE.** This is a personal project, built for my own workflow with no
-> guarantees of stability, support, or correctness. Expect breaking changes
-> without notice. Use at your own risk.
+> **DO NOT USE.** This is a personal project and it's very vibes based atm. That may change later but for now this is primarily a project built for me.
 
 A small CLI for managing the issues in `issues/` and managing work in a more useful way.
 
