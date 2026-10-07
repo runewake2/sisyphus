@@ -1,17 +1,17 @@
 ---
 title: "GitHub Action: open a PR with a matching sisyphus issue for new GitHub issues"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: high         # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [github, actions] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-07
-closed:                # YYYY-MM-DD. Set this only when state is closed.
-owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
-approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
-agent-session:         # AI agent session id of the current agent working on the issue, if available.
+closed: 2026-10-07     # YYYY-MM-DD. Set this only when state is closed.
+owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
+approver: samw         # The person or agent who accepts the issue when it closes.
+bookmark: samw/ai/issue-to-pr # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: [sisyphus-issue-to-pr] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+agent-session:          # AI agent session id of the current agent working on the issue, if available.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent: "[[github-source-of-truth]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 ---
@@ -63,10 +63,18 @@ out of scope (see below).
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+- 2026-10-07: Implemented as planned, plus two small CLI additions the workflow needed:
+  `sisyphus slug <text>` (new command) turns a GitHub issue title into a unique, valid issue name
+  (`slugify`/`uniqueSlug` in `issues.go`), and `sisyphus new --context <text>` (new flag, using the
+  new `replaceSection` helper in `links.go`) fills the Context section from the GitHub issue body,
+  instead of hand-rolling frontmatter in the workflow as the issue suggested avoiding.
+- The workflow itself (`.github/workflows/issue-to-pr.yml`, added to the kit so every initialized
+  repo gets it) is YAML I could not execute in this sandbox (no live GitHub webhook, no push
+  access to test with); it is reviewed by inspection, not by a dry run, same as `ci.yml` earlier.
+  The two sisyphus-side pieces it depends on (`slug`, `new --context`) are unit tested.
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example [[0.0.5]].
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed: `.github/workflows/issue-to-pr.yml` opens a PR with a matching, pinned sisyphus issue
+when a GitHub issue is filed, using the new `sisyphus slug` and `sisyphus new --context`. See
+[[0.0.9]].

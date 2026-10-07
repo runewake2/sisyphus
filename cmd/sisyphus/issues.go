@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -33,7 +34,7 @@ type newOptions struct {
 	name, state, resolution, priority, effort, tags string
 	title, bookmark, deferredFrom, parent           *string
 	owner, approver, workspace, agentSession        *string
-	remote, dependsOn                               *string
+	remote, dependsOn, context                      *string
 }
 
 type issueFile struct {
@@ -50,15 +51,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 		return "", err
 	}
 
-	var clashes []string
-	for _, file := range repoFiles(root) {
-		base := filepath.Base(file)
-		if hasSuffixFold(base, ".md") && strings.EqualFold(trimMarkdownExtension(base), o.name) {
-			clashes = append(clashes, relative(root, file))
-		}
-	}
-	slices.Sort(clashes)
-	if len(clashes) > 0 {
+	if clashes := nameClashes(root, o.name); len(clashes) > 0 {
 		return "", fmt.Errorf("The name '%s' is not unique. These files have the same name: %s.", o.name, strings.Join(clashes, ", "))
 	}
 
@@ -126,6 +119,11 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	for i, line := range doc.body {
 		if line == "# <Title>" {
 			doc.body[i] = "# " + title
+		}
+	}
+	if o.context != nil {
+		if replaced, ok := replaceSection(doc.body, "Context", strings.Split(*o.context, "\n")); ok {
+			doc.body = replaced
 		}
 	}
 
@@ -478,6 +476,60 @@ func issueMatches(root, name string) []issueFile {
 	return matches
 }
 
+// nameClashes returns every Markdown file in the repo (sorted, relative to root) whose name without
+// ".md" equals name, case-insensitively. An issue name must be unique across all of them, not just
+// among other issues.
+func nameClashes(root, name string) []string {
+	var clashes []string
+	for _, file := range repoFiles(root) {
+		base := filepath.Base(file)
+		if hasSuffixFold(base, ".md") && strings.EqualFold(trimMarkdownExtension(base), name) {
+			clashes = append(clashes, relative(root, file))
+		}
+	}
+	slices.Sort(clashes)
+	return clashes
+}
+
+var slugWordPattern = regexp.MustCompile(`[a-z0-9]+`)
+
+// slugify turns text into a kebab-case name of 2-6 words, the shape namePattern requires, for
+// example "Fix the login bug!" -> "fix-the-login-bug".
+func slugify(text string) (string, error) {
+	words := slugWordPattern.FindAllString(strings.ToLower(text), -1)
+	if len(words) > 6 {
+		words = words[:6]
+	}
+	if len(words) < 2 {
+		return "", fmt.Errorf("'%s' does not have enough words to make a valid issue name.", text)
+	}
+	return strings.Join(words, "-"), nil
+}
+
+// uniqueSlug makes a slug from text and, if it already names a file in the repo, appends -2, -3, and
+// so on until it does not, trimming words from the base as needed to stay within namePattern's 6-word
+// limit. The result always matches namePattern.
+func uniqueSlug(root, text string) (string, error) {
+	base, err := slugify(text)
+	if err != nil {
+		return "", err
+	}
+	if len(nameClashes(root, base)) == 0 {
+		return base, nil
+	}
+	words := strings.Split(base, "-")
+	for n := 2; ; n++ {
+		suffixed := words
+		if len(words)+1 > 6 {
+			suffixed = words[:5]
+		}
+		candidate := strings.Join(append(append([]string{}, suffixed...), strconv.Itoa(n)), "-")
+		if len(nameClashes(root, candidate)) == 0 {
+			return candidate, nil
+		}
+	}
+}
+
 func findIssue(root, name string) (issueFile, error) {
 	matches := issueMatches(root, name)
 	switch len(matches) {
@@ -627,6 +679,8 @@ type issueView struct {
 	AgentSession string   `json:"agent-session,omitempty"`
 	DeferredFrom string   `json:"deferred-from,omitempty"`
 	Parent       string   `json:"parent,omitempty"`
+	DependsOn    []string `json:"depends-on,omitempty"`
+	Remote       string   `json:"remote,omitempty"`
 	Body         string   `json:"body"`
 }
 
@@ -648,6 +702,8 @@ func newIssueView(name string, doc *document) issueView {
 		AgentSession: doc.get("agent-session"),
 		DeferredFrom: doc.get("deferred-from"),
 		Parent:       doc.get("parent"),
+		DependsOn:    parseDependsOn(doc.get("depends-on")),
+		Remote:       doc.get("remote"),
 		Body:         strings.Join(doc.body, "\n"),
 	}
 }

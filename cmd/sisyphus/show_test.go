@@ -14,11 +14,11 @@ func TestShowPrintsFieldsAndBody(t *testing.T) {
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
-	contains(t, res.output, "title:    Add explicit step dependencies")
-	contains(t, res.output, "state:    open")
-	contains(t, res.output, "priority: high")
-	contains(t, res.output, "effort:   medium")
-	contains(t, res.output, "tags:     [plan]")
+	contains(t, res.output, "title:      Add explicit step dependencies")
+	contains(t, res.output, "state:      open")
+	contains(t, res.output, "priority:   high")
+	contains(t, res.output, "effort:     medium")
+	contains(t, res.output, "tags:       [plan]")
 	contains(t, res.output, "# Add explicit step dependencies")
 	contains(t, res.output, "## Summary")
 }
@@ -37,14 +37,19 @@ func TestShowAcceptsEveryFormOfTheName(t *testing.T) {
 			res := r.run("show", reference)
 
 			equal(t, 0, res.exit)
-			contains(t, res.output, "title:    Explicit step dependencies")
+			contains(t, res.output, "title:      Explicit step dependencies")
 		})
 	}
 }
 
 func TestShowPrintsJSON(t *testing.T) {
 	r := newTestRepo(t)
-	r.mustRun("new", "explicit-step-dependencies", "--title", "Add explicit step dependencies", "--tags", "plan, repo")
+	r.mustRun("new", "blocking-issue-test")
+	r.mustRun("new", "explicit-step-dependencies",
+		"--title", "Add explicit step dependencies",
+		"--tags", "plan, repo",
+		"--remote", "https://github.com/acme/widgets/issues/42",
+		"--depends-on", "blocking-issue-test")
 
 	res := r.run("show", "--json", "explicit-step-dependencies")
 
@@ -57,6 +62,8 @@ func TestShowPrintsJSON(t *testing.T) {
 	equal(t, "Add explicit step dependencies", view.Title)
 	equal(t, "open", view.State)
 	equalSlices(t, []string{"plan", "repo"}, view.Tags)
+	equal(t, "https://github.com/acme/widgets/issues/42", view.Remote)
+	equalSlices(t, []string{"blocking-issue-test"}, view.DependsOn)
 	isTrue(t, strings.Contains(view.Body, "## Summary"), "the body is included")
 }
 

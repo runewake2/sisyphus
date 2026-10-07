@@ -43,6 +43,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 		parentCommand(findRoot),
 		remoteCommand(findRoot),
 		dependsOnCommand(findRoot),
+		slugCommand(findRoot),
 		showCommand(findRoot),
 		listCommand(findRoot),
 		searchCommand(findRoot),
@@ -55,7 +56,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 
 func newCommand(findRoot func() (string, error)) *cobra.Command {
 	var title, state, resolution, priority, effort, tags, bookmark, deferredFrom, parent string
-	var owner, approver, workspace, agentSession, remote, dependsOn string
+	var owner, approver, workspace, agentSession, remote, dependsOn, context string
 	cmd := &cobra.Command{
 		Use:   "new <name>",
 		Short: "Create an issue from issues/TEMPLATE.md in the directory of its state.",
@@ -87,6 +88,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 					agentSession: optional(cmd, "agent-session", agentSession),
 					remote:       optional(cmd, "remote", remote),
 					dependsOn:    optional(cmd, "depends-on", dependsOn),
+					context:      optional(cmd, "context", context),
 				}, warnings)
 			})
 		},
@@ -107,6 +109,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&agentSession, "agent-session", "", "The AI agent session id working on the issue, if available.")
 	flags.StringVar(&remote, "remote", "", "A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.")
 	flags.StringVar(&dependsOn, "depends-on", "", "An issue that must close before this one can start. The issue must exist.")
+	flags.StringVar(&context, "context", "", "Replaces the Context section's placeholder with this text.")
 	return cmd
 }
 
@@ -221,6 +224,30 @@ func dependsOnCommand(findRoot func() (string, error)) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&clear, "clear", false, "Remove one dependency (with a <blocking-issue>) or every dependency (without one).")
+	return cmd
+}
+
+func slugCommand(findRoot func() (string, error)) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "slug <text>",
+		Short: "Print a unique, valid issue name made from text, for example a GitHub issue title.",
+		Long: "Print a unique, valid issue name made from text: lowercased, with non-alphanumeric runs " +
+			"replaced by a hyphen, trimmed to 2-6 words. If that name already belongs to a file in the " +
+			"repo, a numeric suffix is added until it does not.",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			root, err := findRoot()
+			if err != nil {
+				return err
+			}
+			name, err := uniqueSlug(root, args[0])
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), name)
+			return nil
+		},
+	}
 	return cmd
 }
 
@@ -506,6 +533,8 @@ func writeIssueText(out io.Writer, doc *document) {
 		{"approver", doc.get("approver")},
 		{"bookmark", doc.get("bookmark")},
 		{"parent", doc.get("parent")},
+		{"depends-on", doc.get("depends-on")},
+		{"remote", doc.get("remote")},
 	}
 	width := 0
 	for _, f := range fields {

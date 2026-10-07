@@ -10,6 +10,8 @@ import (
 )
 
 var kitFiles = []string{
+	".github/workflows/issue-to-pr.yml",
+	".github/workflows/sync-to-github.yml",
 	"AGENTS.md",
 	"CHANGELOG.md",
 	"CONTRIBUTING.md",

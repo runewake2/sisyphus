@@ -189,6 +189,19 @@ func TestNewDoesNotWarnWhenAnInProgressIssueHasABookmark(t *testing.T) {
 	equal(t, "samw/ai/work", r.frontmatter("issues/in-progress/started-issue-test.md").get("bookmark"))
 }
 
+func TestNewSetsContextReplacingThePlaceholder(t *testing.T) {
+	r := newTestRepo(t)
+
+	res := r.run("new", "context-test", "--context", "Steps to reproduce: click the button twice.")
+
+	equal(t, 0, res.exit)
+	equal(t, "", res.error)
+	doc := r.frontmatter("issues/open/context-test.md")
+	body := strings.Join(doc.body, "\n")
+	contains(t, body, "## Context\n\nSteps to reproduce: click the button twice.\n\n## Acceptance criteria")
+	isTrue(t, !strings.Contains(body, "<Give the background"), "the placeholder is gone")
+}
+
 func TestNewRejectsValuesThatAreNotAllowed(t *testing.T) {
 	cases := []struct{ option, value string }{
 		{"--state", "blocked"},

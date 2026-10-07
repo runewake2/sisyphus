@@ -1,0 +1,71 @@
+name: Sync issues to GitHub
+
+# Part of the "sisyphus is the source of truth" workflow (see CONTRIBUTING.md#GitHub issues).
+# Mirrors every sisyphus issue to a GitHub issue on push to main. sisyphus always wins: this
+# overwrites whatever is on the GitHub side, it never reads edits back.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Install sisyphus
+        run: go install github.com/runewake2/sisyphus/cmd/sisyphus@latest
+
+      - name: Sync every issue to a mirrored GitHub issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          changed=false
+
+          for name in $(sisyphus list --state open,in-progress,closed --json | jq -r '.[].name'); do
+            issue="$(sisyphus show "$name" --json)"
+            title="$(jq -r '.title' <<<"$issue")"
+            state="$(jq -r '.state' <<<"$issue")"
+            resolution="$(jq -r '.resolution // empty' <<<"$issue")"
+            body="$(jq -r '.body' <<<"$issue")"
+            remote="$(jq -r '.remote // empty' <<<"$issue")"
+            note="_Generated from sisyphus issue \`$name\`. Edits here are overwritten on the next sync: edit \`issues/$name.md\` instead._"
+            full_body="$note"$'\n\n'"$body"
+
+            if [ -z "$remote" ]; then
+              url="$(gh issue create --title "$title" --body "$full_body")"
+              sisyphus remote "$name" "$url"
+              changed=true
+              echo "Created $url for $name"
+              continue
+            fi
+
+            number="${remote##*/}"
+            gh issue edit "$number" --title "$title" --body "$full_body"
+            if [ "$state" = "closed" ]; then
+              reason="completed"
+              [ "$resolution" = "abandoned" ] && reason="not planned"
+              gh issue close "$number" --reason "$reason" || true
+            else
+              gh issue reopen "$number" || true
+            fi
+            echo "Updated $remote for $name"
+          done
+
+          if [ "$changed" = true ]; then
+            git add issues/
+            git commit -m "Record GitHub issue URLs for newly mirrored issues"
+            git push
+          fi

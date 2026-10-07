@@ -1,17 +1,17 @@
 ---
 title: "GitHub Action: turn sisyphus issues into GitHub issues on main"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: high         # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [github, actions] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-07
-closed:                # YYYY-MM-DD. Set this only when state is closed.
-owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
-approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
-agent-session:         # AI agent session id of the current agent working on the issue, if available.
+closed: 2026-10-07     # YYYY-MM-DD. Set this only when state is closed.
+owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
+approver: samw         # The person or agent who accepts the issue when it closes.
+bookmark: samw/ai/sync-to-github # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: [sisyphus-sync-to-github] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+agent-session:          # AI agent session id of the current agent working on the issue, if available.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent: "[[github-source-of-truth]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 ---
@@ -67,10 +67,20 @@ parsing in the workflow.
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+- 2026-10-07: Implemented without a new sisyphus subcommand: the workflow composes existing
+  commands (`sisyphus list --state open,in-progress,closed --json` for names, `sisyphus show <name>
+  --json` for title/body/state/resolution/remote, `sisyphus remote` to record a newly created
+  issue's URL) plus `jq` and the `gh` CLI, rather than adding Go surface for something that is
+  mostly "call gh, then call sisyphus remote". This did require fixing a real gap first: `sisyphus
+  show --json` (and the human-readable form) was missing `remote` and `depends-on` entirely, added
+  to `issueView`/`writeIssueText`.
+- "Every open, in-progress, or closed issue, every run" rather than true changed-since-last-push
+  diffing, per the issue's explicitly allowed simpler first version. `gh issue edit`/`close`/`reopen`
+  are themselves idempotent, so re-running with no sisyphus changes makes no GitHub changes.
+- Like [[github-action-issue-to-pr]], the YAML itself is reviewed by inspection; the `remote`/
+  `depends-on` JSON fields it depends on are unit tested.
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example [[0.0.5]].
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed: `.github/workflows/sync-to-github.yml` creates or updates a GitHub issue for every
+sisyphus issue on push to `main`, recording new issues' URLs back in `remote`. See [[0.0.9]].

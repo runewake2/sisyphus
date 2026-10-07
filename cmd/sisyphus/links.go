@@ -234,30 +234,55 @@ func headingsIn(lines []string) []string {
 	return result
 }
 
-// sectionIn returns the lines of the section named heading (matched case-insensitively, the same way
-// a wikilink's #heading is matched), from just after the heading line to just before the next heading
-// at the same or a shallower level, or the end of lines. ok is false when no heading matches.
-func sectionIn(lines []string, heading string) (section []string, ok bool) {
-	start, level := -1, 0
+// sectionBounds finds the line range of the section named heading (matched case-insensitively, the
+// same way a wikilink's #heading is matched): start is the heading line's index, end is the index of
+// the next heading at the same or a shallower level, or len(lines). ok is false when no heading matches.
+func sectionBounds(lines []string, heading string) (start, end int, ok bool) {
+	end = len(lines)
+	var level int
 	for _, index := range outsideCodeFences(lines) {
 		match := headingPattern.FindStringSubmatch(lines[index])
 		if match == nil {
 			continue
 		}
-		if start == -1 {
+		if !ok {
 			if strings.EqualFold(match[1], heading) {
-				start, level = index, headingLevel(lines[index])
+				start, level, ok = index, headingLevel(lines[index]), true
 			}
 			continue
 		}
 		if headingLevel(lines[index]) <= level {
-			return lines[start+1 : index], true
+			return start, index, true
 		}
 	}
-	if start == -1 {
+	return start, end, ok
+}
+
+// sectionIn returns the lines of the section named heading, from just after the heading line to just
+// before the next heading at the same or a shallower level, or the end of lines. ok is false when no
+// heading matches.
+func sectionIn(lines []string, heading string) (section []string, ok bool) {
+	start, end, ok := sectionBounds(lines, heading)
+	if !ok {
 		return nil, false
 	}
-	return lines[start+1:], true
+	return lines[start+1 : end], true
+}
+
+// replaceSection returns lines with the section named heading replaced by replacement, keeping the
+// heading line itself and the blank line before and after the section. ok is false when no heading
+// matches, in which case lines is returned unchanged.
+func replaceSection(lines []string, heading string, replacement []string) (result []string, ok bool) {
+	start, end, ok := sectionBounds(lines, heading)
+	if !ok {
+		return lines, false
+	}
+	result = append(result, lines[:start+1]...)
+	result = append(result, "")
+	result = append(result, replacement...)
+	result = append(result, "")
+	result = append(result, lines[end:]...)
+	return result, true
 }
 
 // headingLevel counts the leading '#' characters of a heading line, for example 2 for "## Summary".

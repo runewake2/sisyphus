@@ -182,6 +182,8 @@ sisyphus update <issue-name> open                            # stop work without
 sisyphus update <issue-name> in-progress --priority high --effort small --tags "<component>"  # reprioritize
 sisyphus new <sub-issue-name> --parent <issue-name>
 sisyphus parent <issue-name> <parent-issue-name>
+name="$(sisyphus slug "<arbitrary text, for example a GitHub issue title>")"
+sisyphus new "$name" --remote <url> --context "<background text>"
 sisyphus remote <issue-name> <url>                   # pin it to a GitHub issue or Jira ticket
 sisyphus depends-on <issue-name> <blocking-issue-name>   # cannot start until that issue closes
 sisyphus list --blocked                               # issues with an open dependency
@@ -203,6 +205,23 @@ Install it with `go install github.com/runewake2/sisyphus/cmd/sisyphus@latest`. 
 6. **Stop** work without closing by moving the issue back to `issues/open/`, and record what remains in `Notes`.
 
 Do not reopen a closed issue. Create a new issue that links to it. Split a large issue into sub-issues with `parent`, and close the parent when all of its sub-issues are closed.
+
+### GitHub issues
+
+Once a repo is initialized, **sisyphus is always the source of truth for issues.** GitHub issues
+are a mirror and an intake point, never an independent record: content flows `issues/` -> GitHub,
+never the other way.
+
+- **Filing**: `.github/workflows/issue-to-pr.yml` reacts to a newly opened GitHub issue by opening a
+  PR that adds a matching sisyphus issue (built with `sisyphus slug` and `sisyphus new --context`),
+  pinned to it with `remote`. A human reviews and merges the PR like any other change to `issues/`.
+- **Mirroring**: `.github/workflows/sync-to-github.yml` runs on push to `main`. It creates a GitHub
+  issue for every sisyphus issue that has no `remote` yet (recording the new URL back in `remote`),
+  and updates the title, body, and open/closed state of every issue that already has one. The
+  mirrored GitHub issue says it is generated and should not be edited directly: the next sync
+  overwrites any such edit.
+- **Pinning**: `remote` (see [[#Frontmatter]]) holds the URL of the GitHub issue (or Jira ticket) a
+  sisyphus issue corresponds to. Set it with `sisyphus new --remote` or `sisyphus remote`.
 
 ## Writing style
 

@@ -1,17 +1,17 @@
 ---
 title: "Use sisyphus as the source of truth for GitHub issues"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: high         # critical | high | medium | low
 effort: large          # small | medium | large | x-large
 tags: [github, integration] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-07
-closed:                # YYYY-MM-DD. Set this only when state is closed.
-owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
-approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
-agent-session:         # AI agent session id of the current agent working on the issue, if available.
+closed: 2026-10-07     # YYYY-MM-DD. Set this only when state is closed.
+owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
+approver: samw         # The person or agent who accepts the issue when it closes.
+bookmark: samw/ai/github-source-of-truth # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: [sisyphus-github-source-of-truth] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+agent-session:          # AI agent session id of the current agent working on the issue, if available.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 ---
@@ -45,11 +45,11 @@ always flows sisyphus -> GitHub, never the other way, once a repo is initialized
 ## Acceptance criteria
 
 - [x] A sisyphus issue can record a remote reference ([[pin-issue-to-remote-reference]]).
-- [ ] Filing a GitHub issue results in a PR that adds a matching, pinned sisyphus issue
+- [x] Filing a GitHub issue results in a PR that adds a matching, pinned sisyphus issue
       ([[github-action-issue-to-pr]]).
-- [ ] Merging to `main` creates or updates GitHub issues for sisyphus issues that need one
+- [x] Merging to `main` creates or updates GitHub issues for sisyphus issues that need one
       ([[github-action-sync-issues-to-github]]).
-- [ ] The design is documented (in `CONTRIBUTING.md` or a decision record) as: sisyphus is always
+- [x] The design is documented (in `CONTRIBUTING.md` or a decision record) as: sisyphus is always
       the source of truth for issues once a repo is initialized.
 
 ## Out of scope
@@ -61,10 +61,18 @@ always flows sisyphus -> GitHub, never the other way, once a repo is initialized
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+- 2026-10-07: All three sub-issues landed: [[pin-issue-to-remote-reference]] (earlier),
+  [[github-action-issue-to-pr]], and [[github-action-sync-issues-to-github]]. Documented the
+  one-way "sisyphus wins" design as its own `### GitHub issues` subsection in `CONTRIBUTING.md`
+  (and the kit template), rather than a decision record, since it is describing the workflow this
+  epic just built rather than a design choice among alternatives.
+- While adding the two workflow kit templates, found and filed [[init-force-resets-version]]: a
+  real, unrelated bug where `sisyphus init --force` destructively resets `VERSION`/`CHANGELOG.md`
+  on an already-versioned repo. Caught it on this repo itself via `jj restore`; left it as a
+  separate issue rather than fixing it inline here.
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example [[0.0.5]].
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed: sisyphus issues can be pinned to a GitHub issue, filing a GitHub issue opens a PR with a
+matching sisyphus issue, pushing to `main` mirrors sisyphus issues to GitHub, and the one-way
+source-of-truth design is documented in [[CONTRIBUTING]]. See [[0.0.9]].

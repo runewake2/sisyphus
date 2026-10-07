@@ -1,5 +1,10 @@
 # Changelog
 
+## [[0.0.9]] - 2026-10-07
+- Add the two GitHub Actions that finish github-source-of-truth: issue-to-pr and sync-to-github.
+  Add `sisyphus slug` and `sisyphus new --context`; fix `sisyphus show` to include `remote` and
+  `depends-on`.
+
 ## [[0.0.8]] - 2026-10-07
 - Default a closed issue's resolution to `completed` instead of requiring `--resolution`.
 
