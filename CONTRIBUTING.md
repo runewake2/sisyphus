@@ -210,25 +210,22 @@ sisyphus itself must not know about any particular repo or issue, including this
 
 Do not reopen a closed issue. Create a new issue that links to it. Split a large issue into sub-issues with `parent`, and close the parent when all of its sub-issues are closed.
 
-### GitHub issues
+### External trackers
 
-Once a repo is initialized, **sisyphus is always the source of truth for issues.** GitHub issues
-are a mirror and an intake point, never an independent record: content flows `issues/` -> GitHub,
-never the other way.
+Once a repo is initialized, **sisyphus is always the source of truth for issues.** A GitHub, Jira,
+or GitLab issue is a mirror and an intake point, never an independent record: content flows from
+`issues/` to the tracker, and back only through an explicit pull.
 
-- **Filing**: `.github/workflows/issue-to-pr.yml` reacts to a newly opened GitHub issue by opening a
-  PR that adds a matching sisyphus issue (built with `sisyphus slug` and `sisyphus new --context`),
-  pinned to it with `remote`. A human reviews and merges the PR like any other change to `issues/`.
-- **Mirroring**: `.github/workflows/sync-to-github.yml` runs on push to `main`. It creates a GitHub
-  issue for every sisyphus issue that has no `remote` yet (recording the new URL back in `remote`),
-  and updates the title, body, and open/closed state of every issue that already has one. The
-  mirrored GitHub issue says it is generated and should not be edited directly: the next sync
-  overwrites any such edit.
-- **Pinning**: `remote` (see [[#Frontmatter]]) holds the URL of the GitHub issue (or Jira ticket) a
-  sisyphus issue corresponds to. Set it with `sisyphus new --remote` or `sisyphus remote`.
-- **Who can trigger them**: only the repo owner or a member of the owning org. Filing checks the
-  issue author's `author_association`; mirroring checks the pusher. Anyone else's issues are left
-  alone, so a public repo cannot be spammed with generated branches and PRs.
+- **Plugins**: sisyphus talks to a tracker only through a plugin that the repo configures. sisyphus
+  runs each plugin as a separate child process and speaks its own plugin protocol to it; the
+  plugin translates between a sisyphus issue and the tracker's. A plugin can come from anywhere;
+  some, starting with GitHub, are written in this repo. See [[integration-plugins]].
+- **Pinning**: `remote` (see [[#Frontmatter]]) holds the URL of the tracker issue a sisyphus issue
+  corresponds to. Set it with `sisyphus new --remote` or `sisyphus remote`. The URL selects the
+  plugin that handles the issue.
+- **Automation**: this repo has no tracker workflows for now. Intake of new GitHub issues and
+  mirroring to GitHub come back on top of the GitHub plugin ([[github-intake-workflow]],
+  [[github-sync-workflow]]).
 
 ## Writing style
 

@@ -43,41 +43,50 @@ the work.
 
 Proposed design, to confirm before it is split into sub-issues:
 
-- **Configuration**: a per-repo file (for example `issues/plugins.toml`) names each plugin and the
-  command that starts it. sisyphus finds plugins only through this file: no built-in list.
+- **Configuration**: per repo only. A file in the repo names each plugin and the command that
+  starts it. sisyphus finds plugins only through this file: no built-in list, and no user-level
+  configuration. Credentials come from the plugin's own environment, never from the file.
 - **Process model**: sisyphus starts the plugin as a child process for the length of one command
   and speaks a request/response protocol over its stdin and stdout. A crash or a hang in a plugin
   is an error for that command, never for sisyphus as a whole.
-- **Protocol**: a handshake (name, protocol version, which `remote` URLs the plugin owns, which
-  operations it supports), then operations on a platform-neutral issue document: `pull` (remote
-  issue -> sisyphus fields), `push` (sisyphus issue -> create or update the remote, returns its
-  `remote` URL), and `list` (remote issues, for intake). Credentials stay inside the plugin.
+- **Protocol**: a custom protocol, not MCP: sisyphus must not depend on MCP. A handshake (name,
+  protocol version, which `remote` URLs the plugin owns, which operations it supports), then
+  operations on a platform-neutral issue document: `pull` (remote issue -> sisyphus fields),
+  `push` (sisyphus issue -> create or update the remote, returns its `remote` URL), and `list`
+  (remote issues, for intake). Credentials stay inside the plugin. See [[plugin-protocol]].
 - **Routing**: an issue's `remote` URL picks the plugin, by the URL patterns each plugin claims in
   its handshake. `remote` stays a plain URL, as it is today ([[pin-issue-to-remote-reference]]).
 - **CLI**: for example `sisyphus pull <remote-url>` (create or refresh a sisyphus issue from a
   remote one), `sisyphus push <name>` (mirror one issue), and `sisyphus sync` (push every issue).
   The source-of-truth rule from [[github-source-of-truth]] stays: a push overwrites the remote,
   and nothing is read back into a sisyphus issue except through an explicit `pull`.
-- **Where plugins live**: outside the sisyphus core module (for example `sisyphus-github`,
-  `sisyphus-jira`, `sisyphus-gitlab` binaries), so the core never imports a platform SDK.
+- **Where plugins live**: anywhere. The configuration gives the command that starts a plugin, so
+  a plugin can come from any source. Some plugins (GitHub first) are written in this repo, outside
+  the core: the core never imports a platform SDK.
 
-Open questions:
+Decisions (from the human, 2026-10-07):
 
-- **P1**: Reuse MCP as the plugin protocol (each plugin is an MCP server exposing `pull`/`push`/
-  `list` tools, and sisyphus is its client), or define a smaller JSON-RPC protocol of our own? MCP
-  gives a handshake, schemas, and an SDK sisyphus already depends on ([[sisyphus-mcp-server]]);
-  a custom protocol is smaller and fully under our control.
-- **P2**: One config file per repo, a user-level file, or both (per-repo plugins plus per-user
-  credentials)?
-- **P3**: Do plugins live in this repo (as separate modules) or in their own repos?
-- **P4**: What happens to the two GitHub workflows: rewrite them on top of the GitHub plugin, or
-  remove them and leave CI wiring to the project-scaffolding template?
+- **P1**: A custom plugin protocol, not MCP. sisyphus must not depend on MCP.
+- **P2**: Plugins are configured per repo.
+- **P3**: Some plugins are defined in this repo, but a plugin can be sourced from anywhere.
+- **P4**: The two GitHub workflows are removed for now, and rewritten later on top of the GitHub
+  plugin ([[github-intake-workflow]], [[github-sync-workflow]]).
+
+Sub-issues, in dependency order (see `sisyphus graph integration-plugins`):
+
+- [[plugin-protocol]]: the protocol itself.
+- [[plugin-runner]]: per-repo configuration, and running each plugin as a child process.
+- [[plugin-sync-commands]]: `sisyphus pull`, `push`, and `sync`.
+- [[github-plugin]]: the first plugin, written in this repo.
+- [[github-intake-workflow]] and [[github-sync-workflow]]: the two removed workflows, rewritten
+  on top of the GitHub plugin.
 
 ## Acceptance criteria
 
-- [ ] The open questions above are answered, and the answers recorded.
-- [ ] The design is split into sub-issues: protocol, configuration and process runner, CLI
+- [x] The open questions above are answered, and the answers recorded.
+- [x] The design is split into sub-issues: protocol, configuration and process runner, CLI
       commands, and one issue per plugin (GitHub first, porting the two workflows).
+- [ ] Every sub-issue is closed.
 - [ ] sisyphus core contains no platform-specific code, names, or dependencies.
 
 ## Out of scope
@@ -87,7 +96,11 @@ Open questions:
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+- 2026-10-07, from the human: "sisyphus should not depend on an mcp, we'll use a custom plugin
+  protocol. Plugins are configured per repo. Some plugins will be defined in this repo but can be
+  sourced from anywhere. Removed for now and issues opened to write them with the github plugin."
+  Recorded as decisions P1-P4 above. Removed `.github/workflows/issue-to-pr.yml` and
+  `.github/workflows/sync-to-github.yml` in the same change.
 
 ## Resolution
 
