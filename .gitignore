@@ -1,1 +1,4 @@
 /sisyphus
+*.test
+.jj/
+.DS_Store

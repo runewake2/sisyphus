@@ -3,6 +3,9 @@
 > **DO NOT USE.** This is a personal project, built for my own workflow with no
 > guarantees of stability, support, or correctness. Expect breaking changes
 > without notice. Use at your own risk.
+>
+> This repo is public for reference only. See [LICENSE](LICENSE): all rights are reserved, and no
+> license to use, copy, or modify this code is granted.
 
 A small CLI for managing the issues in `issues/` and managing work in a more useful way.
 
