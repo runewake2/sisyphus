@@ -4,5 +4,4 @@
 > guarantees of stability, support, or correctness. Expect breaking changes
 > without notice. Use at your own risk.
 
-A small CLI for managing the issues in `issues/` and resolving wikilinks in a
-repository.
+A small CLI for managing the issues in `issues/` and managing work in a more useful way.
