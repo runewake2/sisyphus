@@ -33,8 +33,9 @@ const (
 type newOptions struct {
 	name, state, resolution, priority, effort, tags string
 	title, bookmark, deferredFrom, parent           *string
-	owner, approver, workspace, agentSession        *string
+	owner, approver, workspace                      *string
 	remote, dependsOn, context                      *string
+	metadata                                        map[string]string
 }
 
 type issueFile struct {
@@ -109,7 +110,9 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	if o.workspace != nil {
 		addToList(doc, "workspaces", *o.workspace)
 	}
-	doc.set("agent-session", valueOrEmpty(o.agentSession))
+	if len(o.metadata) > 0 {
+		doc.set("metadata", formatMetadata(o.metadata))
+	}
 	doc.set("deferred-from", deferred)
 	doc.set("parent", parentValue)
 	doc.set("remote", remoteField)
@@ -138,13 +141,17 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 }
 
 // updateOptions holds the values of "sisyphus update" that are not positional arguments. A nil pointer means the
-// flag was not given. owner, bookmark, and agent-session describe the current, active work on the issue: they are
-// cleared when the issue returns to open. workspaces is a history of every workspace that has worked on the issue,
-// so an entry is appended, never cleared. approver is not tied to active work and is only ever set explicitly.
+// flag was not given. owner and bookmark describe the current, active work on the issue: they are cleared when
+// the issue returns to open. workspaces is a history of every workspace that has worked on the issue, so an
+// entry is appended, never cleared. approver is not tied to active work and is only ever set explicitly.
+// metadata entries are merged into the existing map (added, or overwritten by key), never cleared automatically:
+// it is a place for an agent to leave arbitrary notes, such as a session id, so work can be resumed with
+// context later, including after the issue closes or reopens.
 type updateOptions struct {
-	resolution                                         string
-	bookmark, owner, approver, workspace, agentSession *string
-	priority, effort, tags                             *string
+	resolution                           string
+	bookmark, owner, approver, workspace *string
+	priority, effort, tags               *string
+	metadata                             map[string]string
 }
 
 func updateIssue(root, reference, state string, o updateOptions, warnings io.Writer) (string, error) {
@@ -167,7 +174,6 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	if state == "open" {
 		doc.set("bookmark", "")
 		doc.set("owner", "")
-		doc.set("agent-session", "")
 	} else {
 		if o.bookmark != nil {
 			doc.set("bookmark", *o.bookmark)
@@ -175,9 +181,13 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 		if o.owner != nil {
 			doc.set("owner", *o.owner)
 		}
-		if o.agentSession != nil {
-			doc.set("agent-session", *o.agentSession)
+	}
+	if len(o.metadata) > 0 {
+		merged := parseMetadata(doc.get("metadata"))
+		for k, v := range o.metadata {
+			merged[k] = v
 		}
+		doc.set("metadata", formatMetadata(merged))
 	}
 	if o.workspace != nil {
 		addToList(doc, "workspaces", *o.workspace)
@@ -366,6 +376,37 @@ func formatDependsOn(names []string) string {
 		items[i] = quote("[[" + name + "]]")
 	}
 	return formatList(items)
+}
+
+// parseMetadata reads a frontmatter value like `{session-id: "abc123", note: "a short note"}` into
+// a map. Like tags and the other list-shaped fields, a value cannot contain a comma.
+func parseMetadata(value string) map[string]string {
+	value = strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(value), "{"), "}")
+	m := map[string]string{}
+	for _, item := range strings.Split(value, ",") {
+		key, val, ok := strings.Cut(item, ":")
+		if !ok {
+			continue
+		}
+		if key = strings.TrimSpace(key); key != "" {
+			m[key] = unquote(strings.TrimSpace(val))
+		}
+	}
+	return m
+}
+
+// formatMetadata writes a map back as a frontmatter value, with keys sorted for a deterministic diff.
+func formatMetadata(m map[string]string) string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+	items := make([]string, len(keys))
+	for i, k := range keys {
+		items[i] = k + ": " + quote(m[k])
+	}
+	return "{" + strings.Join(items, ", ") + "}"
 }
 
 func setDependsOn(root, reference string, blocking *string, clear bool, warnings io.Writer) (string, error) {
@@ -663,25 +704,25 @@ func valueOrEmpty(value *string) string {
 
 // issueView is every frontmatter field of an issue, plus its body, for "sisyphus show".
 type issueView struct {
-	Name         string   `json:"name"`
-	Title        string   `json:"title"`
-	State        string   `json:"state"`
-	Resolution   string   `json:"resolution,omitempty"`
-	Priority     string   `json:"priority"`
-	Effort       string   `json:"effort"`
-	Tags         []string `json:"tags,omitempty"`
-	Created      string   `json:"created"`
-	Closed       string   `json:"closed,omitempty"`
-	Owner        string   `json:"owner,omitempty"`
-	Approver     string   `json:"approver,omitempty"`
-	Bookmark     string   `json:"bookmark,omitempty"`
-	Workspaces   []string `json:"workspaces,omitempty"`
-	AgentSession string   `json:"agent-session,omitempty"`
-	DeferredFrom string   `json:"deferred-from,omitempty"`
-	Parent       string   `json:"parent,omitempty"`
-	DependsOn    []string `json:"depends-on,omitempty"`
-	Remote       string   `json:"remote,omitempty"`
-	Body         string   `json:"body"`
+	Name         string            `json:"name"`
+	Title        string            `json:"title"`
+	State        string            `json:"state"`
+	Resolution   string            `json:"resolution,omitempty"`
+	Priority     string            `json:"priority"`
+	Effort       string            `json:"effort"`
+	Tags         []string          `json:"tags,omitempty"`
+	Created      string            `json:"created"`
+	Closed       string            `json:"closed,omitempty"`
+	Owner        string            `json:"owner,omitempty"`
+	Approver     string            `json:"approver,omitempty"`
+	Bookmark     string            `json:"bookmark,omitempty"`
+	Workspaces   []string          `json:"workspaces,omitempty"`
+	DeferredFrom string            `json:"deferred-from,omitempty"`
+	Parent       string            `json:"parent,omitempty"`
+	DependsOn    []string          `json:"depends-on,omitempty"`
+	Remote       string            `json:"remote,omitempty"`
+	Metadata     map[string]string `json:"metadata,omitempty"`
+	Body         string            `json:"body"`
 }
 
 func newIssueView(name string, doc *document) issueView {
@@ -699,11 +740,11 @@ func newIssueView(name string, doc *document) issueView {
 		Approver:     doc.get("approver"),
 		Bookmark:     doc.get("bookmark"),
 		Workspaces:   parseList(doc.get("workspaces")),
-		AgentSession: doc.get("agent-session"),
 		DeferredFrom: doc.get("deferred-from"),
 		Parent:       doc.get("parent"),
 		DependsOn:    parseDependsOn(doc.get("depends-on")),
 		Remote:       doc.get("remote"),
+		Metadata:     parseMetadata(doc.get("metadata")),
 		Body:         strings.Join(doc.body, "\n"),
 	}
 }

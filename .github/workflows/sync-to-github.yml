@@ -13,7 +13,30 @@ permissions:
   issues: write
 
 jobs:
+  # Push events carry no author_association, so check the pusher explicitly: only the repo owner
+  # or a member of the owning org may trigger a sync.
+  authorize:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      allowed: ${{ steps.check.outputs.allowed }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          if [ "$ACTOR" = "$OWNER" ] || gh api "orgs/$OWNER/members/$ACTOR" --silent 2>/dev/null; then
+            echo "allowed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "allowed=false" >> "$GITHUB_OUTPUT"
+            echo "$ACTOR is not the repo owner or a member of $OWNER; skipping the sync."
+          fi
+
   sync:
+    needs: authorize
+    if: needs.authorize.outputs.allowed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

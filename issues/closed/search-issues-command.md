@@ -11,7 +11,7 @@ owner: claude          # The person or agent working on the issue. Cleared when 
 approver: samw         # The person or agent who accepts the issue when it closes.
 bookmark: samw/ai/search-command # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
 workspaces: [sisyphus-search-command] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
-agent-session:          # AI agent session id of the current agent working on the issue, if available.
+metadata: {session-id: "68fa9a09-fe4e-4ae8-9917-086c3313c5be"} # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent: "[[issue-manager-gaps]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 ---

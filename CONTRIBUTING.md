@@ -2,7 +2,7 @@
 
 This guide is for humans and AI agents. AI agents must also follow [[AGENTS]] (`AGENTS.md`), which adds rules that apply only to agents.
 
-The workflow in this guide comes from `sisyphus init`. Change it to fit this repo, and record each change as a decision (see [[#Decisions]]).
+This file, [[AGENTS]], the changelog, and `VERSION` came from a separate project-scaffolding template, not from `sisyphus init`: `sisyphus init` only sets up `issues/` (see [[#Issues]]). Change this guide to fit this repo, and record each change as a decision (see [[#Decisions]]).
 
 ## The design log
 
@@ -163,7 +163,7 @@ issues/
 | `approver` | A person or an agent | Who accepts the issue when it closes. Not cleared when work stops. |
 | `bookmark` | A jj bookmark | The bookmark of the work on the issue. Set it when work starts. Cleared when work stops. |
 | `workspaces` | List of jj workspace names | Every jj workspace that has done local work on the issue. Entries accumulate; never cleared. |
-| `agent-session` | An AI agent session id | The agent session currently working on the issue, if any. Cleared when work stops. |
+| `metadata` | `{key: value, ...}` | Optional. Arbitrary notes, for example `{session-id: "abc123"}` so an agent can resume work with context. Never cleared automatically. |
 | `deferred-from` | `"[[<issue-name>]]"` or a bookmark | Optional. The work that deferred this issue. |
 | `parent` | `"[[<issue-name>]]"` | Optional. The issue that this sub-issue is part of. |
 | `depends-on` | List of `"[[<issue-name>]]"` | Optional. Issues that must close before this one can start. |
@@ -175,7 +175,8 @@ Use `sisyphus` to create issues and to change their state. It keeps the `state` 
 
 ```bash
 sisyphus new <issue-name> --title "<title>" --priority high --effort small --tags "<component>"
-sisyphus update <issue-name> in-progress --bookmark <bookmark> --owner <owner> --workspace <workspace> --agent-session <id>
+sisyphus update <issue-name> in-progress --bookmark <bookmark> --owner <owner> --workspace <workspace>
+sisyphus update <issue-name> in-progress --metadata "session-id=<id>"   # optional, if you have one
 sisyphus update <issue-name> closed                           # resolution defaults to completed
 sisyphus update <issue-name> closed --resolution abandoned
 sisyphus update <issue-name> open                            # stop work without closing
@@ -187,18 +188,19 @@ sisyphus new "$name" --remote <url> --context "<background text>"
 sisyphus remote <issue-name> <url>                   # pin it to a GitHub issue or Jira ticket
 sisyphus depends-on <issue-name> <blocking-issue-name>   # cannot start until that issue closes
 sisyphus list --blocked                               # issues with an open dependency
+sisyphus graph <issue-name>                           # its family tree, as a terminal tree
 sisyphus list --state open,in-progress --priority critical,high
 sisyphus search "timeout" --section summary          # search (and return) just the Summary
 sisyphus resolve "[[CONTRIBUTING#Issues]]"
 sisyphus links "[[<issue-name>]]"
 ```
 
-Install it with `go install github.com/runewake2/sisyphus/cmd/sisyphus@latest`. Run `sisyphus <command> --help` for all options.
+Install it with `go install github.com/runewake2/sisyphus/cmd/sisyphus@latest`. Run `sisyphus <command> --help` for all options. `cmd/sisyphus-mcp` gives an agent every command above as an MCP tool over stdio; see the README's "MCP server" section.
 
 ### Issue lifecycle
 
 1. **Create** an issue in `issues/open/` when you find work that you will not do now. Create it in the same change that defers the work. Do not leave untracked `TODO` comments: write `TODO(#<issue-name>)`.
-2. **Start** the issue in the first change of the work: move it to `issues/in-progress/`, and set `bookmark`, `owner`, `workspace`, and `agent-session` (if available). Make sure first that nobody else has started it.
+2. **Start** the issue in the first change of the work: move it to `issues/in-progress/`, and set `bookmark`, `owner`, and `workspace`. Add `metadata` (for example a session id) if it would help resume the work later. Make sure first that nobody else has started it.
 3. **Work**: add the trailer `Updates #<issue-name>` to each change, and record progress in `Notes`.
 4. **Close** the issue in the change that completes the work: move it to `issues/closed/` with `resolution: completed`, complete `Resolution`, and add the trailer `Fixes #<issue-name>`.
 5. **Abandon** an issue by moving it to `issues/closed/` with `resolution: abandoned`, and tell why in `Resolution`.
@@ -222,6 +224,9 @@ never the other way.
   overwrites any such edit.
 - **Pinning**: `remote` (see [[#Frontmatter]]) holds the URL of the GitHub issue (or Jira ticket) a
   sisyphus issue corresponds to. Set it with `sisyphus new --remote` or `sisyphus remote`.
+- **Who can trigger them**: only the repo owner or a member of the owning org. Filing checks the
+  issue author's `author_association`; mirroring checks the pusher. Anyone else's issues are left
+  alone, so a public repo cannot be spammed with generated branches and PRs.
 
 ## Writing style
 

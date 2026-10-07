@@ -1,5 +1,15 @@
 # Changelog
 
+## [[0.0.12]] - 2026-10-07
+- Add `sisyphus-mcp`: an MCP server giving an agent every `sisyphus` command as a tool.
+
+## [[0.0.11]] - 2026-10-07
+- Add `sisyphus graph` to view a large task's family tree in the terminal.
+
+## [[0.0.10]] - 2026-10-07
+- Narrow `sisyphus init` to set up `issues/` only; replace `agent-session` with a generic
+  `metadata` field.
+
 ## [[0.0.9]] - 2026-10-07
 - Add the two GitHub Actions that finish github-source-of-truth: issue-to-pr and sync-to-github.
   Add `sisyphus slug` and `sisyphus new --context`; fix `sisyphus show` to include `remote` and

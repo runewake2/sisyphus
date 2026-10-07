@@ -28,7 +28,7 @@ func TestNewCreatesAnOpenIssueFromTheTemplate(t *testing.T) {
 	equal(t, "", doc.get("owner"))
 	equal(t, "", doc.get("approver"))
 	equal(t, "[]", doc.get("workspaces"))
-	equal(t, "", doc.get("agent-session"))
+	equal(t, "{}", doc.get("metadata"))
 	isTrue(t, slices.ContainsFunc(doc.body, func(l string) bool { return l == "# Explicit step dependencies" }), "the body has the title")
 }
 
@@ -47,16 +47,18 @@ func TestNewSetsTheGivenOptions(t *testing.T) {
 
 	res := r.run("new", "explicit-step-dependencies",
 		"--title", "Add explicit step dependencies",
+		"--state", "in-progress",
 		"--priority", "high",
 		"--effort", "large",
 		"--tags", "plan, widget-scheduler ,,repo",
+		"--bookmark", "samw/ai/work",
 		"--owner", "samw",
 		"--approver", "samw",
 		"--workspace", "sisyphus-explicit-steps",
-		"--agent-session", "session-123")
+		"--metadata", "session-id=session-123")
 
 	equal(t, 0, res.exit)
-	doc := r.frontmatter("issues/open/explicit-step-dependencies.md")
+	doc := r.frontmatter("issues/in-progress/explicit-step-dependencies.md")
 	equal(t, "Add explicit step dependencies", doc.get("title"))
 	equal(t, "high", doc.get("priority"))
 	equal(t, "large", doc.get("effort"))
@@ -64,8 +66,18 @@ func TestNewSetsTheGivenOptions(t *testing.T) {
 	equal(t, "samw", doc.get("owner"))
 	equal(t, "samw", doc.get("approver"))
 	equal(t, "[sisyphus-explicit-steps]", doc.get("workspaces"))
-	equal(t, "session-123", doc.get("agent-session"))
+	equal(t, `{session-id: "session-123"}`, doc.get("metadata"))
 	isTrue(t, slices.ContainsFunc(doc.body, func(l string) bool { return l == "# Add explicit step dependencies" }), "the body has the title")
+}
+
+func TestNewSetsMultipleMetadataEntries(t *testing.T) {
+	r := newTestRepo(t)
+
+	res := r.run("new", "open-issue-test", "--metadata", "session-id=session-123,note=hello")
+
+	equal(t, 0, res.exit)
+	doc := r.frontmatter("issues/open/open-issue-test.md")
+	equal(t, `{note: "hello", session-id: "session-123"}`, doc.get("metadata"))
 }
 
 func TestNewQuotesTitlesWithSpecialCharacters(t *testing.T) {

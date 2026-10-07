@@ -11,7 +11,7 @@ owner:                 # The person or agent working on the issue. Cleared when 
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
 workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
-agent-session:         # AI agent session id of the current agent working on the issue, if available.
+metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 ---
@@ -42,6 +42,8 @@ hand. The sub-issues below each cover one missing piece:
 - [[lint-issues-command]]: nothing validates the whole `issues/` tree at once (state matching its
   directory, valid enum values, resolving wikilinks, no parent cycles); each check today only runs
   against the one issue a command touches.
+- [[graph-view-command]]: no way to see a large task's whole family tree (an epic and its
+  sub-issues, with state and depends-on edges) at a glance; only one issue at a time via `show`.
 
 ## Acceptance criteria
 
@@ -49,9 +51,10 @@ hand. The sub-issues below each cover one missing piece:
 - [x] `sisyphus show` can print one issue ([[show-issue-command]]).
 - [x] `sisyphus search` can find issues by filter and content, with section-scoped results
       ([[search-issues-command]]).
-- [ ] `sisyphus update` can change priority, effort, and tags ([[update-editable-metadata]]).
+- [x] `sisyphus update` can change priority, effort, and tags ([[update-editable-metadata]]).
 - [x] Issues can express depends-on/blocks relationships ([[issue-dependencies]]).
 - [ ] `sisyphus lint` validates the whole `issues/` tree ([[lint-issues-command]]).
+- [x] `sisyphus graph` shows a large task's family tree in the terminal ([[graph-view-command]]).
 
 ## Out of scope
 

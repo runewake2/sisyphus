@@ -14,6 +14,9 @@ permissions:
 
 jobs:
   create-issue-pr:
+    # Only issues filed by the repo owner or an org member. Anyone can open an issue on a public
+    # repo, and this job pushes a branch and opens a PR with a write token.
+    if: contains(fromJSON('["OWNER", "MEMBER"]'), github.event.issue.author_association)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

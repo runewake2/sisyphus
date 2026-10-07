@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,14 +9,6 @@ import (
 )
 
 var kitFiles = []string{
-	".github/workflows/issue-to-pr.yml",
-	".github/workflows/sync-to-github.yml",
-	"AGENTS.md",
-	"CHANGELOG.md",
-	"CONTRIBUTING.md",
-	"VERSION",
-	"changelog/0.0.0.md",
-	"design/decisions/.gitkeep",
 	"issues/TEMPLATE.md",
 	"issues/closed/.gitkeep",
 	"issues/in-progress/.gitkeep",
@@ -40,10 +31,10 @@ func readIn(t *testing.T, dir, relative string) string {
 	return string(content)
 }
 
-func TestInitWritesTheKit(t *testing.T) {
+func TestInitWritesIssuesOnly(t *testing.T) {
 	dir := t.TempDir()
 
-	res := runIn(t, dir, "init", "--dir", dir, "--project", "calculator", "--bookmark-prefix", "samw/ai/")
+	res := runIn(t, dir, "init", "--dir", dir)
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
@@ -52,42 +43,35 @@ func TestInitWritesTheKit(t *testing.T) {
 		content := readIn(t, dir, file)
 		isTrue(t, !strings.Contains(content, "{%"), file+" has no placeholders left")
 	}
-	equal(t, "0.0.0\n", readIn(t, dir, "VERSION"))
-	agents := readIn(t, dir, "AGENTS.md")
-	contains(t, agents, "../workspaces/calculator-<workspace-name>")
-	contains(t, agents, "samw/ai/<workspace-name>")
-	contains(t, readIn(t, dir, "CONTRIBUTING.md"), "# Contributing to calculator")
-	contains(t, readIn(t, dir, "CHANGELOG.md"), "## [[0.0.0]] - "+today())
-}
-
-func TestInitUsesTheNameOfTheDirectoryAndADefaultPrefix(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "my-service")
-
-	res := runIn(t, dir, "init", "--dir", dir)
-
-	equal(t, 0, res.exit)
-	agents := readIn(t, dir, "AGENTS.md")
-	contains(t, agents, "Rules for AI agents that work in my-service.")
-	contains(t, agents, "ai/<workspace-name>")
+	isTrue(t, !fileExists(filepath.Join(dir, "AGENTS.md")), "init does not write AGENTS.md")
+	isTrue(t, !fileExists(filepath.Join(dir, "CONTRIBUTING.md")), "init does not write CONTRIBUTING.md")
+	isTrue(t, !fileExists(filepath.Join(dir, "VERSION")), "init does not write VERSION")
+	isTrue(t, !fileExists(filepath.Join(dir, ".github")), "init does not write .github")
 }
 
 func TestInitKeepsFilesThatExist(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("# My own rules\n"), 0o644); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "issues"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "issues", "TEMPLATE.md"), []byte("# My own template\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
 	res := runIn(t, dir, "init", "--dir", dir)
 
 	equal(t, 0, res.exit)
-	contains(t, res.error, "AGENTS.md exists, so init did not change it")
-	equal(t, "# My own rules\n", readIn(t, dir, "AGENTS.md"))
+	contains(t, res.error, "issues/TEMPLATE.md exists, so init did not change it")
+	equal(t, "# My own template\n", readIn(t, dir, "issues/TEMPLATE.md"))
 	equal(t, len(kitFiles)-1, len(res.lines()))
 }
 
 func TestInitReplacesFilesWithForce(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("# My own rules\n"), 0o644); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "issues"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "issues", "TEMPLATE.md"), []byte("# My own template\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -95,7 +79,7 @@ func TestInitReplacesFilesWithForce(t *testing.T) {
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
-	contains(t, readIn(t, dir, "AGENTS.md"), "# AGENTS.md")
+	contains(t, readIn(t, dir, "issues/TEMPLATE.md"), "Copy this file to issues/open/<issue-name>.md")
 }
 
 func TestInitMakesARepoThatTheOtherCommandsCanUse(t *testing.T) {
@@ -105,18 +89,4 @@ func TestInitMakesARepoThatTheOtherCommandsCanUse(t *testing.T) {
 	created := runIn(t, dir, "new", "first-issue-test")
 	equal(t, 0, created.exit)
 	equal(t, "issues/open/first-issue-test.md", strings.TrimSpace(created.output))
-
-	for _, document := range []string{"CONTRIBUTING.md", "AGENTS.md", "CHANGELOG.md", "changelog/0.0.0.md"} {
-		res := runIn(t, dir, "links", filepath.Join(dir, document), "--json")
-		equal(t, 0, res.exit)
-		var rows []linkRow
-		if err := json.Unmarshal([]byte(res.output), &rows); err != nil {
-			t.Fatalf("%s: %v", document, err)
-		}
-		for _, row := range rows {
-			if row.Status != "ok" {
-				t.Errorf("%s line %d: %s is %s", document, row.Line, row.Link, row.Status)
-			}
-		}
-	}
 }

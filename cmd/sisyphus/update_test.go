@@ -83,7 +83,7 @@ func TestUpdateKeepsAnExistingBookmarkWhenNoneIsGiven(t *testing.T) {
 	equal(t, "samw/ai/work", r.frontmatter("issues/in-progress/"+updateTarget+".md").get("bookmark"))
 }
 
-func TestUpdateSetsOwnerApproverWorkspaceAndAgentSession(t *testing.T) {
+func TestUpdateSetsOwnerApproverWorkspaceAndMetadata(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r)
 
@@ -92,7 +92,7 @@ func TestUpdateSetsOwnerApproverWorkspaceAndAgentSession(t *testing.T) {
 		"--owner", "samw",
 		"--approver", "runewake2",
 		"--workspace", "sisyphus-work",
-		"--agent-session", "session-123")
+		"--metadata", "session-id=session-123")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
@@ -100,7 +100,22 @@ func TestUpdateSetsOwnerApproverWorkspaceAndAgentSession(t *testing.T) {
 	equal(t, "samw", doc.get("owner"))
 	equal(t, "runewake2", doc.get("approver"))
 	equal(t, "[sisyphus-work]", doc.get("workspaces"))
-	equal(t, "session-123", doc.get("agent-session"))
+	equal(t, `{session-id: "session-123"}`, doc.get("metadata"))
+}
+
+func TestUpdateMergesMetadataAndKeepsItWhenClosed(t *testing.T) {
+	r := newTestRepo(t)
+	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work",
+		"--owner", "samw", "--metadata", "session-id=session-123")
+
+	r.mustRun("update", updateTarget, "in-progress", "--metadata", "note=half-done")
+	res := r.run("update", updateTarget, "closed", "--resolution", "completed")
+
+	equal(t, 0, res.exit)
+	doc := r.frontmatter("issues/closed/" + updateTarget + ".md")
+	equal(t, `{note: "half-done", session-id: "session-123"}`, doc.get("metadata"))
+	equal(t, "samw", doc.get("owner"))
+	equal(t, "samw/ai/work", doc.get("bookmark"))
 }
 
 func TestUpdateAppendsToWorkspacesWithoutDuplicating(t *testing.T) {
@@ -114,20 +129,20 @@ func TestUpdateAppendsToWorkspacesWithoutDuplicating(t *testing.T) {
 	equal(t, "[sisyphus-work, sisyphus-work-2]", doc.get("workspaces"))
 }
 
-func TestUpdateClearsOwnerAndAgentSessionButKeepsWorkspacesAndApproverWhenReopened(t *testing.T) {
+func TestUpdateClearsOwnerButKeepsWorkspacesApproverAndMetadataWhenReopened(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r, "--state", "in-progress", "--bookmark", "samw/ai/work",
-		"--owner", "samw", "--approver", "runewake2", "--workspace", "sisyphus-work", "--agent-session", "session-123")
+		"--owner", "samw", "--approver", "runewake2", "--workspace", "sisyphus-work", "--metadata", "session-id=session-123")
 
 	res := r.run("update", updateTarget, "open")
 
 	equal(t, 0, res.exit)
 	doc := r.frontmatter("issues/open/" + updateTarget + ".md")
 	equal(t, "", doc.get("owner"))
-	equal(t, "", doc.get("agent-session"))
 	equal(t, "", doc.get("bookmark"))
 	equal(t, "runewake2", doc.get("approver"))
 	equal(t, "[sisyphus-work]", doc.get("workspaces"))
+	equal(t, `{session-id: "session-123"}`, doc.get("metadata"))
 }
 
 func TestUpdateMovesTheIssueWithGitMvInAGitRepo(t *testing.T) {

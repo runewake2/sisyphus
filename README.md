@@ -3,16 +3,14 @@
 > **DO NOT USE.** This is a personal project, built for my own workflow with no
 > guarantees of stability, support, or correctness. Expect breaking changes
 > without notice. Use at your own risk.
->
-> This repo is public for reference only. See [LICENSE](LICENSE): all rights are reserved, and no
-> license to use, copy, or modify this code is granted.
 
 A small CLI for managing the issues in `issues/` and managing work in a more useful way.
 
 ## Usage
 
-Install it, then initialize a repo. Init writes the workflow kit: [[CONTRIBUTING]], [[AGENTS]],
-`issues/`, [[CHANGELOG]], and `VERSION`.
+Install it, then initialize a repo. Init sets up issue tracking only: `issues/TEMPLATE.md` and the
+`open`/`in-progress`/`closed` directories. A contributing guide, agent rules, versioning, CI, and
+GitHub Actions workflows are a separate concern of a project-scaffolding template, not of sisyphus.
 
 ```bash
 go install github.com/runewake2/sisyphus/cmd/sisyphus@latest
@@ -43,6 +41,12 @@ sisyphus depends-on <issue-name> <blocking-issue-name>
 sisyphus remote <issue-name> <url>
 ```
 
+View a large task's whole family tree in the terminal:
+
+```bash
+sisyphus graph <issue-name>
+```
+
 Check wikilinks:
 
 ```bash
@@ -52,3 +56,26 @@ sisyphus links <file>
 
 Run `sisyphus <command> --help` for all options on any command. See [[CONTRIBUTING]] for the full
 workflow: the design log, decisions, versioning, the changelog, wikilinks, issues, and jj.
+
+## MCP server
+
+`sisyphus-mcp` gives an agent every `sisyphus` command above as an MCP tool, over stdio. It is a
+thin wrapper: each tool shells out to the `sisyphus` binary, so it needs `sisyphus` installed and on
+`PATH` too.
+
+```bash
+go install github.com/runewake2/sisyphus/cmd/sisyphus@latest
+go install github.com/runewake2/sisyphus/cmd/sisyphus-mcp@latest
+```
+
+Add it to an MCP-compatible client, for example Claude Code:
+
+```bash
+claude mcp add sisyphus -- sisyphus-mcp
+```
+
+Each tool (`sisyphus_new`, `sisyphus_update`, `sisyphus_show`, `sisyphus_list`, `sisyphus_search`,
+`sisyphus_graph`, `sisyphus_parent`, `sisyphus_remote`, `sisyphus_depends_on`, `sisyphus_slug`,
+`sisyphus_resolve`, `sisyphus_links`, `sisyphus_init`) takes an optional `dir` argument (the repo to
+act on; defaults to `sisyphus-mcp`'s own working directory), plus the same arguments as the CLI
+command it wraps.

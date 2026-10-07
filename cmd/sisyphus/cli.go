@@ -45,6 +45,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 		dependsOnCommand(findRoot),
 		slugCommand(findRoot),
 		showCommand(findRoot),
+		graphCommand(findRoot),
 		listCommand(findRoot),
 		searchCommand(findRoot),
 		resolveCommand(findRoot),
@@ -56,7 +57,8 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 
 func newCommand(findRoot func() (string, error)) *cobra.Command {
 	var title, state, resolution, priority, effort, tags, bookmark, deferredFrom, parent string
-	var owner, approver, workspace, agentSession, remote, dependsOn, context string
+	var owner, approver, workspace, remote, dependsOn, context string
+	var metadata map[string]string
 	cmd := &cobra.Command{
 		Use:   "new <name>",
 		Short: "Create an issue from issues/TEMPLATE.md in the directory of its state.",
@@ -85,10 +87,10 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 					owner:        optional(cmd, "owner", owner),
 					approver:     optional(cmd, "approver", approver),
 					workspace:    optional(cmd, "workspace", workspace),
-					agentSession: optional(cmd, "agent-session", agentSession),
 					remote:       optional(cmd, "remote", remote),
 					dependsOn:    optional(cmd, "depends-on", dependsOn),
 					context:      optional(cmd, "context", context),
+					metadata:     metadata,
 				}, warnings)
 			})
 		},
@@ -106,15 +108,16 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&owner, "owner", "", "The person or agent working on the issue.")
 	flags.StringVar(&approver, "approver", "", "The person or agent who accepts the issue when it closes.")
 	flags.StringVar(&workspace, "workspace", "", "The jj workspace where local work on the issue is happening. Appended to the issue's workspace history.")
-	flags.StringVar(&agentSession, "agent-session", "", "The AI agent session id working on the issue, if available.")
 	flags.StringVar(&remote, "remote", "", "A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.")
 	flags.StringVar(&dependsOn, "depends-on", "", "An issue that must close before this one can start. The issue must exist.")
 	flags.StringVar(&context, "context", "", "Replaces the Context section's placeholder with this text.")
+	flags.StringToStringVar(&metadata, "metadata", nil, `Arbitrary key=value notes, for example "session-id=abc123". Repeatable, or comma-separated.`)
 	return cmd
 }
 
 func updateCommand(findRoot func() (string, error)) *cobra.Command {
-	var resolution, bookmark, owner, approver, workspace, agentSession, priority, effort, tags string
+	var resolution, bookmark, owner, approver, workspace, priority, effort, tags string
+	var metadata map[string]string
 	cmd := &cobra.Command{
 		Use:   "update <name> <state>",
 		Short: "Change the state of an issue and move it to the directory of the new state.",
@@ -128,15 +131,15 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 			}
 			return printPath(cmd, findRoot, func(root string, warnings io.Writer) (string, error) {
 				return updateIssue(root, args[0], args[1], updateOptions{
-					resolution:   resolution,
-					bookmark:     optional(cmd, "bookmark", bookmark),
-					owner:        optional(cmd, "owner", owner),
-					approver:     optional(cmd, "approver", approver),
-					workspace:    optional(cmd, "workspace", workspace),
-					agentSession: optional(cmd, "agent-session", agentSession),
-					priority:     optional(cmd, "priority", priority),
-					effort:       optional(cmd, "effort", effort),
-					tags:         optional(cmd, "tags", tags),
+					resolution: resolution,
+					bookmark:   optional(cmd, "bookmark", bookmark),
+					owner:      optional(cmd, "owner", owner),
+					approver:   optional(cmd, "approver", approver),
+					workspace:  optional(cmd, "workspace", workspace),
+					priority:   optional(cmd, "priority", priority),
+					effort:     optional(cmd, "effort", effort),
+					tags:       optional(cmd, "tags", tags),
+					metadata:   metadata,
 				}, warnings)
 			})
 		},
@@ -147,10 +150,10 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&owner, "owner", "", "The person or agent working on the issue.")
 	flags.StringVar(&approver, "approver", "", "The person or agent who accepts the issue when it closes.")
 	flags.StringVar(&workspace, "workspace", "", "The jj workspace where local work on the issue is happening. Appended to the issue's workspace history.")
-	flags.StringVar(&agentSession, "agent-session", "", "The AI agent session id working on the issue, if available.")
 	flags.StringVar(&priority, "priority", "", "Change the priority: "+strings.Join(priorities, ", ")+".")
 	flags.StringVar(&effort, "effort", "", "Change the effort: "+strings.Join(efforts, ", ")+".")
 	flags.StringVar(&tags, "tags", "", `Replace the tags, comma-separated, for example "scheduler,plan".`)
+	flags.StringToStringVar(&metadata, "metadata", nil, `Arbitrary key=value notes to add or update, for example "session-id=abc123". Repeatable, or comma-separated. Never cleared automatically.`)
 	return cmd
 }
 
@@ -280,6 +283,65 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the issue as JSON instead of readable text.")
 	return cmd
+}
+
+func graphCommand(findRoot func() (string, error)) *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "graph <name>",
+		Short: "Show an issue's whole family tree as a terminal tree.",
+		Long: "Show an issue's whole family tree as a terminal tree: walk up to the root ancestor (by " +
+			"parent), then print every descendant with its state, marking <name> itself. Each node also " +
+			"shows what it depends on, if anything, so a large task and its sub-issues can be reviewed " +
+			"at a glance.",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			root, err := findRoot()
+			if err != nil {
+				return err
+			}
+			if _, err := findIssue(root, issueName(args[0])); err != nil {
+				return err
+			}
+			graph := buildGraph(root, issueName(args[0]))
+			if asJSON {
+				encoder := json.NewEncoder(cmd.OutOrStdout())
+				encoder.SetEscapeHTML(false)
+				encoder.SetIndent("", "  ")
+				return encoder.Encode(graph)
+			}
+			writeGraph(cmd.OutOrStdout(), graph, "", true, true)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "Print JSON instead of a tree.")
+	return cmd
+}
+
+// writeGraph prints node and its children as a terminal tree, in the style of the "tree" command.
+func writeGraph(out io.Writer, node graphNode, prefix string, isLast, isRoot bool) {
+	label := node.Name + " [" + node.State + "]"
+	if node.Focus {
+		label += "  <-- you asked about this one"
+	}
+	if len(node.DependsOn) > 0 {
+		label += "  (depends on: " + strings.Join(node.DependsOn, ", ") + ")"
+	}
+	childPrefix := prefix
+	if isRoot {
+		fmt.Fprintln(out, label)
+	} else {
+		connector := "├── "
+		childPrefix += "│   "
+		if isLast {
+			connector = "└── "
+			childPrefix = prefix + "    "
+		}
+		fmt.Fprintln(out, prefix+connector+label)
+	}
+	for i, child := range node.Children {
+		writeGraph(out, child, childPrefix, i == len(node.Children)-1, false)
+	}
 }
 
 func listCommand(findRoot func() (string, error)) *cobra.Command {
@@ -479,30 +541,27 @@ func linksCommand(findRoot func() (string, error)) *cobra.Command {
 }
 
 func initCommand() *cobra.Command {
-	var dir, project, bookmarkPrefix string
+	var dir string
 	var force bool
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Write the workflow into a repo: CONTRIBUTING.md, AGENTS.md, issues/, the changelog, and VERSION.",
-		Long: "Write the workflow into a repo: CONTRIBUTING.md, AGENTS.md, issues/, design/decisions/, the changelog, " +
-			"and VERSION. Files that exist stay as they are, unless --force is given. After init, the other commands " +
-			"of sisyphus work in the repo.",
+		Short: "Write issues/ into a repo: TEMPLATE.md and the open/in-progress/closed directories.",
+		Long: "Write issues/ into a repo: TEMPLATE.md and the open/in-progress/closed directories. Files that " +
+			"exist stay as they are, unless --force is given. After init, the other commands of sisyphus work " +
+			"in the repo.\n\n" +
+			"init sets up issue tracking only. A contributing guide, agent rules, versioning, changelog, " +
+			"decision records, and CI or GitHub Actions workflows are a separate concern: add them from a " +
+			"project-scaffolding template if you want them.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := filepath.Abs(dir)
 			if err != nil {
 				return err
 			}
-			if project == "" {
-				project = filepath.Base(root)
-			}
-			values := kitValues{Project: project, BookmarkPrefix: strings.TrimSuffix(bookmarkPrefix, "/"), Date: today()}
-			return initRepo(root, values, force, cmd.OutOrStdout(), cmd.ErrOrStderr())
+			return initRepo(root, force, cmd.OutOrStdout(), cmd.ErrOrStderr())
 		},
 	}
 	cmd.Flags().StringVar(&dir, "dir", ".", "The root directory of the repo.")
-	cmd.Flags().StringVar(&project, "project", "", "The name of the project. The default is the name of the directory.")
-	cmd.Flags().StringVar(&bookmarkPrefix, "bookmark-prefix", "ai", `The prefix of the jj bookmarks of agents, for example "samw/ai".`)
 	cmd.Flags().BoolVar(&force, "force", false, "Replace files that exist.")
 	return cmd
 }
@@ -535,6 +594,7 @@ func writeIssueText(out io.Writer, doc *document) {
 		{"parent", doc.get("parent")},
 		{"depends-on", doc.get("depends-on")},
 		{"remote", doc.get("remote")},
+		{"metadata", doc.get("metadata")},
 	}
 	width := 0
 	for _, f := range fields {
