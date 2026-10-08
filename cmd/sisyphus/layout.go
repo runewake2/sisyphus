@@ -4,8 +4,6 @@ import (
 	"cmp"
 	"math"
 	"slices"
-
-	"github.com/mattn/go-runewidth"
 )
 
 // The drawing flows left to right. Each issue is in a column, and each directory owns a band of
@@ -25,7 +23,6 @@ type placed struct {
 	index  int
 	name   string
 	column int
-	row    int
 	x, y   int
 }
 
@@ -61,10 +58,14 @@ func columnsOf(graph issueGraph) map[string]int {
 	for i, node := range graph.Nodes {
 		index[node.Name] = i
 	}
+	outgoing := map[string][]graphEdge{}
+	for _, edge := range graph.Edges {
+		outgoing[edge.From] = append(outgoing[edge.From], edge)
+	}
 	column := map[string]int{}
 	for _, node := range graph.Nodes {
-		for _, edge := range graph.Edges {
-			if edge.From == node.Name && index[edge.To] > index[edge.From] {
+		for _, edge := range outgoing[node.Name] {
+			if index[edge.To] > index[edge.From] {
 				column[edge.To] = max(column[edge.To], column[node.Name]+1)
 			}
 		}
@@ -72,43 +73,41 @@ func columnsOf(graph issueGraph) map[string]int {
 	return column
 }
 
-func nodeLabel(node graphNode) string {
-	_, file := splitIssueName(node.Name)
-	return file + " [" + node.State + "]"
-}
-
 func layOut(graph issueGraph) *layout {
 	l := &layout{byName: map[string]*placed{}}
 	column := columnsOf(graph)
 	for i, node := range graph.Nodes {
-		_, file := splitIssueName(node.Name)
-		p := &placed{node: node, index: i, name: file, column: column[node.Name]}
+		p := &placed{node: node, index: i, name: baseName(node.Name), column: column[node.Name]}
 		l.issues = append(l.issues, p)
 		l.byName[node.Name] = p
 		l.columns = max(l.columns, p.column+1)
 	}
 	l.columnWidth = make([]int, l.columns)
 	for _, p := range l.issues {
-		width := max(runewidth.StringWidth(p.name), runewidth.StringWidth(p.node.State)) + 2
+		width := max(textWidth(p.name), textWidth(p.node.State)) + 2
 		l.columnWidth[p.column] = max(l.columnWidth[p.column], width)
+	}
+
+	incoming := map[string][]graphEdge{}
+	for _, edge := range graph.Edges {
+		incoming[edge.To] = append(incoming[edge.To], edge)
 	}
 
 	// Lines go down the directory tree in order of each part's first issue in link order, so
 	// the focus and its family come first.
-	first := map[*directory]int{}
-	var firstIssue func(d *directory) int
-	firstIssue = func(d *directory) int {
-		if i, done := first[d]; done {
-			return i
-		}
-		i := len(graph.Nodes)
-		for _, node := range d.issues {
+	firstOf := func(nodes []graphNode) int {
+		i := len(l.issues)
+		for _, node := range nodes {
 			i = min(i, l.byName[node.Name].index)
 		}
+		return i
+	}
+	var firstIssue func(d *directory) int
+	firstIssue = func(d *directory) int {
+		i := firstOf(d.issues)
 		for _, child := range d.children {
 			i = min(i, firstIssue(child))
 		}
-		first[d] = i
 		return i
 	}
 
@@ -122,9 +121,9 @@ func layOut(graph issueGraph) *layout {
 		rowOf := map[string]int{}
 		taken := map[[2]int]bool{}
 		blocked := func(p *placed, row int) bool {
-			for _, edge := range graph.Edges {
+			for _, edge := range incoming[p.node.Name] {
 				from := l.byName[edge.From]
-				if edge.To != p.node.Name || from.column >= p.column-1 {
+				if from.column >= p.column-1 {
 					continue
 				}
 				for c := from.column + 1; c < p.column; c++ {
@@ -150,8 +149,8 @@ func layOut(graph issueGraph) *layout {
 				}
 				w := want{p: p}
 				sum, n := 0, 0
-				for _, edge := range graph.Edges {
-					if r, placed := rowOf[edge.From]; placed && edge.To == node.Name {
+				for _, edge := range incoming[node.Name] {
+					if r, placed := rowOf[edge.From]; placed {
 						sum, n = sum+r, n+1
 					}
 				}
@@ -182,15 +181,11 @@ func layOut(graph issueGraph) *layout {
 					row++
 				}
 				taken[[2]int{column, row}] = true
-				w.p.row = row
+				w.p.y = y + rowPitch*row
 				rowOf[w.p.node.Name] = row
 				next = row + 1
 				rows = max(rows, next)
 			}
-		}
-		for _, node := range d.issues {
-			p := l.byName[node.Name]
-			p.y = y + rowPitch*p.row
 		}
 		for r := 1; r < rows; r++ {
 			l.blank = append(l.blank, y+rowPitch*r-1)
@@ -204,7 +199,7 @@ func layOut(graph issueGraph) *layout {
 		}
 		var parts []part
 		if len(d.issues) > 0 {
-			parts = append(parts, part{first: firstIssueOf(l, d.issues)})
+			parts = append(parts, part{first: firstOf(d.issues)})
 		}
 		for _, child := range d.children {
 			parts = append(parts, part{first: firstIssue(child), dir: child})
@@ -233,27 +228,25 @@ func layOut(graph issueGraph) *layout {
 	placeDirectory(directoryTree(graph.Nodes), 0)
 	l.height = y
 
-	for _, f := range l.frames {
-		f.firstColumn, f.lastColumn = l.columns, 0
-		for _, p := range l.issues {
-			if dir, _ := splitIssueName(p.node.Name); dir == f.dir.path || len(dir) > len(f.dir.path) && dir[:len(f.dir.path)+1] == f.dir.path+"/" {
-				f.firstColumn = min(f.firstColumn, p.column)
-				f.lastColumn = max(f.lastColumn, p.column)
-			}
+	var columnsIn func(d *directory) (first, last int)
+	columnsIn = func(d *directory) (first, last int) {
+		first, last = l.columns, 0
+		for _, node := range d.issues {
+			first, last = min(first, l.byName[node.Name].column), max(last, l.byName[node.Name].column)
 		}
+		for _, child := range d.children {
+			f, la := columnsIn(child)
+			first, last = min(first, f), max(last, la)
+		}
+		return first, last
+	}
+	for _, f := range l.frames {
+		f.firstColumn, f.lastColumn = columnsIn(f.dir)
 		// The name sits in the top border above the first column, where no arrow crosses it.
-		need := runewidth.StringWidth(f.dir.name) + 4 - l.margin(f)
+		need := textWidth(f.dir.name) + 4 - l.margin(f)
 		l.columnWidth[f.firstColumn] = max(l.columnWidth[f.firstColumn], need)
 	}
 	return l
-}
-
-func firstIssueOf(l *layout, nodes []graphNode) int {
-	i := len(l.issues)
-	for _, node := range nodes {
-		i = min(i, l.byName[node.Name].index)
-	}
-	return i
 }
 
 // margin is how far a frame's border is from the issues in it. Frames that are not nested

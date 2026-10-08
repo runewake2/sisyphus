@@ -185,39 +185,26 @@ func directoryTree(nodes []graphNode) *directory {
 	byPath := map[string]*directory{"": root}
 	for _, node := range nodes {
 		parent := root
-		dir, _ := splitIssueName(node.Name)
-		if dir != "" {
-			path := ""
-			for _, part := range strings.Split(dir, "/") {
-				path = strings.TrimPrefix(path+"/"+part, "/")
-				child, exists := byPath[path]
-				if !exists {
-					child = &directory{name: part, path: path}
-					byPath[path] = child
-					parent.children = append(parent.children, child)
-				}
-				parent = child
+		parts := strings.Split(node.Name, "/")
+		for i, part := range parts[:len(parts)-1] {
+			path := strings.Join(parts[:i+1], "/")
+			child, exists := byPath[path]
+			if !exists {
+				child = &directory{name: part, path: path}
+				byPath[path] = child
+				parent.children = append(parent.children, child)
 			}
+			parent = child
 		}
 		parent.issues = append(parent.issues, node)
 	}
 	return root
 }
 
-// splitIssueName splits a full issue name into its directory and its file name.
-func splitIssueName(name string) (dir, file string) {
-	if i := strings.LastIndex(name, "/"); i >= 0 {
-		return name[:i], name[i+1:]
-	}
-	return "", name
-}
-
 // mermaidSource writes the graph as a Mermaid flowchart. Each subdirectory is a subgraph that holds
 // its issues and its subdirectories, so a node shows only the file name of its issue. A solid arrow
 // points from a parent to a sub-issue; a dotted arrow points from a dependency to the issue that
-// depends on it. The focus issue has the thickest border and an available issue a thicker one, as
-// the double and heavy boxes of the terminal drawing. An available focus issue has the focus border.
-// An issue that is linked only indirectly also has a dashed border.
+// depends on it. Each issue's classes follow its box style in the terminal drawing.
 func mermaidSource(graph issueGraph) string {
 	ids := map[string]string{}
 	for i, node := range graph.Nodes {
@@ -229,7 +216,7 @@ func mermaidSource(graph issueGraph) string {
 	var write func(dir *directory, indent string)
 	write = func(dir *directory, indent string) {
 		for _, node := range dir.issues {
-			fmt.Fprintf(&b, "%s%s[\"%s\"]\n", indent, ids[node.Name], nodeLabel(node))
+			fmt.Fprintf(&b, "%s%s[\"%s [%s]\"]\n", indent, ids[node.Name], baseName(node.Name), node.State)
 		}
 		for _, child := range dir.children {
 			fmt.Fprintf(&b, "%ssubgraph g%d[\"%s\"]\n", indent, groups, child.name)
@@ -246,29 +233,31 @@ func mermaidSource(graph issueGraph) string {
 		}
 		fmt.Fprintf(&b, "    %s %s %s\n", ids[edge.From], arrow, ids[edge.To])
 	}
-	var available []string
+	members := map[string][]string{}
 	for _, node := range graph.Nodes {
-		if node.Available && node.Name != graph.Focus {
-			available = append(available, ids[node.Name])
+		for _, class := range mermaidClasses[issueStyle(graph, node)] {
+			members[class] = append(members[class], ids[node.Name])
 		}
 	}
-	b.WriteString("    classDef focus stroke-width:5px\n")
-	fmt.Fprintf(&b, "    class %s focus\n", ids[graph.Focus])
-	if len(available) > 0 {
-		b.WriteString("    classDef available stroke-width:3px\n")
-		fmt.Fprintf(&b, "    class %s available\n", strings.Join(available, ","))
-	}
-	var indirect []string
-	for _, node := range graph.Nodes {
-		if node.Indirect {
-			indirect = append(indirect, ids[node.Name])
+	for _, class := range []struct{ name, style string }{
+		{"focus", "stroke-width:5px"},
+		{"available", "stroke-width:3px"},
+		{"indirect", "stroke-dasharray:5 3"},
+	} {
+		if len(members[class.name]) > 0 {
+			fmt.Fprintf(&b, "    classDef %s %s\n", class.name, class.style)
+			fmt.Fprintf(&b, "    class %s %s\n", strings.Join(members[class.name], ","), class.name)
 		}
-	}
-	if len(indirect) > 0 {
-		b.WriteString("    classDef indirect stroke-dasharray:5 3\n")
-		fmt.Fprintf(&b, "    class %s indirect\n", strings.Join(indirect, ","))
 	}
 	return b.String()
+}
+
+// mermaidClasses are the Mermaid classes of each issue box style.
+var mermaidClasses = map[boxStyle][]string{
+	doubleBox:      {"focus"},
+	heavyBox:       {"available"},
+	dashedBox:      {"indirect"},
+	heavyDashedBox: {"available", "indirect"},
 }
 
 // hiddenNote tells how many connected issues the graph leaves out, if any.

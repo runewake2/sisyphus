@@ -349,11 +349,7 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			drawing, err := drawGraph(graph, colored)
-			if err != nil {
-				return err
-			}
-			_, err = io.WriteString(cmd.OutOrStdout(), drawing)
+			_, err = io.WriteString(cmd.OutOrStdout(), drawGraph(graph, colored))
 			return err
 		},
 	}

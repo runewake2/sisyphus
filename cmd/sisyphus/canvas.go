@@ -92,7 +92,7 @@ var weightRunes = map[[2]uint8]rune{
 }
 
 // boxStyle is the line style of a box border.
-type boxStyle int
+type boxStyle uint8
 
 const (
 	lightBox boxStyle = iota
@@ -123,35 +123,26 @@ var styleRunes = map[boxStyle]map[uint8]rune{
 	},
 }
 
-// cell is one column of one line. A line through the cell adds to lines. A cell with text shows its
-// text instead. The column after a wide character is a continuation and draws nothing.
-type cell struct {
-	lines        uint8
-	heavy        uint8
-	solid        int
-	dotted       int
-	text         rune
-	continuation bool
-	style        boxStyle
-	color        string
-}
+// pen is a color of a colored drawing. A cell drawn with noPen keeps its color, so a gray line
+// that crosses a colored one does not hide it.
+type pen uint8
 
-// canvas is a grid of cells that grows when something is drawn outside it. While pen is set, each
-// cell that is drawn takes the pen's color. A drawing with no pen leaves a cell's color as it is,
-// so a gray line that crosses a colored one does not hide it.
-type canvas struct {
-	cells [][]cell
-	pen   string
-	heavy bool
-}
+const (
+	noPen pen = iota
+	focusPen
+	pathPen
+	openPen
+	inProgressPen
+	completedPen
+	abandonedPen
+	missingPen
+)
 
 // The ANSI colors of a colored drawing. Each line resets at its end, so a line that is cut or
 // pasted alone does not color what follows it.
 const (
-	strongColor = "\x1b[1;96m"
-	// The color of the work path and the borders of the issues to start now.
-	pathColor = "\x1b[1;95m"
-	// The colors of the issues that the focus issue links directly, by state.
+	strongColor     = "\x1b[1;96m"
+	pathColor       = "\x1b[1;95m"
 	openColor       = "\x1b[1;94m"
 	inProgressColor = "\x1b[1;93m"
 	completedColor  = "\x1b[1;92m"
@@ -161,15 +152,62 @@ const (
 	resetColor      = "\x1b[0m"
 )
 
-func (c *canvas) at(x, y int) *cell {
-	for len(c.cells) <= y {
-		c.cells = append(c.cells, nil)
+var palette = [...]string{
+	noPen:         weakColor,
+	focusPen:      strongColor,
+	pathPen:       pathColor,
+	openPen:       openColor,
+	inProgressPen: inProgressColor,
+	completedPen:  completedColor,
+	abandonedPen:  abandonedColor,
+	missingPen:    missingColor,
+}
+
+// cell is one column of one line. A line through the cell adds its directions to lines, and to
+// heavy if the line is heavy. A cell with text shows its text instead. The column after a wide
+// character is a continuation and draws nothing. A cell has no pointers, so a large canvas costs
+// the garbage collector nothing to scan.
+type cell struct {
+	text         rune
+	lines        uint8
+	heavy        uint8
+	solid        bool
+	continuation bool
+	style        boxStyle
+	color        pen
+}
+
+// stroke is how a line is drawn.
+type stroke struct {
+	dotted, heavy bool
+}
+
+// canvas is a grid of cells that grows when something is drawn outside it. Each cell that is
+// drawn takes the color of pen, unless pen is noPen.
+type canvas struct {
+	cells [][]cell
+	pen   pen
+}
+
+// newCanvas makes a canvas of the size a drawing is known to need, so its rows do not grow one
+// cell at a time.
+func newCanvas(width, height int) *canvas {
+	c := &canvas{cells: make([][]cell, height)}
+	for y := range c.cells {
+		c.cells[y] = make([]cell, width)
 	}
-	for len(c.cells[y]) <= x {
-		c.cells[y] = append(c.cells[y], cell{})
+	return c
+}
+
+func (c *canvas) at(x, y int) *cell {
+	if y >= len(c.cells) {
+		c.cells = append(c.cells, make([][]cell, y+1-len(c.cells))...)
+	}
+	if x >= len(c.cells[y]) {
+		c.cells[y] = append(c.cells[y], make([]cell, x+1-len(c.cells[y]))...)
 	}
 	cl := &c.cells[y][x]
-	if c.pen != "" {
+	if c.pen != noPen {
 		cl.color = c.pen
 	}
 	return cl
@@ -177,18 +215,14 @@ func (c *canvas) at(x, y int) *cell {
 
 // line draws a horizontal or vertical line from (x1, y1) to (x2, y2). A cell shows a dotted
 // character only if every line through it is dotted and the lines do not turn there.
-func (c *canvas) line(x1, y1, x2, y2 int, dotted bool) {
+func (c *canvas) line(x1, y1, x2, y2 int, s stroke) {
 	mark := func(x, y int, directions uint8) {
 		cl := c.at(x, y)
 		cl.lines |= directions
-		if c.heavy {
+		if s.heavy {
 			cl.heavy |= directions
 		}
-		if dotted {
-			cl.dotted++
-		} else {
-			cl.solid++
-		}
+		cl.solid = cl.solid || !s.dotted
 	}
 	switch {
 	case y1 == y2:
@@ -218,19 +252,16 @@ func (c *canvas) line(x1, y1, x2, y2 int, dotted bool) {
 	}
 }
 
-// path draws lines through each point in turn.
-func (c *canvas) path(dotted bool, points ...[2]int) {
+func (c *canvas) path(s stroke, points ...[2]int) {
 	for i := 1; i < len(points); i++ {
-		c.line(points[i-1][0], points[i-1][1], points[i][0], points[i][1], dotted)
+		c.line(points[i-1][0], points[i-1][1], points[i][0], points[i][1], s)
 	}
 }
 
 // box draws a rectangle in style. Lines that end on its border join it.
 func (c *canvas) box(x1, y1, x2, y2 int, style boxStyle) {
-	heavy := c.heavy
-	c.heavy = style == heavyBox || style == heavyDashedBox
-	defer func() { c.heavy = heavy }()
-	c.path(false, [2]int{x1, y1}, [2]int{x2, y1}, [2]int{x2, y2}, [2]int{x1, y2}, [2]int{x1, y1})
+	s := stroke{heavy: style == heavyBox || style == heavyDashedBox}
+	c.path(s, [2]int{x1, y1}, [2]int{x2, y1}, [2]int{x2, y2}, [2]int{x1, y2}, [2]int{x1, y1})
 	for x := x1; x <= x2; x++ {
 		c.at(x, y1).style, c.at(x, y2).style = style, style
 	}
@@ -239,8 +270,17 @@ func (c *canvas) box(x1, y1, x2, y2 int, style boxStyle) {
 	}
 }
 
-// text writes s from (x, y) and returns the column after it.
-func (c *canvas) text(x, y int, s string) int {
+// textWidth is how many columns s takes on a canvas. A rune with no width still takes a column.
+func textWidth(s string) int {
+	width := 0
+	for _, r := range s {
+		width += max(runewidth.RuneWidth(r), 1)
+	}
+	return width
+}
+
+// text writes s from (x, y).
+func (c *canvas) text(x, y int, s string) {
 	for _, r := range s {
 		c.at(x, y).text = r
 		width := runewidth.RuneWidth(r)
@@ -249,7 +289,6 @@ func (c *canvas) text(x, y int, s string) int {
 		}
 		x += max(width, 1)
 	}
-	return x
 }
 
 func (cl cell) rune() rune {
@@ -266,57 +305,53 @@ func (cl cell) rune() rune {
 			}
 		}
 	}
-	horizontal, vertical := lines == left|right, lines == up|down
 	switch {
 	case lines == 0:
 		return ' '
-	case cl.solid == 0 && horizontal:
-		return map[bool]rune{false: '┄', true: '┅'}[heavy != 0]
-	case cl.solid == 0 && vertical:
-		return map[bool]rune{false: '┆', true: '┇'}[heavy != 0]
+	case !cl.solid && lines == left|right && heavy != 0:
+		return '┅'
+	case !cl.solid && lines == left|right:
+		return '┄'
+	case !cl.solid && lines == up|down && heavy != 0:
+		return '┇'
+	case !cl.solid && lines == up|down:
+		return '┆'
 	}
-	if r, styled := styleRunes[cl.style][lines]; styled && (horizontal || vertical || cl.style == doubleBox || cl.style == roundedBox) {
+	if r, styled := styleRunes[cl.style][lines]; styled {
 		return r
 	}
 	return weightRunes[[2]uint8{lines, heavy}]
 }
 
-// render writes the canvas as text. With color, each cell has its own color or weakColor.
+// render writes the canvas as text. With color, each cell has the color of its pen.
 func (c *canvas) render(color bool) string {
-	var lines []string
-	for _, row := range c.cells {
+	var b strings.Builder
+	for y, row := range c.cells {
 		last := len(row) - 1
 		for last >= 0 && (row[last].continuation || row[last].rune() == ' ') {
 			last--
 		}
-		var b strings.Builder
-		current := ""
+		if y > 0 {
+			b.WriteByte('\n')
+		}
+		current := -1
 		for _, cl := range row[:last+1] {
 			if cl.continuation {
 				continue
 			}
 			r := cl.rune()
-			if color && r != ' ' {
-				want := cl.color
-				if want == "" {
-					want = weakColor
+			if color && r != ' ' && int(cl.color) != current {
+				if current >= 0 {
+					b.WriteString(resetColor)
 				}
-				if want != current {
-					if current != "" {
-						b.WriteString(resetColor)
-					}
-					b.WriteString(want)
-					current = want
-				}
+				b.WriteString(palette[cl.color])
+				current = int(cl.color)
 			}
 			b.WriteRune(r)
 		}
-		if current != "" {
+		if current >= 0 {
 			b.WriteString(resetColor)
 		}
-		lines = append(lines, b.String())
 	}
-	return strings.TrimRight(strings.Join(lines, "\n"), "\n")
+	return strings.TrimRight(b.String(), "\n")
 }
-
-func (c *canvas) String() string { return c.render(false) }

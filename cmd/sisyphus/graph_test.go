@@ -724,14 +724,14 @@ func TestCanvasMixesLineWeights(t *testing.T) {
 		cell cell
 		want rune
 	}{
-		{cell{lines: up | down | right, heavy: up | down, solid: 1}, '┠'},
-		{cell{lines: up | down | right, heavy: right, solid: 1}, '┝'},
-		{cell{lines: up | down | left | right, heavy: left | right, solid: 1}, '┿'},
+		{cell{lines: up | down | right, heavy: up | down, solid: true}, '┠'},
+		{cell{lines: up | down | right, heavy: right, solid: true}, '┝'},
+		{cell{lines: up | down | left | right, heavy: left | right, solid: true}, '┿'},
 		{cell{lines: left | right, heavy: left | right}, '┅'},
-		{cell{lines: up, heavy: up, solid: 1}, '┃'},
-		{cell{lines: down | right, solid: 1, style: roundedBox}, '╭'},
-		{cell{lines: left | right, solid: 1, style: dashedBox}, '╌'},
-		{cell{lines: up | down | right, solid: 1, style: dashedBox}, '├'},
+		{cell{lines: up, heavy: up, solid: true}, '┃'},
+		{cell{lines: down | right, solid: true, style: roundedBox}, '╭'},
+		{cell{lines: left | right, solid: true, style: dashedBox}, '╌'},
+		{cell{lines: up | down | right, solid: true, style: dashedBox}, '├'},
 	} {
 		equal(t, tc.want, tc.cell.rune())
 	}

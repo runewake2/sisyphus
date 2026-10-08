@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"maps"
 	"slices"
 	"strings"
@@ -35,16 +36,6 @@ type stub struct {
 	out      bool
 }
 
-// covers tells whether an issue box in one of the columns from first to last covers line y.
-func (l *layout) covers(first, last, y int) bool {
-	for _, p := range l.issues {
-		if p.column >= first && p.column <= last && y >= p.y && y < p.y+boxHeight {
-			return true
-		}
-	}
-	return false
-}
-
 type span struct {
 	first, last int
 	from, to    string
@@ -54,12 +45,29 @@ func routeEdges(l *layout, graph issueGraph) ([]route, map[lane]int) {
 	var routes []route
 	var stubs []stub
 	var lanes []lane
+	known := map[lane]bool{}
 	use := func(gap int, key string) *lane {
 		ln := lane{gap: gap, key: key}
-		if !slices.Contains(lanes, ln) {
+		if !known[ln] {
+			known[ln] = true
 			lanes = append(lanes, ln)
 		}
 		return &ln
+	}
+	inColumn := make([][]*placed, l.columns)
+	for _, p := range l.issues {
+		inColumn[p.column] = append(inColumn[p.column], p)
+	}
+	// covers tells whether an issue box in one of the columns from first to last covers line y.
+	covers := func(first, last, y int) bool {
+		for c := first; c <= last; c++ {
+			for _, p := range inColumn[c] {
+				if y >= p.y && y < p.y+boxHeight {
+					return true
+				}
+			}
+		}
+		return false
 	}
 	along := map[int][]span{}
 	free := func(y int, s span) bool {
@@ -83,22 +91,12 @@ func routeEdges(l *layout, graph issueGraph) ([]route, map[lane]int) {
 			stubs = append(stubs, stub{lane: *ln, row: row, from: u.node.Name, to: v.node.Name, out: out})
 		}
 		switch {
-		case v.column == u.column+1:
+		case v.column == u.column+1, v.column > u.column+1 && covers(u.column+1, v.column-1, u.mid()) && !covers(u.column+1, v.column-1, v.mid()):
 			r.a = use(gapA, src)
-			addStub(r.a, u.mid(), true)
-			addStub(r.a, v.mid(), false)
-		case v.column > u.column+1 && !l.covers(u.column+1, v.column-1, u.mid()):
-			r.b = use(gapB, dst)
-			addStub(r.b, u.mid(), true)
-			addStub(r.b, v.mid(), false)
-		case v.column > u.column+1 && !l.covers(u.column+1, v.column-1, v.mid()):
-			r.a = use(gapA, src)
-			addStub(r.a, u.mid(), true)
-			addStub(r.a, v.mid(), false)
+		case v.column > u.column+1 && !covers(u.column+1, v.column-1, u.mid()):
+			r.a = use(gapB, dst)
 		default:
 			r.a, r.b = use(gapA, src), use(gapB, dst)
-			addStub(r.a, u.mid(), true)
-			addStub(r.b, v.mid(), false)
 			s := span{first: min(gapA, gapB), last: max(gapA, gapB), from: u.node.Name, to: v.node.Name}
 			best := -1
 			for _, y := range l.blank {
@@ -118,6 +116,8 @@ func routeEdges(l *layout, graph issueGraph) ([]route, map[lane]int) {
 			along[best] = append(along[best], s)
 			r.through = best
 		}
+		addStub(r.a, u.mid(), true)
+		addStub(cmp.Or(r.b, r.a), v.mid(), false)
 		routes = append(routes, r)
 	}
 	return routes, orderLanes(lanes, stubs)
@@ -127,11 +127,20 @@ func routeEdges(l *layout, graph issueGraph) ([]route, map[lane]int) {
 // different arrows meet on one line, the out stub's lane comes first, so the two do not overlap.
 // A cycle of such needs is broken in the order that the lanes were first used.
 func orderLanes(lanes []lane, stubs []stub) map[lane]int {
-	before := map[lane]map[lane]bool{}
+	type place struct{ gap, row int }
+	outs := map[place][]stub{}
 	for _, out := range stubs {
-		for _, in := range stubs {
-			if out.out && !in.out && out.lane.gap == in.lane.gap && out.row == in.row &&
-				out.lane != in.lane && out.from != in.from && out.to != in.to {
+		if out.out {
+			outs[place{out.lane.gap, out.row}] = append(outs[place{out.lane.gap, out.row}], out)
+		}
+	}
+	before := map[lane]map[lane]bool{}
+	for _, in := range stubs {
+		if in.out {
+			continue
+		}
+		for _, out := range outs[place{in.lane.gap, in.row}] {
+			if out.lane != in.lane && out.from != in.from && out.to != in.to {
 				if before[in.lane] == nil {
 					before[in.lane] = map[lane]bool{}
 				}
@@ -171,8 +180,92 @@ func abs(n int) int {
 	return n
 }
 
-// render draws the layout and its arrows.
-func render(graph issueGraph, l *layout, routes []route, position map[lane]int, color bool) string {
+// The classes of an arrow, in the order they are drawn: a later class wins a shared line.
+const (
+	plainArrow = iota
+	focusArrow
+	pathArrow
+)
+
+var arrowPens = [...]pen{plainArrow: noPen, focusArrow: focusPen, pathArrow: pathPen}
+
+// look is how a drawing shows each issue and arrow. drawGraph works it out once, and the drawing
+// and the legend both read it.
+type look struct {
+	style    map[string]boxStyle
+	text     map[string]pen
+	border   map[string]pen
+	path     map[graphEdge]bool
+	startNow map[string]bool
+}
+
+func lookOf(graph issueGraph) look {
+	lk := look{style: map[string]boxStyle{}, text: map[string]pen{}, border: map[string]pen{}}
+	lk.path, lk.startNow = workPath(graph)
+	linked := map[string]bool{}
+	for _, edge := range graph.Edges {
+		if touchesFocus(graph, edge) {
+			linked[edge.From], linked[edge.To] = true, true
+		}
+	}
+	for _, node := range graph.Nodes {
+		lk.style[node.Name] = issueStyle(graph, node)
+		switch {
+		case node.Name == graph.Focus:
+			lk.text[node.Name] = focusPen
+		case linked[node.Name]:
+			lk.text[node.Name] = stateColors[stateIndex(node)].pen
+		}
+		lk.border[node.Name] = lk.text[node.Name]
+		if lk.startNow[node.Name] {
+			lk.border[node.Name] = pathPen
+		}
+	}
+	return lk
+}
+
+func (lk look) arrowClass(graph issueGraph, edge graphEdge) int {
+	switch {
+	case lk.path[edge]:
+		return pathArrow
+	case touchesFocus(graph, edge):
+		return focusArrow
+	}
+	return plainArrow
+}
+
+func touchesFocus(graph issueGraph, edge graphEdge) bool {
+	return edge.From == graph.Focus || edge.To == graph.Focus
+}
+
+// stateColors names the state of an issue for its color. A closed issue with no resolution is
+// completed, and an issue that does not exist is missing.
+var stateColors = []struct {
+	name string
+	pen  pen
+}{
+	{"open", openPen},
+	{"in-progress", inProgressPen},
+	{"completed", completedPen},
+	{"abandoned", abandonedPen},
+	{"missing", missingPen},
+}
+
+func stateIndex(node graphNode) int {
+	switch {
+	case node.State == "open":
+		return 0
+	case node.State == "in-progress":
+		return 1
+	case node.State == "closed" && node.Resolution == "abandoned":
+		return 3
+	case node.State == "closed":
+		return 2
+	}
+	return 4
+}
+
+func render(graph issueGraph, lk look, l *layout, routes []route, position map[lane]int, color bool) string {
 	lanesIn := map[int]int{}
 	for ln, i := range position {
 		lanesIn[ln.gap] = max(lanesIn[ln.gap], i+1)
@@ -199,107 +292,49 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int, 
 	}
 	laneAt := func(ln *lane) int { return laneX[ln.gap] + 2*position[*ln] }
 
-	var c canvas
+	c := newCanvas(x, l.height)
 	for _, f := range l.frames {
 		x1 := columnX[f.firstColumn] - l.margin(f)
 		x2 := columnX[f.lastColumn] + l.columnWidth[f.lastColumn] - 1 + l.margin(f)
 		c.box(x1, f.top, x2, f.bottom, roundedBox)
 		c.text(x1+2, f.top, " "+f.dir.name+" ")
 	}
-	path, startNow := workPath(graph)
 	for _, p := range l.issues {
 		p.x = columnX[p.column]
 		width := l.columnWidth[p.column]
-		c.pen = issueColor(graph, p.node)
-		if startNow[p.node.Name] && p.node.Name != graph.Focus {
-			c.pen = pathColor
-		}
-		c.box(p.x, p.y, p.x+width-1, p.y+boxHeight-1, issueStyle(graph, p.node))
-		c.pen = issueColor(graph, p.node)
+		c.pen = lk.border[p.node.Name]
+		c.box(p.x, p.y, p.x+width-1, p.y+boxHeight-1, lk.style[p.node.Name])
+		c.pen = lk.text[p.node.Name]
 		c.text(p.x+1+(width-2-textWidth(p.name))/2, p.y+1, p.name)
 		c.text(p.x+1+(width-2-textWidth(p.node.State))/2, p.y+2, p.node.State)
 	}
-	// The work path is drawn last, so its color wins where it shares a line with other arrows.
 	slices.SortStableFunc(routes, func(a, b route) int {
-		rank := func(r route) int {
-			switch {
-			case path[r.edge]:
-				return 2
-			case attached(graph, r):
-				return 1
-			}
-			return 0
-		}
-		return rank(a) - rank(b)
+		return lk.arrowClass(graph, a.edge) - lk.arrowClass(graph, b.edge)
 	})
-	pen := func(r route) string {
-		switch {
-		case path[r.edge]:
-			return pathColor
-		case attached(graph, r):
-			return strongColor
-		}
-		return ""
-	}
 	for _, r := range routes {
 		start := [2]int{r.from.x + l.columnWidth[r.from.column] - 1, r.from.mid()}
 		end := [2]int{r.to.x - 1, r.to.mid()}
-		points := [][2]int{start}
-		switch {
-		case r.a != nil && r.b != nil:
-			a, b := laneAt(r.a), laneAt(r.b)
-			points = append(points, [2]int{a, start[1]}, [2]int{a, r.through}, [2]int{b, r.through}, [2]int{b, end[1]})
-		case r.a != nil:
-			points = append(points, [2]int{laneAt(r.a), start[1]}, [2]int{laneAt(r.a), end[1]})
-		default:
-			points = append(points, [2]int{laneAt(r.b), start[1]}, [2]int{laneAt(r.b), end[1]})
+		points := [][2]int{start, {laneAt(r.a), start[1]}}
+		if r.b != nil {
+			points = append(points, [2]int{laneAt(r.a), r.through}, [2]int{laneAt(r.b), r.through})
 		}
-		points = append(points, end)
+		last := cmp.Or(r.b, r.a)
+		points = append(points, [2]int{laneAt(last), end[1]}, end)
 		points = slices.CompactFunc(points, func(p, q [2]int) bool { return p == q })
-		c.pen, c.heavy = pen(r), path[r.edge]
-		c.path(r.edge.Kind == dependsOnEdge, points...)
+		class := lk.arrowClass(graph, r.edge)
+		c.pen = arrowPens[class]
+		c.path(stroke{dotted: r.edge.Kind == dependsOnEdge, heavy: class == pathArrow}, points...)
 	}
-	c.heavy = false
 	for _, r := range routes {
-		c.pen = pen(r)
+		c.pen = arrowPens[lk.arrowClass(graph, r.edge)]
 		c.text(r.to.x-1, r.to.mid(), "►")
 	}
-	c.pen = ""
 	return c.render(color)
 }
 
-// issueColor is the color of an issue box: strongColor for the focus issue, a color for the state
-// of an issue that an arrow links directly to the focus, and no color for the rest.
-func issueColor(graph issueGraph, node graphNode) string {
-	if node.Name == graph.Focus {
-		return strongColor
-	}
-	if !slices.ContainsFunc(graph.Edges, func(e graphEdge) bool {
-		return e.From == graph.Focus && e.To == node.Name || e.To == graph.Focus && e.From == node.Name
-	}) {
-		return ""
-	}
-	return stateColor(node)
-}
-
-// stateColor is the color of an issue's state. A closed issue with no resolution is completed.
-func stateColor(node graphNode) string {
-	switch {
-	case node.State == "open":
-		return openColor
-	case node.State == "in-progress":
-		return inProgressColor
-	case node.State == "closed" && node.Resolution == "abandoned":
-		return abandonedColor
-	case node.State == "closed":
-		return completedColor
-	}
-	return missingColor
-}
-
 // workPath is what the focus issue waits on, all the way down: an issue waits on its dependencies
-// and its sub-issues that are not closed. The chains end at available issues, which are the work to
-// start now. path holds each drawn arrow on those chains.
+// and its sub-issues that are not closed. The chains end at available issues other than the focus,
+// which are the work to start now. path holds each drawn arrow on those chains.
 func workPath(graph issueGraph) (path map[graphEdge]bool, startNow map[string]bool) {
 	open := map[string]graphNode{}
 	for _, node := range graph.Nodes {
@@ -323,7 +358,7 @@ func workPath(graph issueGraph) (path map[graphEdge]bool, startNow map[string]bo
 			return
 		}
 		seen[issue] = true
-		if open[issue].Available {
+		if open[issue].Available && issue != graph.Focus {
 			startNow[issue] = true
 		}
 		for _, edge := range waitsOn[issue] {
@@ -341,11 +376,6 @@ func workPath(graph issueGraph) (path map[graphEdge]bool, startNow map[string]bo
 		walk(graph.Focus)
 	}
 	return path, startNow
-}
-
-// attached tells whether an arrow leaves or enters the focus issue.
-func attached(graph issueGraph, r route) bool {
-	return r.edge.From == graph.Focus || r.edge.To == graph.Focus
 }
 
 // issueStyle is the border of an issue box: double for the focus issue, heavy for an available
@@ -366,69 +396,65 @@ func issueStyle(graph issueGraph, node graphNode) boxStyle {
 	return lightBox
 }
 
-func textWidth(s string) int {
-	var c canvas
-	return c.text(0, 0, s)
+// The legend entry of each issue box style, in legend order. The focus has its own entry.
+var styleLegend = []struct {
+	style boxStyle
+	entry string
+}{
+	{heavyBox, "┏━┓ available (ready to start)"},
+	{dashedBox, "┌╌┐ linked indirectly"},
+	{heavyDashedBox, "┏╍┓ available, linked indirectly"},
 }
 
 // drawGraph renders the graph as boxes and arrows for the terminal, followed by a legend. With
 // color, the focus issue and the arrows that leave or enter it are bright, and the rest is dim.
-func drawGraph(graph issueGraph, color bool) (string, error) {
+func drawGraph(graph issueGraph, color bool) string {
+	lk := lookOf(graph)
 	l := layOut(graph)
 	routes, position := routeEdges(l, graph)
-	drawing := render(graph, l, routes, position, color)
+	drawing := render(graph, lk, l, routes, position, color)
 
+	used := map[boxStyle]bool{}
+	for _, style := range lk.style {
+		used[style] = true
+	}
 	legend := "╔═╗ " + graph.Focus
 	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Available && node.Name == graph.Focus }) {
 		legend += " (available)"
 	}
-	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Available && !node.Indirect && node.Name != graph.Focus }) {
-		legend += "   ┏━┓ available (ready to start)"
-	}
-	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Indirect && !node.Available }) {
-		legend += "   ┌╌┐ linked indirectly"
-	}
-	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Indirect && node.Available }) {
-		legend += "   ┏╍┓ available, linked indirectly"
+	for _, entry := range styleLegend {
+		if used[entry.style] {
+			legend += "   " + entry.entry
+		}
 	}
 	if len(graph.Edges) > 0 {
 		legend += "   ──► sub-issue   ┄┄► needed by"
 	}
-	path, startNow := workPath(graph)
-	delete(startNow, graph.Focus)
-	if len(path) > 0 {
+	if len(lk.path) > 0 {
 		legend += "   ━━► work path"
 	}
-	if len(startNow) > 0 {
-		legend += "\nstart now: " + strings.Join(slices.Sorted(maps.Keys(startNow)), ", ")
+	if len(lk.startNow) > 0 {
+		legend += "\nstart now: " + strings.Join(slices.Sorted(maps.Keys(lk.startNow)), ", ")
 	}
 	if color {
-		legend += stateKey(graph)
+		legend += stateKey(graph, lk)
 	}
 	if note := hiddenNote(graph); note != "" {
 		legend += "\n" + note
 	}
-	return strings.TrimRight(drawing, "\n") + "\n\n" + legend + "\n", nil
+	return drawing + "\n\n" + legend + "\n"
 }
 
 // stateKey is a line of the legend that names each state color of the drawing, in its color.
-func stateKey(graph issueGraph) string {
-	used := map[string]bool{}
-	for _, node := range graph.Nodes {
-		if c := issueColor(graph, node); c != "" && c != strongColor {
-			used[c] = true
-		}
+func stateKey(graph issueGraph, lk look) string {
+	used := map[pen]bool{}
+	for _, p := range lk.text {
+		used[p] = true
 	}
 	var key []string
-	for _, state := range []struct{ color, name string }{
-		{openColor, "open"},
-		{inProgressColor, "in-progress"},
-		{completedColor, "completed"},
-		{abandonedColor, "abandoned"},
-		{missingColor, "missing"},
-	} {
-		if used[state.color] {
-			key = append(key, state.color+state.name+resetColor)
+	for _, state := range stateColors {
+		if used[state.pen] {
+			key = append(key, palette[state.pen]+state.name+resetColor)
 		}
 	}
 	if len(key) == 0 {
