@@ -241,14 +241,16 @@ func slugCommand(findRoot func() (string, error)) *cobra.Command {
 		Short: "Print a valid issue name, made from text, that no file in the repo has.",
 		Long: "Print a valid issue name, made from text such as a GitHub issue title, that no Markdown file " +
 			"in the repo has. It does not create anything.\n\n" +
-			"1. Lowercase the text. Each run of ASCII letters and digits is a word. Every other character " +
-			"separates words and is dropped, so \"café\" gives the words \"caf\" and nothing else.\n" +
-			"2. Keep the first 6 words and drop the rest. Text with fewer than 2 words is an error.\n" +
-			"3. Join the words with hyphens.\n" +
-			"4. If a Markdown file in the repo has that name, ignoring case, add -2, -3, and so on until no " +
+			"1. Lowercase the text and spell its letters in ASCII: \"é\" becomes \"e\", \"ß\" becomes \"ss\", " +
+			"and \"æ\" becomes \"ae\". The name is always ASCII.\n" +
+			"2. Each run of ASCII letters and digits is a word. Every other character, for example a " +
+			"Cyrillic letter or an emoji, separates words and is dropped.\n" +
+			"3. Drop the filler words " + fillerWordList() + ", unless fewer than 2 words would remain.\n" +
+			"4. Keep the first 6 words and drop the rest. Text with fewer than 2 words is an error.\n" +
+			"5. Join the words with hyphens.\n" +
+			"6. If a Markdown file in the repo has that name, ignoring case, add -2, -3, and so on until no " +
 			"file has it. A 6-word name drops its last word to make room for the number.\n\n" +
-			"Example: \"Build the issue index once per command\" gives build-the-issue-index-once-per. " +
-			"Choose the name yourself when the first 6 words do not describe the issue.",
+			"Example: \"Build the issue index once per command\" gives build-issue-index-once-per-command.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := findRoot()

@@ -69,9 +69,10 @@ func registerTools(server *mcp.Server) {
 	}, dependsOnHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "sisyphus_slug",
-		Description: "Turn text, for example a title, into a valid sisyphus issue name that no file in the repo has: " +
-			"the first 6 runs of ASCII letters and digits, lowercased and joined with hyphens, plus -2, -3, and so on " +
-			"if the name is taken. Every other character is dropped. Fewer than 2 words is an error.",
+		Description: "Turn text, for example a title, into a valid ASCII sisyphus issue name that no file in the repo has. " +
+			"Letters are spelled in ASCII (é becomes e), other characters separate words, filler words such as " +
+			"'the' and 'of' are dropped, the first 6 words stay, and -2, -3, and so on is added if the name is " +
+			"taken. Fewer than 2 words is an error.",
 	}, slugHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_resolve",

@@ -187,8 +187,8 @@ func TestToolsSlugResolveLinks(t *testing.T) {
 	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
 
 	slug := callTool(t, session, "sisyphus_slug", map[string]any{"dir": dir, "text": "Fix the login bug"})
-	if strings.TrimSpace(slug) != "fix-the-login-bug" {
-		t.Errorf("want fix-the-login-bug, got %q", slug)
+	if strings.TrimSpace(slug) != "fix-login-bug" {
+		t.Errorf("want fix-login-bug, got %q", slug)
 	}
 
 	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-the-login-bug"})

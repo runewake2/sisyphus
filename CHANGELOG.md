@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.20]] - 2026-10-08
+- `sisyphus slug` spells letters in ASCII (é becomes e), drops filler words before it keeps 6 words,
+  and always prints ASCII.
+
 ## [[0.0.19]] - 2026-10-08
 - Read the state directories once per command and parse each issue at most once; link-following
   commands run hundreds of times faster on a repo with thousands of issues.

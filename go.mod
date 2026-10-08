@@ -6,6 +6,7 @@ require (
 	github.com/AlexanderGrooff/mermaid-ascii v0.0.0-20260908213847-5f00e3d9ac9f
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/spf13/cobra v1.10.2
+	golang.org/x/text v0.15.0
 )
 
 require (

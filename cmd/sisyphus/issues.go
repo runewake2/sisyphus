@@ -14,6 +14,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 var (
@@ -574,10 +576,52 @@ func markdownNames(root string) map[string][]string {
 
 var slugWordPattern = regexp.MustCompile(`[a-z0-9]+`)
 
-// slugify turns text into a kebab-case name of 2-6 words, the shape namePattern requires, for
-// example "Fix the login bug!" -> "fix-the-login-bug".
+// asciiSpellings covers the Latin letters that Unicode does not decompose into a base letter and a mark.
+var asciiSpellings = strings.NewReplacer(
+	"ß", "ss", "æ", "ae", "œ", "oe", "ø", "o", "ł", "l", "đ", "d", "ð", "d", "þ", "th",
+	"ı", "i", "ħ", "h", "ŋ", "ng", "ŧ", "t",
+)
+
+// fillerWords add no meaning to an issue name. slugify drops them before it keeps 6 words, so that
+// the 6 words carry the meaning of a long title.
+var fillerWords = map[string]bool{
+	"a": true, "an": true, "the": true, "and": true, "or": true, "of": true, "to": true,
+	"in": true, "on": true, "at": true, "by": true, "for": true, "with": true, "from": true,
+	"into": true, "is": true, "are": true, "was": true, "were": true, "be": true,
+}
+
+// fillerWordList is fillerWords in sorted order, for help text.
+func fillerWordList() string {
+	words := make([]string, 0, len(fillerWords))
+	for w := range fillerWords {
+		words = append(words, w)
+	}
+	slices.Sort(words)
+	return strings.Join(words, ", ")
+}
+
+// toASCII lowercases text and spells its letters in ASCII where it can: accents go, and
+// asciiSpellings covers letters with no decomposition. A character with no ASCII form stays, and
+// slugWordPattern then treats it as a separator.
+func toASCII(text string) string {
+	// NFKD can produce capitals, for example "™" -> "TM", so lowercase again after it.
+	decomposed := strings.ToLower(norm.NFKD.String(asciiSpellings.Replace(strings.ToLower(text))))
+	return strings.Map(func(r rune) rune {
+		if unicode.Is(unicode.Mn, r) {
+			return -1
+		}
+		return r
+	}, decomposed)
+}
+
+// slugify turns text into a kebab-case ASCII name of 2-6 words, the shape namePattern requires, for
+// example "Fix the naïve parser!" -> "fix-naive-parser". Filler words drop first, unless fewer than
+// 2 words would remain.
 func slugify(text string) (string, error) {
-	words := slugWordPattern.FindAllString(strings.ToLower(text), -1)
+	words := slugWordPattern.FindAllString(toASCII(text), -1)
+	if meaningful := slices.DeleteFunc(slices.Clone(words), func(w string) bool { return fillerWords[w] }); len(meaningful) >= 2 {
+		words = meaningful
+	}
 	if len(words) > 6 {
 		words = words[:6]
 	}
