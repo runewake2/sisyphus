@@ -22,11 +22,12 @@ type issueGraph struct {
 // no dependency or sub-issue left open, so work on it can start now. Indirect is true for an issue
 // that only --full draws: it is linked to the focus, but is not below it or on its path above it.
 type graphNode struct {
-	Name      string `json:"name"`
-	Title     string `json:"title"`
-	State     string `json:"state"`
-	Available bool   `json:"available,omitempty"`
-	Indirect  bool   `json:"indirect,omitempty"`
+	Name       string `json:"name"`
+	Title      string `json:"title"`
+	State      string `json:"state"`
+	Available  bool   `json:"available,omitempty"`
+	Resolution string `json:"resolution,omitempty"`
+	Indirect   bool   `json:"indirect,omitempty"`
 }
 
 // graphEdge points from the issue that comes first to the one that comes after: kind "parent" from
@@ -51,7 +52,7 @@ func buildGraph(x *issueIndex, name string, full bool) issueGraph {
 	var edges []graphEdge
 	for _, m := range matchingIssues(x, listOptions{states: states}) {
 		issue := m.name
-		all[issue] = graphNode{Name: issue, Title: m.doc.get("title"), State: m.doc.get("state")}
+		all[issue] = graphNode{Name: issue, Title: m.doc.get("title"), State: m.doc.get("state"), Resolution: m.doc.get("resolution")}
 		if parent := x.canonical(m.doc.get("parent")); parent != "" {
 			edges = append(edges, graphEdge{From: parent, To: issue, Kind: parentEdge})
 		}

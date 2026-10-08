@@ -208,7 +208,7 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int, 
 	for _, p := range l.issues {
 		p.x = columnX[p.column]
 		width := l.columnWidth[p.column]
-		c.strong = p.node.Name == graph.Focus
+		c.pen = issueColor(graph, p.node)
 		c.box(p.x, p.y, p.x+width-1, p.y+boxHeight-1, issueStyle(graph, p.node))
 		c.text(p.x+1+(width-2-textWidth(p.name))/2, p.y+1, p.name)
 		c.text(p.x+1+(width-2-textWidth(p.node.State))/2, p.y+2, p.node.State)
@@ -228,15 +228,50 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int, 
 		}
 		points = append(points, end)
 		points = slices.CompactFunc(points, func(p, q [2]int) bool { return p == q })
-		c.strong = attached(graph, r)
+		c.pen = ""
+		if attached(graph, r) {
+			c.pen = strongColor
+		}
 		c.path(r.edge.Kind == dependsOnEdge, points...)
 	}
 	for _, r := range routes {
-		c.strong = attached(graph, r)
+		c.pen = ""
+		if attached(graph, r) {
+			c.pen = strongColor
+		}
 		c.text(r.to.x-1, r.to.mid(), "►")
 	}
-	c.strong = false
+	c.pen = ""
 	return c.render(color)
+}
+
+// issueColor is the color of an issue box: strongColor for the focus issue, a color for the state
+// of an issue that an arrow links directly to the focus, and no color for the rest.
+func issueColor(graph issueGraph, node graphNode) string {
+	if node.Name == graph.Focus {
+		return strongColor
+	}
+	if !slices.ContainsFunc(graph.Edges, func(e graphEdge) bool {
+		return e.From == graph.Focus && e.To == node.Name || e.To == graph.Focus && e.From == node.Name
+	}) {
+		return ""
+	}
+	return stateColor(node)
+}
+
+// stateColor is the color of an issue's state. A closed issue with no resolution is completed.
+func stateColor(node graphNode) string {
+	switch {
+	case node.State == "open":
+		return openColor
+	case node.State == "in-progress":
+		return inProgressColor
+	case node.State == "closed" && node.Resolution == "abandoned":
+		return abandonedColor
+	case node.State == "closed":
+		return completedColor
+	}
+	return missingColor
 }
 
 // attached tells whether an arrow leaves or enters the focus issue.
@@ -290,8 +325,37 @@ func drawGraph(graph issueGraph, color bool) (string, error) {
 	if len(graph.Edges) > 0 {
 		legend += "   ──► sub-issue   ┄┄► needed by"
 	}
+	if color {
+		legend += stateKey(graph)
+	}
 	if note := hiddenNote(graph); note != "" {
 		legend += "\n" + note
 	}
 	return strings.TrimRight(drawing, "\n") + "\n\n" + legend + "\n", nil
+}
+
+// stateKey is a line of the legend that names each state color of the drawing, in its color.
+func stateKey(graph issueGraph) string {
+	used := map[string]bool{}
+	for _, node := range graph.Nodes {
+		if c := issueColor(graph, node); c != "" && c != strongColor {
+			used[c] = true
+		}
+	}
+	var key []string
+	for _, state := range []struct{ color, name string }{
+		{openColor, "open"},
+		{inProgressColor, "in-progress"},
+		{completedColor, "completed"},
+		{abandonedColor, "abandoned"},
+		{missingColor, "missing"},
+	} {
+		if used[state.color] {
+			key = append(key, state.color+state.name+resetColor)
+		}
+	}
+	if len(key) == 0 {
+		return ""
+	}
+	return "\nlinked to " + graph.Focus + ": " + strings.Join(key, "   ")
 }

@@ -72,22 +72,29 @@ type cell struct {
 	text         rune
 	continuation bool
 	style        boxStyle
-	strong       bool
+	color        string
 }
 
-// canvas is a grid of cells that grows when something is drawn outside it. While strong is set,
-// each cell that is drawn is strong, and stays strong when a weak drawing crosses it.
+// canvas is a grid of cells that grows when something is drawn outside it. While pen is set, each
+// cell that is drawn takes the pen's color. A drawing with no pen leaves a cell's color as it is,
+// so a gray line that crosses a colored one does not hide it.
 type canvas struct {
-	cells  [][]cell
-	strong bool
+	cells [][]cell
+	pen   string
 }
 
 // The ANSI colors of a colored drawing. Each line resets at its end, so a line that is cut or
 // pasted alone does not color what follows it.
 const (
 	strongColor = "\x1b[1;96m"
-	weakColor   = "\x1b[90m"
-	resetColor  = "\x1b[0m"
+	// The colors of the issues that the focus issue links directly, by state.
+	openColor       = "\x1b[1;94m"
+	inProgressColor = "\x1b[1;93m"
+	completedColor  = "\x1b[1;92m"
+	abandonedColor  = "\x1b[1;91m"
+	missingColor    = "\x1b[1;97m"
+	weakColor       = "\x1b[90m"
+	resetColor      = "\x1b[0m"
 )
 
 func (c *canvas) at(x, y int) *cell {
@@ -98,7 +105,9 @@ func (c *canvas) at(x, y int) *cell {
 		c.cells[y] = append(c.cells[y], cell{})
 	}
 	cl := &c.cells[y][x]
-	cl.strong = cl.strong || c.strong
+	if c.pen != "" {
+		cl.color = c.pen
+	}
 	return cl
 }
 
@@ -190,8 +199,7 @@ func (cl cell) rune() rune {
 	return lineRunes[cl.lines]
 }
 
-// render writes the canvas as text. With color, strong cells have strongColor and the rest
-// weakColor.
+// render writes the canvas as text. With color, each cell has its own color or weakColor.
 func (c *canvas) render(color bool) string {
 	var lines []string
 	for _, row := range c.cells {
@@ -207,9 +215,9 @@ func (c *canvas) render(color bool) string {
 			}
 			r := cl.rune()
 			if color && r != ' ' {
-				want := weakColor
-				if cl.strong {
-					want = strongColor
+				want := cl.color
+				if want == "" {
+					want = weakColor
 				}
 				if want != current {
 					if current != "" {

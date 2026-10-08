@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.27]] - 2026-10-08
+- Color each issue linked directly to `<name>` in a colored `sisyphus graph` by its state.
+
 ## [[0.0.26]] - 2026-10-08
 - Color `<name>` and its arrows bold in `sisyphus graph` on a terminal, and the rest gray, as an
   experiment; `--color auto|always|never` decides.

@@ -526,10 +526,10 @@ func TestGraphMarksIndirectIssuesOnlyWithFull(t *testing.T) {
 	contains(t, res.output, "    classDef indirect stroke-dasharray:5 3\n")
 }
 
-// coloredCell is one character of a colored drawing, and whether it has strongColor.
+// coloredCell is one character of a colored drawing, and its color, or "" for none.
 type coloredCell struct {
-	r      rune
-	strong bool
+	r     rune
+	color string
 }
 
 // decodeColors splits a colored drawing into lines of characters, and checks that each colored
@@ -542,28 +542,28 @@ func decodeColors(t *testing.T, output string) [][]coloredCell {
 			isTrue(t, strings.HasSuffix(line, resetColor), "a colored line resets at its end")
 		}
 		var cells []coloredCell
-		strong := false
+		color := ""
 		for len(line) > 0 {
-			switch {
-			case strings.HasPrefix(line, strongColor):
-				strong, line = true, line[len(strongColor):]
-			case strings.HasPrefix(line, weakColor):
-				strong, line = false, line[len(weakColor):]
-			case strings.HasPrefix(line, resetColor):
-				strong, line = false, line[len(resetColor):]
-			default:
-				r, size := utf8.DecodeRuneInString(line)
-				cells = append(cells, coloredCell{r: r, strong: strong})
-				line = line[size:]
+			if strings.HasPrefix(line, "\x1b[") {
+				end := strings.IndexByte(line, 'm') + 1
+				color = line[:end]
+				if color == resetColor {
+					color = ""
+				}
+				line = line[end:]
+				continue
 			}
+			r, size := utf8.DecodeRuneInString(line)
+			cells = append(cells, coloredCell{r: r, color: color})
+			line = line[size:]
 		}
 		lines = append(lines, cells)
 	}
 	return lines
 }
 
-// strength finds text in the drawing and tells whether all of it is strong, or none of it.
-func strength(t *testing.T, lines [][]coloredCell, text string) (all, none bool) {
+// colorOf finds text in the drawing and returns its color, or "mixed" if its characters differ.
+func colorOf(t *testing.T, lines [][]coloredCell, text string) string {
 	t.Helper()
 	want := []rune(text)
 	for _, line := range lines {
@@ -578,16 +578,17 @@ func strength(t *testing.T, lines [][]coloredCell, text string) (all, none bool)
 			if !match {
 				continue
 			}
-			all, none = true, true
+			color := line[x].color
 			for i := range want {
-				all = all && line[x+i].strong
-				none = none && !line[x+i].strong
+				if line[x+i].color != color {
+					return "mixed"
+				}
 			}
-			return all, none
+			return color
 		}
 	}
 	t.Fatalf("no %q in the drawing", text)
-	return false, false
+	return ""
 }
 
 func TestGraphColorsTheFocusAndItsArrows(t *testing.T) {
@@ -597,18 +598,40 @@ func TestGraphColorsTheFocusAndItsArrows(t *testing.T) {
 
 	equal(t, 0, res.exit)
 	lines := decodeColors(t, res.output)
-	all, _ := strength(t, lines, "║sub-a-test╟")
-	isTrue(t, all, "the focus box is strong")
-	all, _ = strength(t, lines, "─►║sub-a-test")
-	isTrue(t, all, "the arrow into the focus is strong")
-	all, _ = strength(t, lines, "╟─┬─►")
-	isTrue(t, all, "the arrows out of the focus are strong")
-	for _, weak := range []string{"epic-root-test", "sub-a-child-test", "sub-b-test", "┌──────────────┐"} {
-		_, none := strength(t, lines, weak)
-		isTrue(t, none, weak+" is weak")
+	equal(t, strongColor, colorOf(t, lines, "║sub-a-test╟"))
+	equal(t, strongColor, colorOf(t, lines, "─►"))
+	equal(t, strongColor, colorOf(t, lines, "╟─┬─►"))
+	equal(t, "", colorOf(t, lines, "╗ sub-a-test   ┏━┓ available"))
+}
+
+func TestGraphColorsTheLinkedIssuesByState(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "far-test")
+	r.mustRun("new", "open-test", "--depends-on", "far-test")
+	r.mustRun("new", "working-test", "--state", "in-progress")
+	r.mustRun("new", "done-test", "--state", "closed", "--resolution", "completed")
+	r.mustRun("new", "dropped-test", "--state", "closed", "--resolution", "abandoned")
+	r.mustRun("new", "focus-test", "--depends-on", "open-test")
+	for _, dependency := range []string{"working-test", "done-test", "dropped-test"} {
+		r.mustRun("depends-on", "focus-test", dependency)
 	}
-	_, none := strength(t, lines, "╗ sub-a-test   ┏━┓ available")
-	isTrue(t, none, "the legend has no color")
+
+	res := r.run("graph", "--color", "always", "focus-test")
+
+	equal(t, 0, res.exit)
+	lines := decodeColors(t, res.output)
+	equal(t, strongColor, colorOf(t, lines, "focus-test"))
+	equal(t, openColor, colorOf(t, lines, "open-test"))
+	equal(t, inProgressColor, colorOf(t, lines, "working-test"))
+	equal(t, inProgressColor, colorOf(t, lines, "in-progress"))
+	equal(t, completedColor, colorOf(t, lines, "done-test"))
+	equal(t, abandonedColor, colorOf(t, lines, "dropped-test"))
+	equal(t, weakColor, colorOf(t, lines, "far-test"))
+	contains(t, res.output, "linked to focus-test: "+openColor+"open"+resetColor+"   "+inProgressColor+"in-progress"+resetColor+"   "+
+		completedColor+"completed"+resetColor+"   "+abandonedColor+"abandoned"+resetColor)
+
+	plain := r.run("graph", "focus-test")
+	isTrue(t, !strings.Contains(plain.output, "linked to"), "the state key is only for a colored drawing")
 }
 
 func TestGraphHasNoColorUnlessAsked(t *testing.T) {
