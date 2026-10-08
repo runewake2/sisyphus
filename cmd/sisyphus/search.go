@@ -31,7 +31,7 @@ func searchIssues(root string, o searchOptions) []searchRow {
 	query := strings.ToLower(o.query)
 
 	rows := []searchRow{}
-	for _, m := range matchingIssues(root, o.filters) {
+	for _, m := range matchingIssues(loadIndex(root), o.filters) {
 		var haystack, content string
 		if o.section != "" {
 			section, ok := sectionIn(m.doc.body, o.section)

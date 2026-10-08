@@ -273,7 +273,7 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			name, _, doc, err := loadIssue(root, args[0])
+			name, _, doc, err := loadIndex(root).load(args[0])
 			if err != nil {
 				return err
 			}
@@ -310,11 +310,12 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			issue, err := findIssue(root, issueName(args[0]))
+			x := loadIndex(root)
+			issue, err := x.find(issueName(args[0]))
 			if err != nil {
 				return err
 			}
-			graph := buildGraph(root, issue.name, full)
+			graph := buildGraph(x, issue.name, full)
 			switch {
 			case asJSON:
 				encoder := json.NewEncoder(cmd.OutOrStdout())

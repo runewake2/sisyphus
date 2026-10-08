@@ -33,6 +33,9 @@ func parseDocument(content string) (*document, error) {
 }
 
 func loadDocument(path string) (*document, error) {
+	if traceRead != nil {
+		traceRead(path)
+	}
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

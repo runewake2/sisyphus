@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.19]] - 2026-10-08
+- Read the state directories once per command and parse each issue at most once; link-following
+  commands run hundreds of times faster on a repo with thousands of issues.
+
 ## [[0.0.18]] - 2026-10-08
 - Let issues sit in subdirectories below the state directories, found by their full name or by their
   file name; an ambiguous file name fails and lists the full names.

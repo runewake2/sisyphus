@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"net/url"
 	"os"
 	"os/exec"
@@ -69,6 +68,7 @@ func baseName(name string) string {
 }
 
 func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
+	x := loadIndex(root)
 	if !validName(o.name) {
 		return "", fmt.Errorf("Invalid issue name '%s'. Use 2-6 lowercase words in kebab-case, for example fix-login-bug, optionally below kebab-case directories, for example web/auth/fix-login-bug.", o.name)
 	}
@@ -77,7 +77,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 		return "", err
 	}
 
-	if existing := exactIssues(root, o.name); len(existing) > 0 {
+	if existing := x.exact[o.name]; len(existing) > 0 {
 		return "", fmt.Errorf("Issue '%s' already exists: %s.", o.name, relative(root, existing[0].path))
 	}
 	if clashes := nameClashes(root, baseName(o.name)); len(clashes) > 0 {
@@ -91,7 +91,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 
 	parentValue := ""
 	if o.parent != nil {
-		value, err := parentValueFor(root, *o.parent, o.name, warnings)
+		value, err := parentValueFor(x, *o.parent, o.name, warnings)
 		if err != nil {
 			return "", err
 		}
@@ -99,7 +99,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	}
 	var dependsOnValue []string
 	if o.dependsOn != nil {
-		value, err := dependsOnValueFor(root, *o.dependsOn, o.name, warnings)
+		value, err := dependsOnValueFor(x, *o.dependsOn, o.name, warnings)
 		if err != nil {
 			return "", err
 		}
@@ -120,7 +120,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	}
 	deferred := ""
 	if o.deferredFrom != nil {
-		value, err := deferredValue(root, *o.deferredFrom)
+		value, err := deferredValue(x, *o.deferredFrom)
 		if err != nil {
 			return "", err
 		}
@@ -192,7 +192,8 @@ type updateOptions struct {
 }
 
 func updateIssue(root, reference, state string, o updateOptions, warnings io.Writer) (string, error) {
-	name, current, doc, err := loadIssue(root, reference)
+	x := loadIndex(root)
+	name, current, doc, err := x.load(reference)
 	if err != nil {
 		return "", err
 	}
@@ -252,7 +253,7 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	}
 	if state == "closed" {
 		var open []string
-		for _, sub := range subIssues(root, name) {
+		for _, sub := range subIssues(x, name) {
 			if sub.state != "closed" {
 				open = append(open, sub.name)
 			}
@@ -261,7 +262,7 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 			warn(warnings, fmt.Sprintf("Issue '%s' has sub-issues that are not closed: %s.", name, strings.Join(open, ", ")))
 		}
 		var blocked []string
-		for _, dep := range dependents(root, name) {
+		for _, dep := range dependents(x, name) {
 			if dep.state != "closed" {
 				blocked = append(blocked, dep.name)
 			}
@@ -279,13 +280,14 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 }
 
 func setParent(root, reference string, parent *string, warnings io.Writer) (string, error) {
-	name, issue, doc, err := loadIssue(root, reference)
+	x := loadIndex(root)
+	name, issue, doc, err := x.load(reference)
 	if err != nil {
 		return "", err
 	}
 	value := ""
 	if parent != nil {
-		if value, err = parentValueFor(root, *parent, name, warnings); err != nil {
+		if value, err = parentValueFor(x, *parent, name, warnings); err != nil {
 			return "", err
 		}
 	}
@@ -297,7 +299,8 @@ func setParent(root, reference string, parent *string, warnings io.Writer) (stri
 }
 
 func setRemote(root, reference string, remote *string, warnings io.Writer) (string, error) {
-	_, issue, doc, err := loadIssue(root, reference)
+	x := loadIndex(root)
+	_, issue, doc, err := x.load(reference)
 	if err != nil {
 		return "", err
 	}
@@ -335,11 +338,11 @@ func applyState(doc *document, state, resolution string) {
 	doc.set("closed", closed)
 }
 
-func parentValueFor(root, reference, child string, warnings io.Writer) (string, error) {
+func parentValueFor(x *issueIndex, reference, child string, warnings io.Writer) (string, error) {
 	if issueName(reference) == "" {
 		return "", fmt.Errorf("'%s' does not name an issue.", reference)
 	}
-	match, found, err := matchIssue(root, issueName(reference))
+	match, found, err := x.match(issueName(reference))
 	if err != nil {
 		return "", err
 	}
@@ -355,7 +358,7 @@ func parentValueFor(root, reference, child string, warnings io.Writer) (string, 
 	}
 
 	seen := map[string]bool{parent: true}
-	for ancestor := parentName(root, parent); ancestor != "" && !seen[ancestor]; ancestor = parentName(root, ancestor) {
+	for ancestor := parentName(x, parent); ancestor != "" && !seen[ancestor]; ancestor = parentName(x, ancestor) {
 		if ancestor == child {
 			return "", fmt.Errorf("Issue '%s' is already below '%s'. A parent of '%s' cannot be one of its sub-issues.", parent, child, child)
 		}
@@ -365,16 +368,16 @@ func parentValueFor(root, reference, child string, warnings io.Writer) (string, 
 }
 
 // parentName returns the full name of the parent of the issue name, or "" when it has none.
-func parentName(root, name string) string {
-	match, found, err := matchIssue(root, name)
+func parentName(x *issueIndex, name string) string {
+	match, found, err := x.match(name)
 	if err != nil || !found {
 		return ""
 	}
-	doc, err := loadDocument(match.path)
+	doc, err := x.document(match)
 	if err != nil {
 		return ""
 	}
-	return canonicalName(root, doc.get("parent"))
+	return x.canonical(doc.get("parent"))
 }
 
 type subIssue struct {
@@ -382,11 +385,11 @@ type subIssue struct {
 	state string
 }
 
-func subIssues(root, name string) []subIssue {
+func subIssues(x *issueIndex, name string) []subIssue {
 	var result []subIssue
-	for _, issue := range allIssues(root) {
-		doc, err := loadDocument(issue.path)
-		if err != nil || canonicalName(root, doc.get("parent")) != name {
+	for _, issue := range x.issues {
+		doc, err := x.document(issue)
+		if err != nil || x.canonical(doc.get("parent")) != name {
 			continue
 		}
 		result = append(result, subIssue{name: issue.name, state: issue.state})
@@ -447,7 +450,8 @@ func formatMetadata(m map[string]string) string {
 }
 
 func setDependsOn(root, reference string, blocking *string, clear bool, warnings io.Writer) (string, error) {
-	name, issue, doc, err := loadIssue(root, reference)
+	x := loadIndex(root)
+	name, issue, doc, err := x.load(reference)
 	if err != nil {
 		return "", err
 	}
@@ -456,10 +460,10 @@ func setDependsOn(root, reference string, blocking *string, clear bool, warnings
 	case blocking == nil: // clear is guaranteed true by the caller: clear every dependency
 		current = nil
 	case clear:
-		target := canonicalName(root, *blocking)
-		current = slices.DeleteFunc(current, func(n string) bool { return canonicalName(root, n) == target })
+		target := x.canonical(*blocking)
+		current = slices.DeleteFunc(current, func(n string) bool { return x.canonical(n) == target })
 	default:
-		added, err := dependsOnValueFor(root, *blocking, name, warnings)
+		added, err := dependsOnValueFor(x, *blocking, name, warnings)
 		if err != nil {
 			return "", err
 		}
@@ -477,11 +481,11 @@ func setDependsOn(root, reference string, blocking *string, clear bool, warnings
 // dependsOnValueFor validates that child can depend on reference: it must name an existing issue,
 // not be child itself, and not already (directly or transitively) depend on child, which would form
 // a cycle.
-func dependsOnValueFor(root, reference, child string, warnings io.Writer) (string, error) {
+func dependsOnValueFor(x *issueIndex, reference, child string, warnings io.Writer) (string, error) {
 	if issueName(reference) == "" {
 		return "", fmt.Errorf("'%s' does not name an issue.", reference)
 	}
-	match, found, err := matchIssue(root, issueName(reference))
+	match, found, err := x.match(issueName(reference))
 	if err != nil {
 		return "", err
 	}
@@ -492,7 +496,7 @@ func dependsOnValueFor(root, reference, child string, warnings io.Writer) (strin
 	if blocking == child {
 		return "", fmt.Errorf("Issue '%s' cannot depend on itself.", child)
 	}
-	if dependsOnReaches(root, blocking, child, map[string]bool{}) {
+	if dependsOnReaches(x, blocking, child, map[string]bool{}) {
 		return "", fmt.Errorf("Issue '%s' already depends on '%s'. Adding this dependency would create a cycle.", blocking, child)
 	}
 	if match.state == "closed" {
@@ -502,7 +506,7 @@ func dependsOnValueFor(root, reference, child string, warnings io.Writer) (strin
 }
 
 // dependsOnReaches reports whether target is reachable from start by following depends-on edges.
-func dependsOnReaches(root, start, target string, seen map[string]bool) bool {
+func dependsOnReaches(x *issueIndex, start, target string, seen map[string]bool) bool {
 	if start == target {
 		return true
 	}
@@ -510,16 +514,16 @@ func dependsOnReaches(root, start, target string, seen map[string]bool) bool {
 		return false
 	}
 	seen[start] = true
-	match, found, err := matchIssue(root, start)
+	match, found, err := x.match(start)
 	if err != nil || !found {
 		return false
 	}
-	doc, err := loadDocument(match.path)
+	doc, err := x.document(match)
 	if err != nil {
 		return false
 	}
 	for _, next := range parseDependsOn(doc.get("depends-on")) {
-		if dependsOnReaches(root, canonicalName(root, next), target, seen) {
+		if dependsOnReaches(x, x.canonical(next), target, seen) {
 			return true
 		}
 	}
@@ -527,14 +531,14 @@ func dependsOnReaches(root, start, target string, seen map[string]bool) bool {
 }
 
 // dependents returns every issue whose depends-on list includes name.
-func dependents(root, name string) []subIssue {
+func dependents(x *issueIndex, name string) []subIssue {
 	var result []subIssue
-	for _, issue := range allIssues(root) {
-		doc, err := loadDocument(issue.path)
+	for _, issue := range x.issues {
+		doc, err := x.document(issue)
 		if err != nil {
 			continue
 		}
-		if slices.ContainsFunc(parseDependsOn(doc.get("depends-on")), func(dep string) bool { return canonicalName(root, dep) == name }) {
+		if slices.ContainsFunc(parseDependsOn(doc.get("depends-on")), func(dep string) bool { return x.canonical(dep) == name }) {
 			result = append(result, subIssue{name: issue.name, state: issue.state})
 		}
 	}
@@ -545,96 +549,27 @@ func issuePath(root, state, name string) string {
 	return filepath.Join(root, "issues", state, filepath.FromSlash(name)+".md")
 }
 
-// allIssues returns every issue in the state directories and their subdirectories, sorted by name.
-func allIssues(root string) []issueFile {
-	var result []issueFile
-	for _, state := range states {
-		directory := filepath.Join(root, "issues", state)
-		_ = filepath.WalkDir(directory, func(path string, entry fs.DirEntry, err error) error {
-			if err != nil || entry.IsDir() || !hasSuffixFold(entry.Name(), ".md") {
-				return nil
-			}
-			result = append(result, issueFile{state: state, path: path, name: trimMarkdownExtension(relative(directory, path))})
-			return nil
-		})
-	}
-	slices.SortStableFunc(result, func(a, b issueFile) int { return strings.Compare(a.name, b.name) })
-	return result
-}
-
-// exactIssues returns the issue files whose full name is name, one for each state directory that has it.
-func exactIssues(root, name string) []issueFile {
-	var matches []issueFile
-	for _, issue := range allIssues(root) {
-		if issue.name == name {
-			matches = append(matches, issue)
-		}
-	}
-	return matches
-}
-
-// issueMatches returns the issue files that name gives. A full name gives its own issue, even when
-// it is also the end of a longer name. Otherwise name gives every issue whose full name ends with
-// it, so that a bare file name gives the issue in any subdirectory.
-func issueMatches(root, name string) []issueFile {
-	if exact := exactIssues(root, name); len(exact) > 0 {
-		return exact
-	}
-	var matches []issueFile
-	for _, issue := range allIssues(root) {
-		if strings.HasSuffix(issue.name, "/"+name) {
-			matches = append(matches, issue)
-		}
-	}
-	return matches
-}
-
-// matchIssue finds the one issue that name gives. found is false when no issue matches. A name
-// that gives more than one issue, or one issue in more than one state directory, is an error.
-func matchIssue(root, name string) (issueFile, bool, error) {
-	matches := issueMatches(root, name)
-	if len(matches) == 0 {
-		return issueFile{}, false, nil
-	}
-	var names, paths []string
-	for _, m := range matches {
-		if !slices.Contains(names, m.name) {
-			names = append(names, m.name)
-		}
-		paths = append(paths, relative(root, m.path))
-	}
-	if len(names) > 1 {
-		return issueFile{}, false, fmt.Errorf("'%s' matches more than one issue: %s. Use the full name, for example %s.", name, strings.Join(names, ", "), names[0])
-	}
-	if len(matches) > 1 {
-		return issueFile{}, false, fmt.Errorf("Issue '%s' exists in more than one state directory: %s. Remove the duplicate.", names[0], strings.Join(paths, ", "))
-	}
-	return matches[0], true, nil
-}
-
-// canonicalName returns the full name of the one issue that reference gives. If no single issue
-// matches, it returns the name in reference unchanged.
-func canonicalName(root, reference string) string {
-	name := issueName(reference)
-	if match, found, err := matchIssue(root, name); err == nil && found {
-		return match.name
-	}
-	return name
-}
-
 // nameClashes returns every Markdown file in the repo (sorted, relative to root) whose name without
-// ".md" equals name, case-insensitively. An issue name must be unique across all of them, not just
-// among other issues.
+// ".md" equals name, case-insensitively. A link to that bare name is ambiguous.
 func nameClashes(root, name string) []string {
-	var clashes []string
+	return markdownNames(root)[strings.ToLower(name)]
+}
+
+// markdownNames reads the repo once and maps each Markdown file name, without ".md" and in lower
+// case, to the sorted paths of the files that have it, relative to root.
+func markdownNames(root string) map[string][]string {
+	names := map[string][]string{}
 	for _, file := range repoFiles(root) {
 		base := filepath.Base(file)
-		if hasSuffixFold(base, ".md") && strings.EqualFold(trimMarkdownExtension(base), name) {
-			clashes = append(clashes, relative(root, file))
+		if hasSuffixFold(base, ".md") {
+			key := strings.ToLower(trimMarkdownExtension(base))
+			names[key] = append(names[key], relative(root, file))
 		}
 	}
-	slices.Sort(clashes)
-	return clashes
+	for _, paths := range names {
+		slices.Sort(paths)
+	}
+	return names
 }
 
 var slugWordPattern = regexp.MustCompile(`[a-z0-9]+`)
@@ -660,7 +595,8 @@ func uniqueSlug(root, text string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if len(nameClashes(root, base)) == 0 {
+	names := markdownNames(root)
+	if len(names[base]) == 0 {
 		return base, nil
 	}
 	words := strings.Split(base, "-")
@@ -670,31 +606,10 @@ func uniqueSlug(root, text string) (string, error) {
 			suffixed = words[:5]
 		}
 		candidate := strings.Join(append(append([]string{}, suffixed...), strconv.Itoa(n)), "-")
-		if len(nameClashes(root, candidate)) == 0 {
+		if len(names[candidate]) == 0 {
 			return candidate, nil
 		}
 	}
-}
-
-func findIssue(root, name string) (issueFile, error) {
-	match, found, err := matchIssue(root, name)
-	if err != nil {
-		return issueFile{}, err
-	}
-	if !found {
-		return issueFile{}, fmt.Errorf("No issue named '%s' in %s.", name, stateDirectoryList)
-	}
-	return match, nil
-}
-
-// loadIssue finds the issue that reference gives and returns its full name, its file, and its document.
-func loadIssue(root, reference string) (string, issueFile, *document, error) {
-	issue, err := findIssue(root, issueName(reference))
-	if err != nil {
-		return "", issueFile{}, nil, err
-	}
-	doc, err := loadDocument(issue.path)
-	return issue.name, issue, doc, err
 }
 
 // saveIssue writes the document to "from" and moves it to "to", the directory of its state. It
@@ -789,12 +704,12 @@ func resolveResolution(state, resolution string) string {
 
 // deferredValue writes a deferred-from reference: an issue becomes a wikilink to its full name, and
 // any other value with "/" is a bookmark, written as it is.
-func deferredValue(root, reference string) (string, error) {
+func deferredValue(x *issueIndex, reference string) (string, error) {
 	r := strings.TrimSpace(reference)
 	if strings.HasPrefix(r, "[[") {
 		return quote(r), nil
 	}
-	match, found, err := matchIssue(root, issueName(r))
+	match, found, err := x.match(issueName(r))
 	if err != nil {
 		return "", err
 	}

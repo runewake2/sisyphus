@@ -26,9 +26,9 @@ type listOptions struct {
 }
 
 // isBlocked reports whether doc depends on any issue that is not closed.
-func isBlocked(root string, doc *document) bool {
+func isBlocked(x *issueIndex, doc *document) bool {
 	for _, dep := range parseDependsOn(doc.get("depends-on")) {
-		match, found, err := matchIssue(root, dep)
+		match, found, err := x.match(dep)
 		if err == nil && found && match.state != "closed" {
 			return true
 		}
@@ -44,22 +44,22 @@ type matchedIssue struct {
 
 // matchingIssues returns every issue matching o's frontmatter filters, unsorted. With no state
 // filter, only open and in-progress issues are matched.
-func matchingIssues(root string, o listOptions) []matchedIssue {
+func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 	stateFilter := o.states
 	if len(stateFilter) == 0 {
 		stateFilter = []string{"open", "in-progress"}
 	}
 	parentFilter := ""
 	if o.parent != "" {
-		parentFilter = canonicalName(root, o.parent)
+		parentFilter = x.canonical(o.parent)
 	}
 
 	var matches []matchedIssue
-	for _, issue := range allIssues(root) {
+	for _, issue := range x.issues {
 		if !slices.Contains(stateFilter, issue.state) {
 			continue
 		}
-		doc, err := loadDocument(issue.path)
+		doc, err := x.document(issue)
 		if err != nil {
 			continue
 		}
@@ -72,10 +72,10 @@ func matchingIssues(root string, o listOptions) []matchedIssue {
 		if o.owner != "" && doc.get("owner") != o.owner {
 			continue
 		}
-		if parentFilter != "" && canonicalName(root, doc.get("parent")) != parentFilter {
+		if parentFilter != "" && x.canonical(doc.get("parent")) != parentFilter {
 			continue
 		}
-		if o.blockedOnly && !isBlocked(root, doc) {
+		if o.blockedOnly && !isBlocked(x, doc) {
 			continue
 		}
 		matches = append(matches, matchedIssue{name: issue.name, doc: doc})
@@ -85,7 +85,7 @@ func matchingIssues(root string, o listOptions) []matchedIssue {
 
 // listIssues returns every issue that matches o, sorted by state, then priority, then name.
 func listIssues(root string, o listOptions) []listRow {
-	matches := matchingIssues(root, o)
+	matches := matchingIssues(loadIndex(root), o)
 	rows := make([]listRow, 0, len(matches))
 	for _, m := range matches {
 		rows = append(rows, listRow{

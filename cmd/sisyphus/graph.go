@@ -53,17 +53,17 @@ const (
 // ways. A link to an issue that does not exist becomes a node with state "?" and is not followed.
 // Unless full is set, only name, everything below it, and the path above it are kept, and the
 // rest are counted as hidden.
-func buildGraph(root, name string, full bool) issueGraph {
+func buildGraph(x *issueIndex, name string, full bool) issueGraph {
 	all := map[string]graphNode{}
 	var edges []graphEdge
-	for _, m := range matchingIssues(root, listOptions{states: states}) {
+	for _, m := range matchingIssues(x, listOptions{states: states}) {
 		issue := m.name
 		all[issue] = graphNode{Name: issue, Title: m.doc.get("title"), State: m.doc.get("state")}
-		if parent := canonicalName(root, m.doc.get("parent")); parent != "" {
+		if parent := x.canonical(m.doc.get("parent")); parent != "" {
 			edges = append(edges, graphEdge{From: parent, To: issue, Kind: parentEdge})
 		}
 		for _, dependency := range parseDependsOn(m.doc.get("depends-on")) {
-			edges = append(edges, graphEdge{From: canonicalName(root, dependency), To: issue, Kind: dependsOnEdge})
+			edges = append(edges, graphEdge{From: x.canonical(dependency), To: issue, Kind: dependsOnEdge})
 		}
 	}
 
