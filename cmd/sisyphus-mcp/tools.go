@@ -87,7 +87,7 @@ func registerTools(server *mcp.Server) {
 
 type newArgs struct {
 	Dir          string            `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name         string            `json:"name" jsonschema:"The issue name: 2-6 lowercase kebab-case words, for example fix-login-bug. Must be unique in the repo."`
+	Name         string            `json:"name" jsonschema:"The issue name: 2-6 lowercase kebab-case words, optionally below kebab-case directories, for example fix-login-bug or web/auth/fix-login-bug. No other issue can have the same full name."`
 	Title        string            `json:"title,omitempty" jsonschema:"The issue title. Defaults to a title made from the name."`
 	State        string            `json:"state,omitempty" jsonschema:"open, in-progress, or closed. Defaults to open."`
 	Priority     string            `json:"priority,omitempty" jsonschema:"critical, high, medium, or low. Defaults to medium."`
@@ -133,7 +133,7 @@ func newHandler(_ context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.Cal
 
 type updateArgs struct {
 	Dir        string            `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name       string            `json:"name" jsonschema:"The issue name, [[name]], #name, or a path to the issue."`
+	Name       string            `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	State      string            `json:"state" jsonschema:"The new state: open, in-progress, or closed."`
 	Resolution string            `json:"resolution,omitempty" jsonschema:"completed or abandoned. Only valid when state is closed; defaults to completed."`
 	Bookmark   string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark of the work. Set it when work starts."`
@@ -166,7 +166,7 @@ func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*m
 
 type showArgs struct {
 	Dir  string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name string `json:"name" jsonschema:"The issue name, [[name]], #name, or a path to the issue."`
+	Name string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	Text bool   `json:"text,omitempty" jsonschema:"Return the human-readable text form instead of JSON."`
 }
 
@@ -242,7 +242,7 @@ func searchHandler(_ context.Context, _ *mcp.CallToolRequest, in searchArgs) (*m
 
 type graphArgs struct {
 	Dir     string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name    string `json:"name" jsonschema:"The issue name, [[name]], #name, or a path to the issue."`
+	Name    string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	JSON    bool   `json:"json,omitempty" jsonschema:"Return the nodes and edges as JSON instead of a drawing."`
 	Mermaid bool   `json:"mermaid,omitempty" jsonschema:"Return Mermaid flowchart source instead of a drawing."`
 	Full    bool   `json:"full,omitempty" jsonschema:"Draw every linked issue, not only what is below this issue and the path above it."`
@@ -262,7 +262,7 @@ func graphHandler(_ context.Context, _ *mcp.CallToolRequest, in graphArgs) (*mcp
 
 type parentArgs struct {
 	Dir    string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name   string `json:"name" jsonschema:"The issue name, [[name]], #name, or a path to the issue."`
+	Name   string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	Parent string `json:"parent,omitempty" jsonschema:"The parent issue to set. Omit and set clear to remove the current parent instead."`
 	Clear  bool   `json:"clear,omitempty" jsonschema:"Remove the issue's current parent instead of setting a new one."`
 }
@@ -282,7 +282,7 @@ func parentHandler(_ context.Context, _ *mcp.CallToolRequest, in parentArgs) (*m
 
 type remoteArgs struct {
 	Dir   string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name  string `json:"name" jsonschema:"The issue name, [[name]], #name, or a path to the issue."`
+	Name  string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	URL   string `json:"url,omitempty" jsonschema:"The GitHub issue or Jira ticket URL to set. Omit and set clear to remove the current one instead."`
 	Clear bool   `json:"clear,omitempty" jsonschema:"Remove the issue's current remote reference instead of setting a new one."`
 }
@@ -302,7 +302,7 @@ func remoteHandler(_ context.Context, _ *mcp.CallToolRequest, in remoteArgs) (*m
 
 type dependsOnArgs struct {
 	Dir           string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name          string `json:"name" jsonschema:"The issue name, [[name]], #name, or a path to the issue."`
+	Name          string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	BlockingIssue string `json:"blockingIssue,omitempty" jsonschema:"The issue that must close first, to add or (with clear) remove. Omit with clear to remove every dependency."`
 	Clear         bool   `json:"clear,omitempty" jsonschema:"Remove blockingIssue (if given) or every dependency (if not) instead of adding one."`
 }

@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"fmt"
 	"maps"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -58,13 +57,13 @@ func buildGraph(root, name string, full bool) issueGraph {
 	all := map[string]graphNode{}
 	var edges []graphEdge
 	for _, m := range matchingIssues(root, listOptions{states: states}) {
-		issue := trimMarkdownExtension(filepath.Base(m.file))
+		issue := m.name
 		all[issue] = graphNode{Name: issue, Title: m.doc.get("title"), State: m.doc.get("state")}
-		if parent := issueName(m.doc.get("parent")); parent != "" {
+		if parent := canonicalName(root, m.doc.get("parent")); parent != "" {
 			edges = append(edges, graphEdge{From: parent, To: issue, Kind: parentEdge})
 		}
 		for _, dependency := range parseDependsOn(m.doc.get("depends-on")) {
-			edges = append(edges, graphEdge{From: dependency, To: issue, Kind: dependsOnEdge})
+			edges = append(edges, graphEdge{From: canonicalName(root, dependency), To: issue, Kind: dependsOnEdge})
 		}
 	}
 

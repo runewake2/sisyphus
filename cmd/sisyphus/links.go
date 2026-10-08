@@ -61,9 +61,18 @@ func linkTarget(reference string) string {
 	return parseLink(reference).target
 }
 
+// issueName returns the issue name in reference: the link target without ".md". A path to an issue
+// file loses everything up to and including issues/<state>/, so that only the full name remains.
 func issueName(reference string) string {
-	target := strings.ReplaceAll(linkTarget(reference), `\`, "/")
-	return trimMarkdownExtension(target[strings.LastIndex(target, "/")+1:])
+	target := trimMarkdownExtension(strings.Trim(strings.ReplaceAll(linkTarget(reference), `\`, "/"), "/"))
+	target = strings.TrimPrefix(target, "./")
+	for _, state := range states {
+		marker := "issues/" + state + "/"
+		if i := strings.LastIndex("/"+target, "/"+marker); i >= 0 {
+			return target[i+len(marker):]
+		}
+	}
+	return target
 }
 
 func repoCandidates(root string) []candidate {

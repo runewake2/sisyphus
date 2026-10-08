@@ -52,7 +52,8 @@ is never cleared automatically.
 
 **Moving the file**
 
-The file moves to `issues/<state>/<name>.md`. If the repo root contains `.git` and git tracks the
+The file moves to `issues/<state>/<name>.md`, where `<name>` is the full name, so the issue keeps
+its subdirectories. If the repo root contains `.git` and git tracks the
 file, sisyphus moves it with `git mv`, so git records a rename. Otherwise it renames the file; jj
 detects the rename itself. In a colocated jj repo, git does not track an issue until jj commits it.
 

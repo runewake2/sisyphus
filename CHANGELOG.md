@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.18]] - 2026-10-08
+- Let issues sit in subdirectories below the state directories, found by their full name or by their
+  file name; an ambiguous file name fails and lists the full names.
+
 ## [[0.0.17]] - 2026-10-08
 - Fix `sisyphus update` in a colocated jj repo: move an issue that git does not track with a plain
   rename instead of `git mv`.

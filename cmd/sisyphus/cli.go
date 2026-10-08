@@ -63,7 +63,11 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "new <name>",
 		Short: "Create an issue from issues/TEMPLATE.md in the directory of its state.",
-		Args:  cobra.ExactArgs(1),
+		Long: "Create an issue from issues/TEMPLATE.md in the directory of its state.\n\n" +
+			"<name> is 2-6 lowercase words in kebab-case, for example fix-login-bug, optionally below " +
+			"kebab-case directories, for example web/auth/fix-login-bug. The directories stay with the " +
+			"issue when its state changes.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := firstError(
 				oneOf("state", state, states),
@@ -123,8 +127,8 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 		Use:   "update <name> <state>",
 		Short: "Change the state of an issue and move it to the directory of the new state.",
 		Long: "Change the state of an issue and move it to the directory of the new state.\n\n" +
-			"<name> is an issue name, [[issue-name]], #issue-name, or a path to the issue. " +
-			"<state> is " + strings.Join(states, ", ") + ".",
+			"<name> is an issue's full name, its file name, [[issue-name]], #issue-name, or a path to the issue. " +
+			"A file name that more than one issue has is refused. <state> is " + strings.Join(states, ", ") + ".",
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := firstError(oneOf("state", args[1], states), resolutionFlag(cmd, resolution)); err != nil {
@@ -261,7 +265,8 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 		Use:   "show <name>",
 		Short: "Print one issue: its key fields and its body.",
 		Long: "Print one issue: its key fields and its body, without first finding which state directory holds it.\n\n" +
-			"<name> is an issue name, [[issue-name]], #issue-name, or a path to the issue.",
+			"<name> is an issue's full name, its file name, [[issue-name]], #issue-name, or a path to the issue. " +
+			"A file name that more than one issue has is refused.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := findRoot()
@@ -305,10 +310,11 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if _, err := findIssue(root, issueName(args[0])); err != nil {
+			issue, err := findIssue(root, issueName(args[0]))
+			if err != nil {
 				return err
 			}
-			graph := buildGraph(root, issueName(args[0]), full)
+			graph := buildGraph(root, issue.name, full)
 			switch {
 			case asJSON:
 				encoder := json.NewEncoder(cmd.OutOrStdout())

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -49,7 +48,7 @@ func searchIssues(root string, o searchOptions) []searchRow {
 			continue
 		}
 		rows = append(rows, searchRow{
-			Name:     trimMarkdownExtension(filepath.Base(m.file)),
+			Name:     m.name,
 			Title:    m.doc.get("title"),
 			State:    m.doc.get("state"),
 			Priority: m.doc.get("priority"),

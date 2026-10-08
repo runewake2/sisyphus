@@ -8,14 +8,15 @@ Create an issue from `issues/TEMPLATE.md`, in the directory of its state.
 sisyphus new <name> [flags]
 ```
 
-`<name>` is the new issue's name: 2-6 lowercase words in kebab-case, for example `fix-login-bug`.
-[[sisyphus-slug]] makes a valid, unique name from any text.
+`<name>` is the new issue's full name: 2-6 lowercase words in kebab-case, for example
+`fix-login-bug`, optionally below kebab-case directories, for example `web/auth/fix-login-bug`
+(see [[commands#Naming an issue]]). [[sisyphus-slug]] makes a valid, unique file name from any text.
 
 ## Flags
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `-t`, `--title` | made from the name | The title. `fix-login-bug` becomes "Fix login bug". |
+| `-t`, `--title` | made from the file name | The title. `web/fix-login-bug` becomes "Fix login bug". |
 | `-s`, `--state` | `open` | `open`, `in-progress`, or `closed`. |
 | `-r`, `--resolution` | `completed` when closed | `completed` or `abandoned`. Only for a closed issue. |
 | `-p`, `--priority` | `medium` | `critical`, `high`, `medium`, or `low`. |
@@ -34,8 +35,9 @@ sisyphus new <name> [flags]
 
 ## What it does
 
-1. Checks the name: its shape, and that no Markdown file anywhere in the repo already has that
-   name, ignoring case. A clash lists the files that have it.
+1. Checks the name: its shape, and that no issue in any state directory already has that full
+   name. If another Markdown file anywhere in the repo has the same file name, ignoring case, it
+   warns and lists those files, because a link to the bare file name is then ambiguous.
 2. Checks the values: state, priority, effort, and resolution must be valid; `--resolution` is
    only allowed for a closed issue; `--parent` and `--depends-on` must name existing issues and
    cannot create a cycle; `--remote` must be a URL.
@@ -43,14 +45,15 @@ sisyphus new <name> [flags]
    top of the frontmatter), and fills in the fields. Inline comments on field lines stay.
 4. Sets `created` to today and, for a closed issue, `closed` to today.
 5. Replaces `# <Title>` in the body with the title, and the Context placeholder with `--context`.
-6. Writes the file to `issues/<state>/<name>.md`.
+6. Writes the file to `issues/<state>/<name>.md`, and creates its subdirectories.
 
 Value details:
 
 - `--tags "bug, scheduler ,,ui"` is written as `[bug, scheduler, ui]`: spaces trimmed, empties dropped.
-- `--parent` and `--depends-on` are written as quoted wikilinks, for example `"[[some-epic]]"`.
-- `--deferred-from` takes an issue (name, `[[name]]`, or `#name`), written as a quoted wikilink, or
-  a bookmark (any value with `/`), written as it is.
+- `--parent` and `--depends-on` are written as quoted wikilinks to the full name, for example
+  `"[[web/some-epic]]"`, whichever form of the name you give.
+- `--deferred-from` takes an issue (any form of its name), written as a quoted wikilink to its full
+  name, or a bookmark (any other value with `/`), written as it is.
 - `--metadata` values are written quoted, with keys in sorted order:
   `{note: "first pass", session-id: "abc123"}`. A value cannot contain a comma.
 
@@ -62,11 +65,13 @@ Warnings:
 
 - The issue is in-progress but has no bookmark.
 - The parent issue, or an issue in `--depends-on`, is closed.
+- Another Markdown file has the same file name, so a link to the bare file name is ambiguous.
 
 ## Examples
 
 ```bash
 sisyphus new fix-login-bug --tags bug --priority high
+sisyphus new web/auth/fix-session-expiry --tags bug   # issues/open/web/auth/fix-session-expiry.md
 sisyphus new add-dark-mode --title "Add a dark mode" --tags feature,ui --effort large
 sisyphus new split-login-form --parent add-dark-mode --depends-on fix-login-bug
 sisyphus new retry-backoff --state in-progress --bookmark ai/retry-backoff --owner alice

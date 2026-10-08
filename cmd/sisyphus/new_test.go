@@ -125,11 +125,28 @@ func TestNewRejectsInvalidNames(t *testing.T) {
 	}
 }
 
-func TestNewRejectsNamesThatAreNotUniqueAcrossAllMarkdownFiles(t *testing.T) {
-	cases := []struct{ name, existing string }{
-		{"widget-scheduler", "design/widget-scheduler.md"},
-		{"mixed-case-doc", "design/Mixed-Case-Doc.md"},
-		{"existing-issue", "issues/closed/existing-issue.md"},
+func TestNewRejectsAFullNameThatAnIssueAlreadyHas(t *testing.T) {
+	for _, existing := range []string{"issues/closed/existing-issue.md", "issues/in-progress/web/existing-issue.md"} {
+		t.Run(existing, func(t *testing.T) {
+			r := newTestRepo(t)
+			r.write(existing, "---\nstate: closed\n---\n")
+			name := strings.TrimSuffix(strings.SplitN(existing, "/", 3)[2], ".md")
+
+			res := r.run("new", name)
+
+			equal(t, 1, res.exit)
+			contains(t, res.error, "already exists")
+			contains(t, res.error, existing)
+			isTrue(t, !r.exists("issues/open/"+name+".md"), "no issue is created")
+		})
+	}
+}
+
+func TestNewWarnsWhenOtherFilesHaveTheSameFileName(t *testing.T) {
+	cases := []struct{ name, existing, advice string }{
+		{"widget-scheduler", "design/widget-scheduler.md", "Put the issue in a subdirectory"},
+		{"mixed-case-doc", "design/Mixed-Case-Doc.md", "Put the issue in a subdirectory"},
+		{"web/existing-issue", "issues/closed/existing-issue.md", "[[web/existing-issue]]"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -140,10 +157,11 @@ func TestNewRejectsNamesThatAreNotUniqueAcrossAllMarkdownFiles(t *testing.T) {
 
 			res := r.run("new", c.name)
 
-			equal(t, 1, res.exit)
-			contains(t, res.error, "is not unique")
+			equal(t, 0, res.exit)
+			contains(t, res.error, "Warning: Other files also have the name")
 			contains(t, res.error, c.existing)
-			isTrue(t, !r.exists("issues/open/"+c.name+".md"), "no issue is created")
+			contains(t, res.error, c.advice)
+			isTrue(t, r.exists("issues/open/"+c.name+".md"), "the issue is created")
 		})
 	}
 }

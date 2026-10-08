@@ -1,7 +1,6 @@
 package main
 
 import (
-	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -29,8 +28,8 @@ type listOptions struct {
 // isBlocked reports whether doc depends on any issue that is not closed.
 func isBlocked(root string, doc *document) bool {
 	for _, dep := range parseDependsOn(doc.get("depends-on")) {
-		matches := issueMatches(root, dep)
-		if len(matches) == 1 && matches[0].state != "closed" {
+		match, found, err := matchIssue(root, dep)
+		if err == nil && found && match.state != "closed" {
 			return true
 		}
 	}
@@ -39,7 +38,7 @@ func isBlocked(root string, doc *document) bool {
 
 // matchedIssue is one issue that matched a set of frontmatter filters, before formatting as a row.
 type matchedIssue struct {
-	file string
+	name string
 	doc  *document
 }
 
@@ -52,34 +51,34 @@ func matchingIssues(root string, o listOptions) []matchedIssue {
 	}
 	parentFilter := ""
 	if o.parent != "" {
-		parentFilter = issueName(o.parent)
+		parentFilter = canonicalName(root, o.parent)
 	}
 
 	var matches []matchedIssue
-	for _, state := range stateFilter {
-		files, _ := filepath.Glob(filepath.Join(root, "issues", state, "*.md"))
-		for _, file := range files {
-			doc, err := loadDocument(file)
-			if err != nil {
-				continue
-			}
-			if len(o.priorities) > 0 && !slices.Contains(o.priorities, doc.get("priority")) {
-				continue
-			}
-			if len(o.tags) > 0 && !anyOf(parseList(doc.get("tags")), o.tags) {
-				continue
-			}
-			if o.owner != "" && doc.get("owner") != o.owner {
-				continue
-			}
-			if parentFilter != "" && issueName(doc.get("parent")) != parentFilter {
-				continue
-			}
-			if o.blockedOnly && !isBlocked(root, doc) {
-				continue
-			}
-			matches = append(matches, matchedIssue{file: file, doc: doc})
+	for _, issue := range allIssues(root) {
+		if !slices.Contains(stateFilter, issue.state) {
+			continue
 		}
+		doc, err := loadDocument(issue.path)
+		if err != nil {
+			continue
+		}
+		if len(o.priorities) > 0 && !slices.Contains(o.priorities, doc.get("priority")) {
+			continue
+		}
+		if len(o.tags) > 0 && !anyOf(parseList(doc.get("tags")), o.tags) {
+			continue
+		}
+		if o.owner != "" && doc.get("owner") != o.owner {
+			continue
+		}
+		if parentFilter != "" && canonicalName(root, doc.get("parent")) != parentFilter {
+			continue
+		}
+		if o.blockedOnly && !isBlocked(root, doc) {
+			continue
+		}
+		matches = append(matches, matchedIssue{name: issue.name, doc: doc})
 	}
 	return matches
 }
@@ -90,7 +89,7 @@ func listIssues(root string, o listOptions) []listRow {
 	rows := make([]listRow, 0, len(matches))
 	for _, m := range matches {
 		rows = append(rows, listRow{
-			Name:     trimMarkdownExtension(filepath.Base(m.file)),
+			Name:     m.name,
 			Title:    m.doc.get("title"),
 			State:    m.doc.get("state"),
 			Priority: m.doc.get("priority"),
