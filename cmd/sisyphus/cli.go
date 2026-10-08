@@ -310,9 +310,10 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 			"arrows from a parent to its sub-issues, dotted arrows from an issue to the issues that " +
 			"depend on it. Below <name> are its sub-issues and dependents, all the way down; above it " +
 			"are its parents and dependencies, all the way up. A note tells how many other linked " +
-			"issues are not drawn; --full draws them too. Each box shows the issue's name and state. " +
-			"<name> itself is marked with \"📍\", and each leaf with \"🍃\": an issue that is not closed " +
-			"and has no open dependency or sub-issue, so work on it can start now.",
+			"issues are not drawn; --full draws them too. Each box shows the issue's file name and state, " +
+			"inside a rounded box for each directory above it. <name> has a double box (╔═╗), and each " +
+			"leaf has a heavy box (┏━┓): an issue that is not closed and has no open dependency or " +
+			"sub-issue, so work on it can start now.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := findRoot()

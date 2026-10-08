@@ -53,7 +53,7 @@ func registerTools(server *mcp.Server) {
 	}, searchHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_graph",
-		Description: "Draw a sisyphus issue, everything below it (sub-issues and dependents, all the way down), and the path above it (parents and dependencies, all the way up), with their states, and say how many other linked issues are not drawn. Leaves (not closed, with no open dependency or sub-issue, so ready to start) are marked with \"🍃\" (and the issue itself with \"📍\") and have leaf: true in JSON. With full, draw every linked issue. Arrows point from the issue that comes first: solid from a parent to a sub-issue, dotted from a dependency to the issue that depends on it.",
+		Description: "Draw a sisyphus issue, everything below it (sub-issues and dependents, all the way down), and the path above it (parents and dependencies, all the way up), with their states, and say how many other linked issues are not drawn. Each directory is a rounded box around its issues, and each issue box shows only the file name. The issue itself has a double box. Leaves (not closed, with no open dependency or sub-issue, so ready to start) have a heavy box and leaf: true in JSON. With full, draw every linked issue. Arrows point from the issue that comes first: solid from a parent to a sub-issue, dotted from a dependency to the issue that depends on it.",
 	}, graphHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_parent",

@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.21]] - 2026-10-08
+- Draw each issue subdirectory in `sisyphus graph` as a box around its issues, show only file
+  names in issue boxes, and mark the focus and leaves with box line styles instead of emoji.
+
 ## [[0.0.20]] - 2026-10-08
 - `sisyphus slug` spells letters in ASCII (é becomes e), drops filler words before it keeps 6 words,
   and always prints ASCII.

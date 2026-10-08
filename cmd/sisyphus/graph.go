@@ -6,9 +6,6 @@ import (
 	"maps"
 	"slices"
 	"strings"
-
-	"github.com/AlexanderGrooff/mermaid-ascii/pkg/diagram"
-	mermaid "github.com/AlexanderGrooff/mermaid-ascii/pkg/graph"
 )
 
 // issueGraph is "sisyphus graph": the focus issue, every issue below it, and the path above it, or
@@ -37,12 +34,6 @@ type graphEdge struct {
 	To   string `json:"to"`
 	Kind string `json:"kind"`
 }
-
-// The marks are emoji that always draw two columns wide, so the boxes around them line up.
-const (
-	focusMark = "📍"
-	leafMark  = "🍃"
-)
 
 const (
 	parentEdge    = "parent"
@@ -171,9 +162,54 @@ func nodeFor(all map[string]graphNode, issue string) graphNode {
 	return graphNode{Name: issue, Title: "(missing)", State: "?"}
 }
 
-// mermaidSource writes the graph as a Mermaid flowchart. A solid arrow points from a parent to a
-// sub-issue; a dotted arrow points from a dependency to the issue that depends on it. The focus issue is
-// marked with focusMark, and each leaf with leafMark.
+// directory is one subdirectory of the drawn issues: the issues directly in it, and the
+// subdirectories below it. Both keep the order of graph.Nodes.
+type directory struct {
+	name     string
+	path     string
+	issues   []graphNode
+	children []*directory
+}
+
+// directoryTree groups the nodes by the directories of their names. The root has no name, and
+// holds the issues that are directly below a state directory.
+func directoryTree(nodes []graphNode) *directory {
+	root := &directory{}
+	byPath := map[string]*directory{"": root}
+	for _, node := range nodes {
+		parent := root
+		dir, _ := splitIssueName(node.Name)
+		if dir != "" {
+			path := ""
+			for _, part := range strings.Split(dir, "/") {
+				path = strings.TrimPrefix(path+"/"+part, "/")
+				child, exists := byPath[path]
+				if !exists {
+					child = &directory{name: part, path: path}
+					byPath[path] = child
+					parent.children = append(parent.children, child)
+				}
+				parent = child
+			}
+		}
+		parent.issues = append(parent.issues, node)
+	}
+	return root
+}
+
+// splitIssueName splits a full issue name into its directory and its file name.
+func splitIssueName(name string) (dir, file string) {
+	if i := strings.LastIndex(name, "/"); i >= 0 {
+		return name[:i], name[i+1:]
+	}
+	return "", name
+}
+
+// mermaidSource writes the graph as a Mermaid flowchart. Each subdirectory is a subgraph that holds
+// its issues and its subdirectories, so a node shows only the file name of its issue. A solid arrow
+// points from a parent to a sub-issue; a dotted arrow points from a dependency to the issue that
+// depends on it. The focus issue has the thickest border and a leaf a thicker one, as the double
+// and heavy boxes of the terminal drawing. A focus issue that is also a leaf has the focus border.
 func mermaidSource(graph issueGraph) string {
 	ids := map[string]string{}
 	for i, node := range graph.Nodes {
@@ -181,20 +217,20 @@ func mermaidSource(graph issueGraph) string {
 	}
 	var b strings.Builder
 	b.WriteString("graph LR\n")
-	for _, node := range graph.Nodes {
-		marks := ""
-		if node.Name == graph.Focus {
-			marks += focusMark
+	groups := 0
+	var write func(dir *directory, indent string)
+	write = func(dir *directory, indent string) {
+		for _, node := range dir.issues {
+			fmt.Fprintf(&b, "%s%s[\"%s\"]\n", indent, ids[node.Name], nodeLabel(node))
 		}
-		if node.Leaf {
-			marks += leafMark
+		for _, child := range dir.children {
+			fmt.Fprintf(&b, "%ssubgraph g%d[\"%s\"]\n", indent, groups, child.name)
+			groups++
+			write(child, indent+"    ")
+			fmt.Fprintf(&b, "%send\n", indent)
 		}
-		label := node.Name + " [" + node.State + "]"
-		if marks != "" {
-			label = marks + " " + label
-		}
-		fmt.Fprintf(&b, "    %s[\"%s\"]\n", ids[node.Name], label)
 	}
+	write(directoryTree(graph.Nodes), "    ")
 	for _, edge := range graph.Edges {
 		arrow := "-->"
 		if edge.Kind == dependsOnEdge {
@@ -202,37 +238,19 @@ func mermaidSource(graph issueGraph) string {
 		}
 		fmt.Fprintf(&b, "    %s %s %s\n", ids[edge.From], arrow, ids[edge.To])
 	}
+	var leaves []string
+	for _, node := range graph.Nodes {
+		if node.Leaf && node.Name != graph.Focus {
+			leaves = append(leaves, ids[node.Name])
+		}
+	}
+	b.WriteString("    classDef focus stroke-width:5px\n")
+	fmt.Fprintf(&b, "    class %s focus\n", ids[graph.Focus])
+	if len(leaves) > 0 {
+		b.WriteString("    classDef leaf stroke-width:3px\n")
+		fmt.Fprintf(&b, "    class %s leaf\n", strings.Join(leaves, ","))
+	}
 	return b.String()
-}
-
-// drawGraph renders the graph as boxes and arrows for the terminal, followed by a legend.
-func drawGraph(graph issueGraph) (string, error) {
-	properties, err := mermaid.Parse(mermaidSource(graph), "cli")
-	if err != nil {
-		return "", err
-	}
-	config := diagram.DefaultConfig()
-	config.BoxBorderPadding = 0
-	config.PaddingBetweenY = 3
-	properties.Apply(config)
-
-	var lines []string
-	for _, line := range strings.Split(mermaid.Draw(properties), "\n") {
-		lines = append(lines, strings.TrimRight(line, " "))
-	}
-	drawing := strings.TrimRight(strings.Join(lines, "\n"), "\n")
-
-	legend := focusMark + " " + graph.Focus
-	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Leaf }) {
-		legend += "   " + leafMark + " leaf (ready to start)"
-	}
-	if len(graph.Edges) > 0 {
-		legend += "   ──► sub-issue   ┄┄► needed by"
-	}
-	if note := hiddenNote(graph); note != "" {
-		legend += "\n" + note
-	}
-	return drawing + "\n\n" + legend + "\n", nil
 }
 
 // hiddenNote tells how many connected issues the graph leaves out, if any.

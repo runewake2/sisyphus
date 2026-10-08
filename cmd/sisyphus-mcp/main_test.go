@@ -135,7 +135,7 @@ func TestToolsCreateShowListSearchGraph(t *testing.T) {
 	}
 
 	source := callTool(t, session, "sisyphus_graph", map[string]any{"dir": dir, "name": "sub-issue-test", "mermaid": true, "full": true})
-	if !strings.HasPrefix(source, "graph LR") || !strings.Contains(source, "📍🍃 sub-issue-test") {
+	if !strings.HasPrefix(source, "graph LR") || !strings.Contains(source, "sub-issue-test [") || !strings.Contains(source, "classDef focus") {
 		t.Errorf("graph did not return Mermaid source: %s", source)
 	}
 }

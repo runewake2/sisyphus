@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -48,7 +49,7 @@ func TestGraphOfAnEpicDrawsEverythingBelowIt(t *testing.T) {
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
-	contains(t, res.output, "📍 epic-root-test [open]")
+	equal(t, '║', borderOf(t, res.output, "epic-root-test [open]"))
 	contains(t, res.output, "sub-a-test [open]")
 	contains(t, res.output, "sub-a-child-test [open]")
 	contains(t, res.output, "sub-b-test [closed]")
@@ -71,7 +72,7 @@ func TestGraphLeavesOutIssuesOffThePathAbove(t *testing.T) {
 	res := r.run("graph", "sub-b-test")
 
 	equal(t, 0, res.exit)
-	contains(t, res.output, "📍 sub-b-test [closed]")
+	equal(t, '║', borderOf(t, res.output, "sub-b-test [closed]"))
 	contains(t, res.output, "sub-a-test [open]")
 	contains(t, res.output, "epic-root-test [open]")
 	isTrue(t, !strings.Contains(res.output, "sub-a-child-test"), "a sibling's sub-issue is not drawn")
@@ -119,9 +120,10 @@ func TestGraphMarksTheRequestedIssueAsFocus(t *testing.T) {
 	res := r.run("graph", "sub-a-test")
 
 	equal(t, 0, res.exit)
-	contains(t, res.output, "📍 sub-a-test [open]")
-	equal(t, 2, strings.Count(res.output, "📍 sub-a-test")) // Its box and the legend.
-	isTrue(t, !strings.Contains(res.output, "📍 epic-root-test"), "only the focus is marked")
+	equal(t, '║', borderOf(t, res.output, "sub-a-test [open]"))
+	equal(t, '│', borderOf(t, res.output, "epic-root-test [open]"))
+	equal(t, 1, strings.Count(res.output, "╔═╗ sub-a-test"))
+	equal(t, 2, strings.Count(res.output, "╔")) // The focus box and the legend.
 }
 
 func TestGraphPrintsMermaid(t *testing.T) {
@@ -134,10 +136,12 @@ func TestGraphPrintsMermaid(t *testing.T) {
 		"graph LR",
 		`    n0["epic-root-test [open]"]`,
 		`    n1["sub-a-test [open]"]`,
-		`    n2["📍 sub-b-test [closed]"]`,
+		`    n2["sub-b-test [closed]"]`,
 		"    n0 --> n1",
 		"    n0 --> n2",
 		"    n1 -.-> n2",
+		"    classDef focus stroke-width:5px",
+		"    class n2 focus",
 		"    %% 1 more linked issue is not drawn. Use --full to draw it.",
 	}, res.lines())
 }
@@ -149,8 +153,9 @@ func TestGraphOfAnIssueWithNoRelationsIsOneBox(t *testing.T) {
 	res := r.run("graph", "lonely-issue-test")
 
 	equal(t, 0, res.exit)
-	contains(t, res.output, "📍🍃 lonely-issue-test [open]")
-	equal(t, 1, strings.Count(res.output, "┌"))
+	equal(t, '║', borderOf(t, res.output, "lonely-issue-test [open]"))
+	contains(t, res.output, "╔═╗ lonely-issue-test (a leaf)")
+	equal(t, 2, strings.Count(res.output, "╔")) // The box and the legend.
 	isTrue(t, !strings.Contains(res.output, "needed by"), "no legend for edges that are not drawn")
 }
 
@@ -175,7 +180,7 @@ func TestGraphAcceptsEveryFormOfTheName(t *testing.T) {
 			res := r.run("graph", reference)
 
 			equal(t, 0, res.exit)
-			contains(t, res.output, "📍 sub-a-test [open]")
+			equal(t, '║', borderOf(t, res.output, "sub-a-test [open]"))
 		})
 	}
 }
@@ -224,15 +229,27 @@ func TestGraphMarksLeaves(t *testing.T) {
 	isTrue(t, leaves["waits-on-closed-test"], "an issue whose dependencies are all closed is a leaf")
 }
 
-func TestGraphDrawsTheLeafMark(t *testing.T) {
+func TestGraphDrawsALeafInAHeavyBox(t *testing.T) {
+	r := setUpGraphIssues(t)
+
+	res := r.run("graph", "epic-root-test")
+
+	equal(t, 0, res.exit)
+	equal(t, '┃', borderOf(t, res.output, "sub-a-child-test [open]"))
+	equal(t, '│', borderOf(t, res.output, "sub-a-test [open]"))
+	equal(t, '│', borderOf(t, res.output, "sub-b-test [closed]"))
+	contains(t, res.output, "┏━┓ leaf (ready to start)")
+}
+
+func TestGraphDrawsAFocusLeafInADoubleBox(t *testing.T) {
 	r := setUpGraphIssues(t)
 
 	res := r.run("graph", "sub-a-child-test")
 
 	equal(t, 0, res.exit)
-	contains(t, res.output, "📍🍃 sub-a-child-test [open]")
-	contains(t, res.output, "🍃 leaf (ready to start)")
-	isTrue(t, !strings.Contains(res.output, "🍃 sub-a-test"), "only leaves are marked")
+	equal(t, '║', borderOf(t, res.output, "sub-a-child-test [open]"))
+	contains(t, res.output, "╔═╗ sub-a-child-test (a leaf)")
+	isTrue(t, !strings.Contains(res.output, "┏━┓ leaf"), "no other leaf is drawn")
 }
 
 func TestGraphLeavesOutTheLeafLegendWithoutLeaves(t *testing.T) {
@@ -242,4 +259,172 @@ func TestGraphLeavesOutTheLeafLegendWithoutLeaves(t *testing.T) {
 
 	equal(t, 0, res.exit)
 	isTrue(t, !strings.Contains(res.output, "leaf"), "no leaf is drawn")
+}
+
+// borderOf is the left border character of the box that holds label.
+func borderOf(t *testing.T, drawing, label string) rune {
+	t.Helper()
+	for _, line := range strings.Split(drawing, "\n") {
+		if before, _, found := strings.Cut(line, label); found {
+			left := []rune(strings.TrimRight(before, " "))
+			return left[len(left)-1]
+		}
+	}
+	t.Fatalf("no box holds %q:\n%s", label, drawing)
+	return 0
+}
+
+// frame is the area inside the border of one directory box, in line and column numbers.
+type frameArea struct {
+	top, left, bottom, right int
+}
+
+// framesOf finds each directory box by its name in the top border. The drawing has no wide
+// characters, so a rune is one column.
+func framesOf(t *testing.T, drawing string) map[string][]frameArea {
+	t.Helper()
+	var grid [][]rune
+	for _, line := range strings.Split(drawing, "\n") {
+		grid = append(grid, []rune(line))
+	}
+	frames := map[string][]frameArea{}
+	for y, line := range grid {
+		for x := 0; x+2 < len(line); x++ {
+			if line[x] != '╭' || line[x+1] != '─' || line[x+2] != ' ' {
+				continue
+			}
+			name := strings.Fields(string(line[x+3:]))[0]
+			f := frameArea{top: y, left: x}
+			f.right = x + slices.Index(line[x:], '╮')
+			for f.bottom = y + 1; f.bottom < len(grid) && (len(grid[f.bottom]) <= x || grid[f.bottom][x] != '╰'); f.bottom++ {
+			}
+			frames[name] = append(frames[name], f)
+		}
+	}
+	return frames
+}
+
+// position is the line and column of the first rune of label.
+func position(t *testing.T, drawing, label string) (int, int) {
+	t.Helper()
+	for y, line := range strings.Split(drawing, "\n") {
+		if before, _, found := strings.Cut(line, label); found {
+			return y, len([]rune(before))
+		}
+	}
+	t.Fatalf("no %q in:\n%s", label, drawing)
+	return 0, 0
+}
+
+func (f frameArea) holds(y, x int) bool {
+	return y > f.top && y < f.bottom && x > f.left && x < f.right
+}
+
+func TestGraphDrawsEachDirectoryAsABox(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "web/auth/login-epic")
+	r.mustRun("new", "web/auth/fix-login-bug", "--parent", "login-epic")
+	r.mustRun("new", "web/split-login-form", "--parent", "login-epic", "--depends-on", "fix-login-bug")
+	r.mustRun("new", "mobile/add-dark-mode", "--depends-on", "web/split-login-form")
+
+	res := r.run("graph", "--full", "login-epic")
+
+	equal(t, 0, res.exit)
+	drawing, legend, _ := strings.Cut(res.output, "\n\n")
+	frames := framesOf(t, drawing)
+	equal(t, 3, len(frames))
+	for _, name := range []string{"web", "auth", "mobile"} {
+		equal(t, 1, len(frames[name]))
+	}
+	contains(t, drawing, "login-epic [open]")
+	isTrue(t, !strings.Contains(drawing, "web/"), "a box shows only the file name of its issue")
+	contains(t, legend, "╔═╗ web/auth/login-epic")
+}
+
+// TestGraphDirectoryBoxHoldsOnlyItsIssues draws two sibling directories with links in both
+// directions between them, and one directory nested in one of them.
+func TestGraphDirectoryBoxHoldsOnlyItsIssues(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "plugins/integration-plugins")
+	r.mustRun("new", "plugins/plugin-protocol", "--parent", "integration-plugins")
+	r.mustRun("new", "plugins/plugin-runner", "--parent", "integration-plugins", "--depends-on", "plugin-protocol")
+	r.mustRun("new", "plugins/github/github-plugin", "--parent", "integration-plugins", "--depends-on", "plugin-protocol")
+	r.mustRun("new", "github/intake-workflow", "--parent", "integration-plugins", "--depends-on", "github-plugin")
+	r.mustRun("new", "github/sync-workflow", "--parent", "integration-plugins", "--depends-on", "plugin-runner")
+
+	res := r.run("graph", "--full", "integration-plugins")
+
+	equal(t, 0, res.exit)
+	drawing, _, _ := strings.Cut(res.output, "\n\n")
+	frames := framesOf(t, drawing)
+	equal(t, 2, len(frames["github"]))
+	plugins := frames["plugins"][0]
+	nested, top := frames["github"][0], frames["github"][1]
+	if !plugins.holds(nested.top, nested.left) {
+		nested, top = top, nested
+	}
+	isTrue(t, plugins.holds(nested.top, nested.left) && plugins.holds(nested.bottom, nested.right), "plugins/github is inside plugins")
+	isTrue(t, !plugins.holds(top.top, top.left) && !plugins.holds(top.bottom, top.right), "github is outside plugins")
+
+	for label, inside := range map[string][]frameArea{
+		"integration-plugins [open]": {plugins},
+		"plugin-protocol [open]":     {plugins},
+		"plugin-runner [open]":       {plugins},
+		"github-plugin [open]":       {plugins, nested},
+		"intake-workflow [open]":     {top},
+		"sync-workflow [open]":       {top},
+	} {
+		y, x := position(t, drawing, label)
+		for _, f := range []frameArea{plugins, nested, top} {
+			equal(t, slices.Contains(inside, f), f.holds(y, x))
+		}
+	}
+
+	// An arrow that crosses a border joins it with a solid character, so the border stays visible.
+	grid := strings.Split(drawing, "\n")
+	for _, list := range frames {
+		for _, f := range list {
+			for y := f.top; y <= f.bottom; y++ {
+				line := []rune(grid[y])
+				for x := f.left; x <= f.right && x < len(line); x++ {
+					if y == f.top || y == f.bottom || x == f.left || x == f.right {
+						isTrue(t, line[x] != '┄' && line[x] != '┆', "a frame border is not hidden by an arrow")
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestGraphWithoutDirectoriesDrawsNoFrame(t *testing.T) {
+	r := setUpGraphIssues(t)
+
+	res := r.run("graph", "epic-root-test")
+
+	equal(t, 0, res.exit)
+	isTrue(t, !strings.Contains(res.output, "╭"), "no directory box")
+}
+
+func TestGraphPrintsMermaidSubgraphs(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "web/auth/login-epic")
+	r.mustRun("new", "web/split-login-form", "--parent", "login-epic")
+
+	res := r.run("graph", "--mermaid", "login-epic")
+
+	equal(t, 0, res.exit)
+	equalSlices(t, []string{
+		"graph LR",
+		`    subgraph g0["web"]`,
+		`        n1["split-login-form [open]"]`,
+		`        subgraph g1["auth"]`,
+		`            n0["login-epic [open]"]`,
+		"        end",
+		"    end",
+		"    n0 --> n1",
+		"    classDef focus stroke-width:5px",
+		"    class n0 focus",
+		"    classDef leaf stroke-width:3px",
+		"    class n1 leaf",
+	}, res.lines())
 }

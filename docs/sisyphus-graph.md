@@ -22,7 +22,7 @@ Every arrow points from the issue that comes first to the issue that comes after
 
 `sisyphus graph <name>` then draws:
 
-1. `<name>`, marked with 📍.
+1. `<name>`, in a double box.
 2. Everything below `<name>`: its sub-issues and the issues that depend on it, and theirs, all the
    way down.
 3. The path above `<name>`: its parent and the issues it depends on, and theirs, all the way up.
@@ -38,27 +38,38 @@ issue's part of it.
 Issues with no path of links to `<name>` are never drawn or counted. A `parent` or `depends-on` link
 to an issue that does not exist is drawn as a box with the state `?`.
 
-Each leaf is marked with 🍃. A leaf is an issue that is not closed, whose dependencies are all
+Each leaf is in a heavy box. A leaf is an issue that is not closed, whose dependencies are all
 closed, and whose sub-issues are all closed: nothing is left that it waits on, so work on it can
-start now. A dependency that does not exist does not block, as in `sisyphus list --blocked`. An
-issue that is both `<name>` and a leaf is marked 📍🍃.
+start now. A dependency that does not exist does not block, as in `sisyphus list --blocked`.
+
+| Box | Issue |
+| --- | --- |
+| `╔═╗` double | `<name>` |
+| `┏━┓` heavy | A leaf |
+| `┌─┐` light | Any other issue |
+| `╭─╮` rounded | A directory, with its name in the top border |
+
+No box is both double and heavy. So if `<name>` is a leaf, its box is double, and the legend says
+`(a leaf)` after its name.
+
+Each directory that holds a drawn issue is a rounded box around the issues and directories below
+it, nested as the directories nest. So an issue box shows only the file name of its issue, and the
+legend gives the full name of `<name>`.
 
 ## Output
 
 On an issue inside an epic:
 
 ```
-┌────────────────────┐     ┌─────────────────────────────────┐     ┌─────────────────────────┐
-│auth-overhaul [open]├────►│      fix-login-bug [closed]     │     │🍃 form-validation [open]│
-└──────────┬─────────┘     └────────────────┬────────────────┘     └─────────────────────────┘
-           │                                ┆                                   ▲
-           │                                ┆                                   │
-           │                                ▼                                   │
-           │               ┌─────────────────────────────────┐                  │
-           └──────────────►│📍 split-login-form [in-progress]├──────────────────┘
-                           └─────────────────────────────────┘
+┌────────────────────┐      ┌──────────────────────────────┐
+│auth-overhaul [open]├─┬───►│    fix-login-bug [closed]    ├┄┐
+└────────────────────┘ │    └──────────────────────────────┘ ┆
+                       │ ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+                       │ ┆  ╔══════════════════════════════╗      ┏━━━━━━━━━━━━━━━━━━━━━━┓
+                       └─┴─►║split-login-form [in-progress]╟─────►┃form-validation [open]┃
+                            ╚══════════════════════════════╝      ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
-📍 split-login-form   🍃 leaf (ready to start)   ──► sub-issue   ┄┄► needed by
+╔═╗ split-login-form   ┏━┓ leaf (ready to start)   ──► sub-issue   ┄┄► needed by
 1 more linked issue is not drawn. Use --full to draw it.
 ```
 
@@ -69,32 +80,61 @@ the only leaf drawn: `split-login-form` waits on it, and `auth-overhaul` waits o
 On the epic:
 
 ```
-┌───────────────────────┐     ┌──────────────────────────────┐     ┌─────────────────────────┐
-│📍 auth-overhaul [open]├────►│    fix-login-bug [closed]    │     │🍃 form-validation [open]│
-└───────────┬───────────┘     └───────────────┬──────────────┘     └─────────────────────────┘
-            │                                 ┆                                 ▲
-            │                                 └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐               │
-            │                                                   ┆               │
-            │                 ┌──────────────────────────────┐  ┆               │
-            ├────────────────►│  🍃 session-timeouts [open]  │  ┆               │
-            │                 └──────────────────────────────┘  ┆               │
-            │                                                   ┆               │
-            │                                 ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘               │
-            │                                 ▼                                 │
-            │                 ┌──────────────────────────────┐                  │
-            └────────────────►│split-login-form [in-progress]├──────────────────┘
-                              └──────────────────────────────┘
+╔════════════════════╗      ┌──────────────────────────────┐
+║auth-overhaul [open]╟─┬───►│    fix-login-bug [closed]    ├┄┐
+╚════════════════════╝ │    └──────────────────────────────┘ ┆
+                       │ ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
+                       │ ┆  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+                       ├─┼─►┃   session-timeouts [open]    ┃
+                       │ ┆  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                       │ ┆
+                       │ ┆  ┌──────────────────────────────┐      ┏━━━━━━━━━━━━━━━━━━━━━━┓
+                       └─┴─►│split-login-form [in-progress]├─────►┃form-validation [open]┃
+                            └──────────────────────────────┘      ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
-📍 auth-overhaul   🍃 leaf (ready to start)   ──► sub-issue   ┄┄► needed by
+╔═╗ auth-overhaul   ┏━┓ leaf (ready to start)   ──► sub-issue   ┄┄► needed by
+```
+
+With issues in directories, here `web/auth/login-epic`, `web/auth/fix-login-bug`,
+`web/split-login-form`, and `mobile/add-dark-mode`:
+
+```
+╭─ web ──────────────────────────────────────────────────────────╮
+│                                                                │
+│ ╭─ auth ─────────────────────────────────────────────────────╮ │
+│ │                                                            │ │
+│ │ ╔═════════════════╗              ┏━━━━━━━━━━━━━━━━━━━━━━━┓ │ │
+│ │ ║login-epic [open]╟───────┬─────►┃ fix-login-bug [open]  ┝┄┼┄┼┄┐
+│ │ ╚═════════════════╝       │      ┗━━━━━━━━━━━━━━━━━━━━━━━┛ │ │ ┆
+│ │                         ┌┄┼┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┼┄┼┄┘
+│ ╰─────────────────────────┼─┼────────────────────────────────╯ │
+│                           ┆ │                                  │
+│                           ┆ │      ┌───────────────────────┐   │
+│                           └┄┴─────►│split-login-form [open]├┄┄┄┼┄┄┄┐
+│                                    └───────────────────────┘   │   ┆
+│                                                                │   ┆
+╰────────────────────────────────────────────────────────────────╯   ┆
+                                                                     ┆
+                                                                     ┆  ╭─ mobile ───────────────────╮
+                                                                     ┆  │                            │
+                                                                     ┆  │   ┌────────────────────┐   │
+                                                                     └┄┄┼┄┄►│add-dark-mode [open]│   │
+                                                                        │   └────────────────────┘   │
+                                                                        │                            │
+                                                                        ╰────────────────────────────╯
+
+╔═╗ web/auth/login-epic   ┏━┓ leaf (ready to start)   ──► sub-issue   ┄┄► needed by
 ```
 
 The drawing flows left to right, so a large family grows down the terminal rather than across it.
 Each issue is placed in the column after the first issue that points to it, so an epic's sub-issues
-share one column even when they depend on each other. Where two arrows share a path, one can be
-drawn over the other. Use `--json` or `--mermaid` when the exact links matter.
+share one column even when they depend on each other. An arrow to an issue in the same column or
+an earlier one goes out to the right and comes back along a blank line.
 
-The drawing is made by [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii) (MIT
-license) from the same Mermaid source that `--mermaid` prints.
+Each directory has lines of its own, so no box of a directory holds an issue from outside it, and
+the boxes of two sibling directories do not overlap. An arrow that crosses a border joins it with
+`┼`, and never runs along it. Arrows that leave one issue share a line, and so do arrows that enter
+one issue. Use `--json` or `--mermaid` when the exact links matter.
 
 ## Options
 
@@ -106,20 +146,25 @@ license) from the same Mermaid source that `--mermaid` prints.
 
 `--json` and `--mermaid` cannot be used together. `--full` works with either.
 
-The epic with `--mermaid`:
+The epic with `--mermaid`. Each directory becomes a `subgraph`. The `focus` and `leaf` classes
+give `<name>` and the leaves thicker borders:
 
 ```
 graph LR
-    n0["📍 auth-overhaul [open]"]
+    n0["auth-overhaul [open]"]
     n1["fix-login-bug [closed]"]
-    n2["🍃 session-timeouts [open]"]
+    n2["session-timeouts [open]"]
     n3["split-login-form [in-progress]"]
-    n4["🍃 form-validation [open]"]
+    n4["form-validation [open]"]
     n0 --> n1
     n0 --> n2
     n0 --> n3
     n1 -.-> n3
     n3 --> n4
+    classDef focus stroke-width:5px
+    class n0 focus
+    classDef leaf stroke-width:3px
+    class n2,n4 leaf
 ```
 
 ## Examples
