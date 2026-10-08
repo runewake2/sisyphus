@@ -174,6 +174,21 @@ func TestUpdateMovesTheIssueWithGitMvInAGitRepo(t *testing.T) {
 	isTrue(t, movedAsRename || movedAsStagedDeleteAndAdd, "the move is staged in the git index: "+output)
 }
 
+func TestUpdateMovesAnIssueThatGitDoesNotTrackInAGitRepo(t *testing.T) {
+	r := newTestRepo(t)
+	r.git("init", "-q")
+	r.git("add", "-A")
+	r.git("-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "initial")
+	createUpdateTarget(r)
+
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
+
+	equal(t, 0, res.exit)
+	equal(t, "", res.error)
+	isTrue(t, !r.exists("issues/open/"+updateTarget+".md"), "the open file is gone")
+	isTrue(t, r.exists("issues/in-progress/"+updateTarget+".md"), "the issue moved")
+}
+
 func TestUpdateMovesTheIssueWithPlainRenameWithoutGit(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r)

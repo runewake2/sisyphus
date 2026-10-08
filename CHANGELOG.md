@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.17]] - 2026-10-08
+- Fix `sisyphus update` in a colocated jj repo: move an issue that git does not track with a plain
+  rename instead of `git mv`.
+
 ## [[0.0.16]] - 2026-10-08
 - Draw `sisyphus graph` as a real dependency graph: everything below an issue and the path above
   it, with leaves marked, every linked issue with `--full`, plus `--mermaid` output and a new JSON format.

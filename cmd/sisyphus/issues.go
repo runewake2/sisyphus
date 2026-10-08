@@ -600,9 +600,10 @@ func loadIssue(root, reference string) (string, issueFile, *document, error) {
 }
 
 // saveIssue writes the document to "from" and moves it to "to", the directory of its state. It
-// moves the file through git when the repo has a .git directory, so the move lands in the git
-// index as a rename instead of as an untracked delete-and-add. jj needs no such step: it detects a
-// rename from content when it next snapshots the working copy, so a plain rename is already correct.
+// moves the file through git when git tracks it, so the move lands in the git index as a rename
+// instead of as an untracked delete-and-add. A file that git does not track gets a plain rename:
+// git mv refuses it. In a colocated jj repo that is every file that jj has not committed yet, and
+// jj detects the rename from content when it next snapshots the working copy.
 func saveIssue(root string, doc *document, from, to string) error {
 	if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
 		return err
@@ -613,7 +614,7 @@ func saveIssue(root string, doc *document, from, to string) error {
 	if from == to {
 		return nil
 	}
-	if usesGit(root) {
+	if usesGit(root) && gitTracks(root, from) {
 		return gitMove(root, from, to)
 	}
 	return os.Rename(from, to)
@@ -623,6 +624,13 @@ func saveIssue(root string, doc *document, from, to string) error {
 func usesGit(root string) bool {
 	_, err := os.Stat(filepath.Join(root, ".git"))
 	return err == nil
+}
+
+// gitTracks reports whether the git index of root has the file at path.
+func gitTracks(root, path string) bool {
+	cmd := exec.Command("git", "ls-files", "--error-unmatch", "--", path)
+	cmd.Dir = root
+	return cmd.Run() == nil
 }
 
 func gitMove(root, from, to string) error {
