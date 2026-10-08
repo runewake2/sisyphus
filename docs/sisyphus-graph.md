@@ -57,6 +57,22 @@ says `(available)` after its name.
 A dashed box has two dashes per character (`╌`, `╎`), and a dotted arrow has three (`┄`, `┆`), so
 the two do not look alike. Unicode has no dashed corners, so a dashed box has solid corners.
 
+### Work path
+
+The work path shows what to do now to get to `<name>`. An issue waits on its dependencies and on
+its sub-issues that are not closed, and they wait on theirs. Followed from `<name>` through issues
+that are not closed, these links end at available issues: the work to start now. Each arrow on the
+way is drawn with heavy lines (`━━►`, and `┅┅►` for a dependency), and a legend line names the
+issues to start now:
+
+```
+start now: form-validation
+```
+
+An issue that is not on the work path, such as the parent of `<name>`, is work for later, or work
+that `<name>` does not need. A work path follows only the arrows that the graph draws. If
+`<name>` is available or closed, it has no work path.
+
 Each directory that holds a drawn issue is a rounded box around the issues and directories below
 it, nested as the directories nest. So an issue box shows only the file name of its issue, with
 its state on the line below, and the legend gives the full name of `<name>`.
@@ -72,11 +88,12 @@ On an issue inside an epic:
 └─────────────┘ │  └─────────────┘ ┆
                 │                  ┆
                 │                  ┆  ╔════════════════╗    ┏━━━━━━━━━━━━━━━┓
-                └──────────────────┴─►║split-login-form╟───►┃form-validation┃
+                └──────────────────┴─►║split-login-form╟━━━►┃form-validation┃
                                       ║  in-progress   ║    ┃     open      ┃
                                       ╚════════════════╝    ┗━━━━━━━━━━━━━━━┛
 
-╔═╗ split-login-form   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by
+╔═╗ split-login-form   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by   ━━► work path
+start now: form-validation
 1 more linked issue is not drawn. Use --full to draw it.
 ```
 
@@ -88,21 +105,22 @@ On the epic:
 
 ```
 ╔═════════════╗    ┌────────────────┐
-║auth-overhaul╟─┬─►│ fix-login-bug  ├┄┐
-║    open     ║ │  │     closed     │ ┆
-╚═════════════╝ │  └────────────────┘ ┆
-                │                     ┆
-                │  ┏━━━━━━━━━━━━━━━━┓ ┆
-                ├─►┃session-timeouts┃ ┆
-                │  ┃      open      ┃ ┆
-                │  ┗━━━━━━━━━━━━━━━━┛ ┆
-                │                     ┆
-                │                     ┆  ┌────────────────┐    ┏━━━━━━━━━━━━━━━┓
-                └─────────────────────┴─►│split-login-form├───►┃form-validation┃
+║auth-overhaul╟━┱─►│ fix-login-bug  ├┄┐
+║    open     ║ ┃  │     closed     │ ┆
+╚═════════════╝ ┃  └────────────────┘ ┆
+                ┃                     ┆
+                ┃  ┏━━━━━━━━━━━━━━━━┓ ┆
+                ┣━►┃session-timeouts┃ ┆
+                ┃  ┃      open      ┃ ┆
+                ┃  ┗━━━━━━━━━━━━━━━━┛ ┆
+                ┃                     ┆
+                ┃                     ┆  ┌────────────────┐    ┏━━━━━━━━━━━━━━━┓
+                ┗━━━━━━━━━━━━━━━━━━━━━┷━►│split-login-form┝━━━►┃form-validation┃
                                          │  in-progress   │    ┃     open      ┃
                                          └────────────────┘    ┗━━━━━━━━━━━━━━━┛
 
-╔═╗ auth-overhaul   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by
+╔═╗ auth-overhaul   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by   ━━► work path
+start now: form-validation, session-timeouts
 ```
 
 With issues in directories, here `web/auth/login-epic`, `web/auth/fix-login-bug`,
@@ -114,14 +132,14 @@ With issues in directories, here `web/auth/login-epic`, `web/auth/fix-login-bug`
 │ ╭─ auth ──────────────────────────────────╮                               │
 │ │                                         │                               │
 │ │ ╔══════════╗            ┏━━━━━━━━━━━━━┓ │                               │
-│ │ ║login-epic╟─────┬─────►┃fix-login-bug┝┄┼┄┄┄┐                           │
-│ │ ║   open   ║     │      ┃    open     ┃ │   ┆                           │
-│ │ ╚══════════╝     │      ┗━━━━━━━━━━━━━┛ │   ┆                           │
-│ │                  │                      │   ┆                           │
-│ ╰──────────────────┼──────────────────────╯   ┆                           │
-│                    │                          ┆                           │
-│                    │                          ┆      ┌────────────────┐   │
-│                    └──────────────────────────┴─────►│split-login-form├┄┄┄┼┄┐
+│ │ ║login-epic╟━━━━━┳━━━━━►┃fix-login-bug┣┅┿┅┅┅┓                           │
+│ │ ║   open   ║     ┃      ┃    open     ┃ │   ┇                           │
+│ │ ╚══════════╝     ┃      ┗━━━━━━━━━━━━━┛ │   ┇                           │
+│ │                  ┃                      │   ┇                           │
+│ ╰──────────────────╂──────────────────────╯   ┇                           │
+│                    ┃                          ┇                           │
+│                    ┃                          ┇      ┌────────────────┐   │
+│                    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━►│split-login-form├┄┄┄┼┄┐
 │                                                      │      open      │   │ ┆
 │                                                      └────────────────┘   │ ┆
 │                                                                           │ ┆
@@ -136,7 +154,8 @@ With issues in directories, here `web/auth/login-epic`, `web/auth/fix-login-bug`
                                                                                  │                     │
                                                                                  ╰─────────────────────╯
 
-╔═╗ web/auth/login-epic   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by
+╔═╗ web/auth/login-epic   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by   ━━► work path
+start now: web/auth/fix-login-bug
 ```
 
 The drawing flows left to right, so a large family grows down the terminal rather than across it.
@@ -165,7 +184,7 @@ one issue. Use `--json` or `--mermaid` when the exact links matter.
 
 ## Color
 
-As of 0.0.27, color is an experiment. `<name>` and each arrow that leaves or enters it are bold
+As of 0.0.28, color is an experiment. `<name>` and each arrow that leaves or enters it are bold
 bright cyan. Each issue that such an arrow links to `<name>` is bold in the color of its state:
 
 | Color | State |
@@ -177,8 +196,9 @@ bright cyan. Each issue that such an arrow links to `<name>` is bold in the colo
 
 The rest of the drawing is gray, so the issue and its direct links stand out. Where an arrow
 shares a line with the arrows of other issues, only the part that leads to or from `<name>` is
-bright. The legend has no color, except a line that names each state color the drawing uses. Each
-colored line resets the color at its end.
+bright. The arrows of the work path and the borders of the issues to start now are bold magenta.
+The legend has no color, except a line that names each state color the drawing uses. Each colored
+line resets the color at its end.
 
 The epic with `--mermaid`. Each directory becomes a `subgraph`. The `focus` and `available` classes
 give `<name>` and the available issues thicker borders. With `--full`, the `indirect` class gives

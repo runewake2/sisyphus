@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.28]] - 2026-10-08
+- Draw the work path of `<name>` in `sisyphus graph` with heavy lines, from the issues to start
+  now, and name those issues in the legend.
+
 ## [[0.0.27]] - 2026-10-08
 - Color each issue linked directly to `<name>` in a colored `sisyphus graph` by its state.
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"maps"
 	"slices"
 	"strings"
 )
@@ -205,13 +206,40 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int, 
 		c.box(x1, f.top, x2, f.bottom, roundedBox)
 		c.text(x1+2, f.top, " "+f.dir.name+" ")
 	}
+	path, startNow := workPath(graph)
 	for _, p := range l.issues {
 		p.x = columnX[p.column]
 		width := l.columnWidth[p.column]
 		c.pen = issueColor(graph, p.node)
+		if startNow[p.node.Name] && p.node.Name != graph.Focus {
+			c.pen = pathColor
+		}
 		c.box(p.x, p.y, p.x+width-1, p.y+boxHeight-1, issueStyle(graph, p.node))
+		c.pen = issueColor(graph, p.node)
 		c.text(p.x+1+(width-2-textWidth(p.name))/2, p.y+1, p.name)
 		c.text(p.x+1+(width-2-textWidth(p.node.State))/2, p.y+2, p.node.State)
+	}
+	// The work path is drawn last, so its color wins where it shares a line with other arrows.
+	slices.SortStableFunc(routes, func(a, b route) int {
+		rank := func(r route) int {
+			switch {
+			case path[r.edge]:
+				return 2
+			case attached(graph, r):
+				return 1
+			}
+			return 0
+		}
+		return rank(a) - rank(b)
+	})
+	pen := func(r route) string {
+		switch {
+		case path[r.edge]:
+			return pathColor
+		case attached(graph, r):
+			return strongColor
+		}
+		return ""
 	}
 	for _, r := range routes {
 		start := [2]int{r.from.x + l.columnWidth[r.from.column] - 1, r.from.mid()}
@@ -228,17 +256,12 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int, 
 		}
 		points = append(points, end)
 		points = slices.CompactFunc(points, func(p, q [2]int) bool { return p == q })
-		c.pen = ""
-		if attached(graph, r) {
-			c.pen = strongColor
-		}
+		c.pen, c.heavy = pen(r), path[r.edge]
 		c.path(r.edge.Kind == dependsOnEdge, points...)
 	}
+	c.heavy = false
 	for _, r := range routes {
-		c.pen = ""
-		if attached(graph, r) {
-			c.pen = strongColor
-		}
+		c.pen = pen(r)
 		c.text(r.to.x-1, r.to.mid(), "►")
 	}
 	c.pen = ""
@@ -272,6 +295,52 @@ func stateColor(node graphNode) string {
 		return completedColor
 	}
 	return missingColor
+}
+
+// workPath is what the focus issue waits on, all the way down: an issue waits on its dependencies
+// and its sub-issues that are not closed. The chains end at available issues, which are the work to
+// start now. path holds each drawn arrow on those chains.
+func workPath(graph issueGraph) (path map[graphEdge]bool, startNow map[string]bool) {
+	open := map[string]graphNode{}
+	for _, node := range graph.Nodes {
+		if node.State != "closed" && node.State != "?" {
+			open[node.Name] = node
+		}
+	}
+	waitsOn := map[string][]graphEdge{}
+	for _, edge := range graph.Edges {
+		waiting := edge.To
+		if edge.Kind == parentEdge {
+			waiting = edge.From
+		}
+		waitsOn[waiting] = append(waitsOn[waiting], edge)
+	}
+	path, startNow = map[graphEdge]bool{}, map[string]bool{}
+	seen := map[string]bool{}
+	var walk func(issue string)
+	walk = func(issue string) {
+		if seen[issue] {
+			return
+		}
+		seen[issue] = true
+		if open[issue].Available {
+			startNow[issue] = true
+		}
+		for _, edge := range waitsOn[issue] {
+			on := edge.From
+			if edge.Kind == parentEdge {
+				on = edge.To
+			}
+			if _, waits := open[on]; waits {
+				path[edge] = true
+				walk(on)
+			}
+		}
+	}
+	if _, waits := open[graph.Focus]; waits {
+		walk(graph.Focus)
+	}
+	return path, startNow
 }
 
 // attached tells whether an arrow leaves or enters the focus issue.
@@ -324,6 +393,14 @@ func drawGraph(graph issueGraph, color bool) (string, error) {
 	}
 	if len(graph.Edges) > 0 {
 		legend += "   ──► sub-issue   ┄┄► needed by"
+	}
+	path, startNow := workPath(graph)
+	delete(startNow, graph.Focus)
+	if len(path) > 0 {
+		legend += "   ━━► work path"
+	}
+	if len(startNow) > 0 {
+		legend += "\nstart now: " + strings.Join(slices.Sorted(maps.Keys(startNow)), ", ")
 	}
 	if color {
 		legend += stateKey(graph)

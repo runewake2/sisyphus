@@ -598,9 +598,10 @@ func TestGraphColorsTheFocusAndItsArrows(t *testing.T) {
 
 	equal(t, 0, res.exit)
 	lines := decodeColors(t, res.output)
-	equal(t, strongColor, colorOf(t, lines, "║sub-a-test╟"))
-	equal(t, strongColor, colorOf(t, lines, "─►"))
-	equal(t, strongColor, colorOf(t, lines, "╟─┬─►"))
+	equal(t, strongColor, colorOf(t, lines, "║sub-a-test"))
+	equal(t, strongColor, colorOf(t, lines, "─►║sub-a-test"))
+	equal(t, strongColor, colorOf(t, lines, "┴─►"))
+	equal(t, pathColor, colorOf(t, lines, "━┯━►"))
 	equal(t, "", colorOf(t, lines, "╗ sub-a-test   ┏━┓ available"))
 }
 
@@ -651,4 +652,87 @@ func TestGraphRejectsAnUnknownColorMode(t *testing.T) {
 
 	equal(t, 1, res.exit)
 	contains(t, res.error, `--color must be auto, always, or never, not "purple"`)
+}
+
+// setUpWorkPath makes focus-test, which depends on middle-test, which depends on start-test. All
+// three are sub-issues of epic-test, and focus-test has an open sub-issue part-test and a closed one.
+func setUpWorkPath(t *testing.T) *testRepo {
+	t.Helper()
+	r := newTestRepo(t)
+	r.mustRun("new", "epic-test")
+	r.mustRun("new", "start-test", "--parent", "epic-test")
+	r.mustRun("new", "middle-test", "--parent", "epic-test", "--depends-on", "start-test")
+	r.mustRun("new", "focus-test", "--parent", "epic-test", "--depends-on", "middle-test")
+	r.mustRun("new", "part-test", "--parent", "focus-test")
+	r.mustRun("new", "finished-test", "--parent", "focus-test", "--state", "closed", "--resolution", "completed")
+	return r
+}
+
+func TestGraphWorkPathFollowsWhatTheFocusWaitsOn(t *testing.T) {
+	r := setUpWorkPath(t)
+
+	path, startNow := workPath(graphJSON(t, r, "focus-test"))
+
+	equal(t, 3, len(path))
+	isTrue(t, path[graphEdge{From: "start-test", To: "middle-test", Kind: dependsOnEdge}], "start-test is on the path")
+	isTrue(t, path[graphEdge{From: "middle-test", To: "focus-test", Kind: dependsOnEdge}], "middle-test is on the path")
+	isTrue(t, path[graphEdge{From: "focus-test", To: "part-test", Kind: parentEdge}], "an open sub-issue is on the path")
+	isTrue(t, !path[graphEdge{From: "focus-test", To: "finished-test", Kind: parentEdge}], "a closed sub-issue is not")
+	isTrue(t, !path[graphEdge{From: "epic-test", To: "focus-test", Kind: parentEdge}], "the parent does not wait on the focus's path")
+	equal(t, 2, len(startNow))
+	isTrue(t, startNow["start-test"] && startNow["part-test"], "the chains end at the available issues")
+}
+
+func TestGraphDrawsTheWorkPathHeavy(t *testing.T) {
+	r := setUpWorkPath(t)
+
+	res := r.run("graph", "focus-test")
+
+	equal(t, 0, res.exit)
+	contains(t, res.output, "┅")
+	contains(t, res.output, "┗━►┃  part-test")
+	contains(t, res.output, "│epic-test├─┬─►")
+	contains(t, res.output, "━━► work path")
+	contains(t, res.output, "\nstart now: part-test, start-test\n")
+}
+
+func TestGraphWithoutAWorkPathHasNoPathLegend(t *testing.T) {
+	r := setUpWorkPath(t)
+
+	res := r.run("graph", "start-test")
+
+	equal(t, 0, res.exit)
+	isTrue(t, !strings.Contains(res.output, "work path"), "an available focus waits on nothing")
+	isTrue(t, !strings.Contains(res.output, "start now"), "an available focus waits on nothing")
+}
+
+func TestGraphColorsTheWorkPath(t *testing.T) {
+	r := setUpWorkPath(t)
+
+	res := r.run("graph", "--color", "always", "focus-test")
+
+	equal(t, 0, res.exit)
+	lines := decodeColors(t, res.output)
+	equal(t, pathColor, colorOf(t, lines, "┏━━━━━━━━━━┓"))
+	equal(t, weakColor, colorOf(t, lines, "start-test"))
+	equal(t, openColor, colorOf(t, lines, "part-test"))
+	equal(t, pathColor, colorOf(t, lines, "━►"))
+}
+
+func TestCanvasMixesLineWeights(t *testing.T) {
+	for _, tc := range []struct {
+		cell cell
+		want rune
+	}{
+		{cell{lines: up | down | right, heavy: up | down, solid: 1}, '┠'},
+		{cell{lines: up | down | right, heavy: right, solid: 1}, '┝'},
+		{cell{lines: up | down | left | right, heavy: left | right, solid: 1}, '┿'},
+		{cell{lines: left | right, heavy: left | right}, '┅'},
+		{cell{lines: up, heavy: up, solid: 1}, '┃'},
+		{cell{lines: down | right, solid: 1, style: roundedBox}, '╭'},
+		{cell{lines: left | right, solid: 1, style: dashedBox}, '╌'},
+		{cell{lines: up | down | right, solid: 1, style: dashedBox}, '├'},
+	} {
+		equal(t, tc.want, tc.cell.rune())
+	}
 }
