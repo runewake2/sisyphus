@@ -52,7 +52,8 @@ sisyphus resolve "[[<issue-name>]]"
 sisyphus links <file>
 ```
 
-Run `sisyphus <command> --help` for all options on any command. See [[CONTRIBUTING]] for the full
+Run `sisyphus <command> --help` for all options on any command, and see [[commands]] (`docs/`)
+for every command in detail. See [[CONTRIBUTING]] for the full
 workflow: the design log, decisions, versioning, the changelog, wikilinks, issues, and jj.
 
 ## Obsidian
@@ -92,4 +93,4 @@ Each tool (`sisyphus_new`, `sisyphus_update`, `sisyphus_show`, `sisyphus_list`, 
 `sisyphus_graph`, `sisyphus_parent`, `sisyphus_remote`, `sisyphus_depends_on`, `sisyphus_slug`,
 `sisyphus_resolve`, `sisyphus_links`, `sisyphus_init`) takes an optional `dir` argument (the repo to
 act on; defaults to `sisyphus-mcp`'s own working directory), plus the same arguments as the CLI
-command it wraps.
+command it wraps. See [[sisyphus-mcp]] for the full list of tools.
