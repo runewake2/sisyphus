@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.22]] - 2026-10-08
+- Place each issue in `sisyphus graph` one column after the farthest issue that points to it, so
+  arrows no longer turn back or run side by side.
+
 ## [[0.0.21]] - 2026-10-08
 - Draw each issue subdirectory in `sisyphus graph` as a box around its issues, show only file
   names in issue boxes, and mark the focus and leaves with box line styles instead of emoji.

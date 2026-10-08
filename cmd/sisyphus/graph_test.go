@@ -428,3 +428,25 @@ func TestGraphPrintsMermaidSubgraphs(t *testing.T) {
 		"    class n1 leaf",
 	}, res.lines())
 }
+
+// TestGraphArrowsTakeNoDetourWithoutACycle draws an epic whose sub-issues depend on each other in
+// chains. Each arrow must reach its issue with one turn at most, never by a line back to the left.
+func TestGraphArrowsTakeNoDetourWithoutACycle(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "integration-plugins")
+	r.mustRun("new", "plugin-protocol", "--parent", "integration-plugins")
+	r.mustRun("new", "plugin-runner", "--parent", "integration-plugins", "--depends-on", "plugin-protocol")
+	r.mustRun("new", "github-plugin", "--parent", "integration-plugins", "--depends-on", "plugin-protocol")
+	r.mustRun("new", "sync-commands", "--parent", "integration-plugins", "--depends-on", "plugin-runner")
+	r.mustRun("new", "intake-workflow", "--parent", "integration-plugins", "--depends-on", "github-plugin")
+	r.mustRun("depends-on", "intake-workflow", "sync-commands")
+
+	graph := graphJSON(t, r, "--full", "integration-plugins")
+	routes, _ := routeEdges(layOut(graph), graph)
+
+	equal(t, len(graph.Edges), len(routes))
+	for _, route := range routes {
+		isTrue(t, route.a == nil || route.b == nil, "the arrow from "+route.edge.From+" to "+route.edge.To+" takes no detour")
+		isTrue(t, route.to.column > route.from.column, "the arrow from "+route.edge.From+" points right")
+	}
+}

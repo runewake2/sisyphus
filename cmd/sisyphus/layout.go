@@ -1,6 +1,8 @@
 package main
 
 import (
+	"cmp"
+	"math"
 	"slices"
 
 	"github.com/mattn/go-runewidth"
@@ -43,18 +45,20 @@ type layout struct {
 	height      int
 }
 
-// columnsOf puts each issue in the column after the first issue in link order that points to it,
-// so the sub-issues of an epic share one column even when they depend on each other.
+// columnsOf puts each issue one column after the farthest issue that points to it, so a chain of
+// dependencies reads left to right and most arrows reach only the next column. graph.Nodes is in
+// link order, with issues in a cycle last; an arrow back to an earlier issue does not move it.
 func columnsOf(graph issueGraph) map[string]int {
+	index := map[string]int{}
+	for i, node := range graph.Nodes {
+		index[node.Name] = i
+	}
 	column := map[string]int{}
 	for _, node := range graph.Nodes {
 		for _, edge := range graph.Edges {
-			if _, done := column[edge.To]; edge.From == node.Name && !done && edge.To != node.Name {
-				column[edge.To] = column[node.Name] + 1
+			if edge.From == node.Name && index[edge.To] > index[edge.From] {
+				column[edge.To] = max(column[edge.To], column[node.Name]+1)
 			}
-		}
-		if _, done := column[node.Name]; !done {
-			column[node.Name] = 0
 		}
 	}
 	return column
@@ -101,27 +105,78 @@ func layOut(graph issueGraph) *layout {
 	y := 0
 	var placeDirectory func(d *directory, depth int)
 	placeIssues := func(d *directory) {
-		// An issue takes the row of the first issue that points to it in the same directory, or
-		// the next free row in its column.
-		taken := map[[2]int]bool{}
+		// Column by column, each issue wants the mean row of the issues in this directory that
+		// point to it, so an arrow can run straight. Issues keep that order down the column, one
+		// row apart at least. An arrow from two or more columns back runs along the row of the
+		// issue it enters, so that row must be free in each column between.
 		rowOf := map[string]int{}
-		rows := 0
-		for _, node := range d.issues {
-			p := l.byName[node.Name]
-			row := 0
+		taken := map[[2]int]bool{}
+		blocked := func(p *placed, row int) bool {
 			for _, edge := range graph.Edges {
-				if r, same := rowOf[edge.From]; same && edge.To == node.Name {
-					row = r
-					break
+				from := l.byName[edge.From]
+				if edge.To != p.node.Name || from.column >= p.column-1 {
+					continue
+				}
+				for c := from.column + 1; c < p.column; c++ {
+					if taken[[2]int{c, row}] {
+						return true
+					}
 				}
 			}
-			for taken[[2]int{p.column, row}] {
-				row++
+			return false
+		}
+		rows := 0
+		for column := range l.columns {
+			type want struct {
+				p   *placed
+				row float64
+				has bool
 			}
-			taken[[2]int{p.column, row}] = true
-			rowOf[node.Name] = row
-			p.row = row
-			rows = max(rows, row+1)
+			var wants []want
+			for _, node := range d.issues {
+				p := l.byName[node.Name]
+				if p.column != column {
+					continue
+				}
+				w := want{p: p}
+				sum, n := 0, 0
+				for _, edge := range graph.Edges {
+					if r, placed := rowOf[edge.From]; placed && edge.To == node.Name {
+						sum, n = sum+r, n+1
+					}
+				}
+				if n > 0 {
+					w.row, w.has = float64(sum)/float64(n), true
+				}
+				wants = append(wants, w)
+			}
+			slices.SortStableFunc(wants, func(a, b want) int {
+				switch {
+				case a.has && b.has && a.row != b.row:
+					return cmp.Compare(a.row, b.row)
+				case a.has != b.has:
+					if a.has {
+						return -1
+					}
+					return 1
+				}
+				return a.p.index - b.p.index
+			})
+			next := 0
+			for _, w := range wants {
+				row := next
+				if w.has {
+					row = max(row, int(math.Round(w.row)))
+				}
+				for blocked(w.p, row) {
+					row++
+				}
+				taken[[2]int{column, row}] = true
+				w.p.row = row
+				rowOf[w.p.node.Name] = row
+				next = row + 1
+				rows = max(rows, next)
+			}
 		}
 		for _, node := range d.issues {
 			p := l.byName[node.Name]

@@ -61,13 +61,13 @@ legend gives the full name of `<name>`.
 On an issue inside an epic:
 
 ```
-┌────────────────────┐      ┌──────────────────────────────┐
-│auth-overhaul [open]├─┬───►│    fix-login-bug [closed]    ├┄┐
-└────────────────────┘ │    └──────────────────────────────┘ ┆
-                       │ ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
-                       │ ┆  ╔══════════════════════════════╗      ┏━━━━━━━━━━━━━━━━━━━━━━┓
-                       └─┴─►║split-login-form [in-progress]╟─────►┃form-validation [open]┃
-                            ╚══════════════════════════════╝      ┗━━━━━━━━━━━━━━━━━━━━━━┛
+┌────────────────────┐    ┌──────────────────────┐
+│auth-overhaul [open]├─┬─►│fix-login-bug [closed]├┄┐
+└────────────────────┘ │  └──────────────────────┘ ┆
+                       │                           ┆
+                       │                           ┆  ╔══════════════════════════════╗    ┏━━━━━━━━━━━━━━━━━━━━━━┓
+                       └───────────────────────────┴─►║split-login-form [in-progress]╟───►┃form-validation [open]┃
+                                                      ╚══════════════════════════════╝    ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
 ╔═╗ split-login-form   ┏━┓ leaf (ready to start)   ──► sub-issue   ┄┄► needed by
 1 more linked issue is not drawn. Use --full to draw it.
@@ -80,17 +80,17 @@ the only leaf drawn: `split-login-form` waits on it, and `auth-overhaul` waits o
 On the epic:
 
 ```
-╔════════════════════╗      ┌──────────────────────────────┐
-║auth-overhaul [open]╟─┬───►│    fix-login-bug [closed]    ├┄┐
-╚════════════════════╝ │    └──────────────────────────────┘ ┆
-                       │ ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘
-                       │ ┆  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-                       ├─┼─►┃   session-timeouts [open]    ┃
-                       │ ┆  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-                       │ ┆
-                       │ ┆  ┌──────────────────────────────┐      ┏━━━━━━━━━━━━━━━━━━━━━━┓
-                       └─┴─►│split-login-form [in-progress]├─────►┃form-validation [open]┃
-                            └──────────────────────────────┘      ┗━━━━━━━━━━━━━━━━━━━━━━┛
+╔════════════════════╗    ┌───────────────────────┐
+║auth-overhaul [open]╟─┬─►│fix-login-bug [closed] ├┄┐
+╚════════════════════╝ │  └───────────────────────┘ ┆
+                       │                            ┆
+                       │  ┏━━━━━━━━━━━━━━━━━━━━━━━┓ ┆
+                       ├─►┃session-timeouts [open]┃ ┆
+                       │  ┗━━━━━━━━━━━━━━━━━━━━━━━┛ ┆
+                       │                            ┆
+                       │                            ┆  ┌──────────────────────────────┐    ┏━━━━━━━━━━━━━━━━━━━━━━┓
+                       └────────────────────────────┴─►│split-login-form [in-progress]├───►┃form-validation [open]┃
+                                                       └──────────────────────────────┘    ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
 ╔═╗ auth-overhaul   ┏━┓ leaf (ready to start)   ──► sub-issue   ┄┄► needed by
 ```
@@ -99,37 +99,39 @@ With issues in directories, here `web/auth/login-epic`, `web/auth/fix-login-bug`
 `web/split-login-form`, and `mobile/add-dark-mode`:
 
 ```
-╭─ web ──────────────────────────────────────────────────────────╮
-│                                                                │
-│ ╭─ auth ─────────────────────────────────────────────────────╮ │
-│ │                                                            │ │
-│ │ ╔═════════════════╗              ┏━━━━━━━━━━━━━━━━━━━━━━━┓ │ │
-│ │ ║login-epic [open]╟───────┬─────►┃ fix-login-bug [open]  ┝┄┼┄┼┄┐
-│ │ ╚═════════════════╝       │      ┗━━━━━━━━━━━━━━━━━━━━━━━┛ │ │ ┆
-│ │                         ┌┄┼┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┼┄┼┄┘
-│ ╰─────────────────────────┼─┼────────────────────────────────╯ │
-│                           ┆ │                                  │
-│                           ┆ │      ┌───────────────────────┐   │
-│                           └┄┴─────►│split-login-form [open]├┄┄┄┼┄┄┄┐
-│                                    └───────────────────────┘   │   ┆
-│                                                                │   ┆
-╰────────────────────────────────────────────────────────────────╯   ┆
-                                                                     ┆
-                                                                     ┆  ╭─ mobile ───────────────────╮
-                                                                     ┆  │                            │
-                                                                     ┆  │   ┌────────────────────┐   │
-                                                                     └┄┄┼┄┄►│add-dark-mode [open]│   │
-                                                                        │   └────────────────────┘   │
-                                                                        │                            │
-                                                                        ╰────────────────────────────╯
+╭─ web ──────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                │
+│ ╭─ auth ────────────────────────────────────────────────╮                                      │
+│ │                                                       │                                      │
+│ │ ╔═════════════════╗            ┏━━━━━━━━━━━━━━━━━━━━┓ │                                      │
+│ │ ║login-epic [open]╟─────┬─────►┃fix-login-bug [open]┝┄┼┄┄┄┐                                  │
+│ │ ╚═════════════════╝     │      ┗━━━━━━━━━━━━━━━━━━━━┛ │   ┆                                  │
+│ │                         │                             │   ┆                                  │
+│ ╰─────────────────────────┼─────────────────────────────╯   ┆                                  │
+│                           │                                 ┆                                  │
+│                           │                                 ┆      ┌───────────────────────┐   │
+│                           └─────────────────────────────────┴─────►│split-login-form [open]├┄┄┄┼┄┐
+│                                                                    └───────────────────────┘   │ ┆
+│                                                                                                │ ┆
+╰────────────────────────────────────────────────────────────────────────────────────────────────╯ ┆
+                                                                                                   ┆
+                                                                                                   ┆  ╭─ mobile ───────────────────╮
+                                                                                                   ┆  │                            │
+                                                                                                   ┆  │   ┌────────────────────┐   │
+                                                                                                   └┄┄┼┄┄►│add-dark-mode [open]│   │
+                                                                                                      │   └────────────────────┘   │
+                                                                                                      │                            │
+                                                                                                      ╰────────────────────────────╯
 
 ╔═╗ web/auth/login-epic   ┏━┓ leaf (ready to start)   ──► sub-issue   ┄┄► needed by
 ```
 
 The drawing flows left to right, so a large family grows down the terminal rather than across it.
-Each issue is placed in the column after the first issue that points to it, so an epic's sub-issues
-share one column even when they depend on each other. An arrow to an issue in the same column or
-an earlier one goes out to the right and comes back along a blank line.
+Each issue is placed one column after the farthest issue that points to it, so a chain of
+dependencies reads left to right, and most arrows reach only the next column. An arrow that
+skips columns runs along the row of the issue it enters, and no other issue sits on that row in
+the columns between, so the arrow is one straight line. Only an arrow in a cycle goes out to the
+right and comes back along a blank line.
 
 Each directory has lines of its own, so no box of a directory holds an issue from outside it, and
 the boxes of two sibling directories do not overlap. An arrow that crosses a border joins it with
