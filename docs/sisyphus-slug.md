@@ -10,8 +10,11 @@ sisyphus slug <text>
 
 ## Rules
 
-1. Lowercase the text and keep only runs of letters and digits, as words.
-2. Keep the first 6 words. Fewer than 2 words is an error: the text cannot make a valid name.
+1. Lowercase the text. Each run of ASCII letters and digits is a word. Every other character,
+   including an accented letter, separates words and is dropped: `Café` gives `caf`.
+2. Keep the first 6 words and drop the rest. sisyphus does not choose which words matter, so a
+   long title can lose the words that describe it. Fewer than 2 words is an error: the text cannot
+   make a valid name.
 3. Join the words with hyphens.
 4. If a Markdown file anywhere in the repo already has that name (ignoring case), add `-2`, `-3`,
    and so on until it does not. If the name already has 6 words, the last word gives way to the
@@ -27,6 +30,8 @@ The name, for example:
 ```bash
 $ sisyphus slug "Crash when the cache is empty!"
 crash-when-the-cache-is-empty
+$ sisyphus slug "Build the issue index once per command"
+build-the-issue-index-once-per
 $ sisyphus slug "Fix login bug"     # fix-login-bug.md already exists
 fix-login-bug-2
 ```

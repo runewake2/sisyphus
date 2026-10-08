@@ -238,10 +238,17 @@ func dependsOnCommand(findRoot func() (string, error)) *cobra.Command {
 func slugCommand(findRoot func() (string, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "slug <text>",
-		Short: "Print a unique, valid issue name made from text, for example a GitHub issue title.",
-		Long: "Print a unique, valid issue name made from text: lowercased, with non-alphanumeric runs " +
-			"replaced by a hyphen, trimmed to 2-6 words. If that name already belongs to a file in the " +
-			"repo, a numeric suffix is added until it does not.",
+		Short: "Print a valid issue name, made from text, that no file in the repo has.",
+		Long: "Print a valid issue name, made from text such as a GitHub issue title, that no Markdown file " +
+			"in the repo has. It does not create anything.\n\n" +
+			"1. Lowercase the text. Each run of ASCII letters and digits is a word. Every other character " +
+			"separates words and is dropped, so \"café\" gives the words \"caf\" and nothing else.\n" +
+			"2. Keep the first 6 words and drop the rest. Text with fewer than 2 words is an error.\n" +
+			"3. Join the words with hyphens.\n" +
+			"4. If a Markdown file in the repo has that name, ignoring case, add -2, -3, and so on until no " +
+			"file has it. A 6-word name drops its last word to make room for the number.\n\n" +
+			"Example: \"Build the issue index once per command\" gives build-the-issue-index-once-per. " +
+			"Choose the name yourself when the first 6 words do not describe the issue.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := findRoot()

@@ -68,8 +68,10 @@ func registerTools(server *mcp.Server) {
 		Description: "Add or remove an issue that a sisyphus issue depends on (must close before it can start).",
 	}, dependsOnHandler)
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "sisyphus_slug",
-		Description: "Turn arbitrary text (for example a title) into a unique, valid sisyphus issue name.",
+		Name: "sisyphus_slug",
+		Description: "Turn text, for example a title, into a valid sisyphus issue name that no file in the repo has: " +
+			"the first 6 runs of ASCII letters and digits, lowercased and joined with hyphens, plus -2, -3, and so on " +
+			"if the name is taken. Every other character is dropped. Fewer than 2 words is an error.",
 	}, slugHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_resolve",
