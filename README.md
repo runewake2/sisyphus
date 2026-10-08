@@ -1,6 +1,6 @@
 # sisyphus
 
-> **DO NOT USE.** This is a personal project and it's very vibes based atm. That may change later but for now this is primarily a project built for me.
+> **DO NOT USE.** This is a personal project and it's very vibes based atm. That may change later but for now this is primarily a project built just for me.
 
 A small CLI for managing the issues in `issues/` and managing work in a more useful way.
 
@@ -54,6 +54,22 @@ sisyphus links <file>
 
 Run `sisyphus <command> --help` for all options on any command. See [[CONTRIBUTING]] for the full
 workflow: the design log, decisions, versioning, the changelog, wikilinks, issues, and jj.
+
+## Obsidian
+
+sisyphus issues are plain Markdown with YAML frontmatter, so a repo that uses sisyphus also works
+as an [Obsidian](https://obsidian.md/) vault: open the repo's root as a vault to browse, link, and
+edit issues there.
+
+- sisyphus resolves wikilinks the way Obsidian does: `[[name]]`, `[[name#Heading]]`, and
+  `[[name|text]]` match a file by name in any directory, ignoring case. A link to an issue keeps
+  working when the issue moves between `open/`, `in-progress/`, and `closed/`.
+  `sisyphus links <file>` reports any link that does not resolve.
+- Like Obsidian, sisyphus ignores wikilinks inside code blocks and inline code.
+- In frontmatter, a wikilink is quoted (`parent: "[[some-epic]]"`) so the YAML stays valid.
+  sisyphus writes them that way.
+- Obsidian keeps its own settings in `.obsidian/`. Those are per-user, so keep them out of version
+  control; this repo ignores them.
 
 ## MCP server
 
