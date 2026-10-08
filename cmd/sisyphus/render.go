@@ -235,14 +235,19 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int) 
 }
 
 // issueStyle is the border of an issue box: double for the focus issue, heavy for an available
-// issue, and light for the rest. No box is both double and heavy, so an available focus issue is
-// double, and the legend tells that it is available.
+// issue, and light for the rest, dashed if the issue is linked only indirectly. No box is both
+// double and heavy, so an available focus issue is double, and the legend tells that it is
+// available.
 func issueStyle(graph issueGraph, node graphNode) boxStyle {
 	switch {
 	case node.Name == graph.Focus:
 		return doubleBox
+	case node.Available && node.Indirect:
+		return heavyDashedBox
 	case node.Available:
 		return heavyBox
+	case node.Indirect:
+		return dashedBox
 	}
 	return lightBox
 }
@@ -262,8 +267,14 @@ func drawGraph(graph issueGraph) (string, error) {
 	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Available && node.Name == graph.Focus }) {
 		legend += " (available)"
 	}
-	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Available && node.Name != graph.Focus }) {
+	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Available && !node.Indirect && node.Name != graph.Focus }) {
 		legend += "   ┏━┓ available (ready to start)"
+	}
+	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Indirect && !node.Available }) {
+		legend += "   ┌╌┐ linked indirectly"
+	}
+	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Indirect && node.Available }) {
+		legend += "   ┏╍┓ available, linked indirectly"
 	}
 	if len(graph.Edges) > 0 {
 		legend += "   ──► sub-issue   ┄┄► needed by"

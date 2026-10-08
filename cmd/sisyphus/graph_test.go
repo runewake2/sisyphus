@@ -450,3 +450,45 @@ func TestGraphArrowsTakeNoDetourWithoutACycle(t *testing.T) {
 		isTrue(t, route.to.column > route.from.column, "the arrow from "+route.edge.From+" points right")
 	}
 }
+
+func TestGraphFullDrawsAnIndirectIssueInADashedBox(t *testing.T) {
+	r := setUpGraphIssues(t)
+
+	res := r.run("graph", "--full", "sub-a-child-test")
+
+	equal(t, 0, res.exit)
+	equal(t, '╎', borderOf(t, res.output, "sub-b-test [closed]"))
+	equal(t, '│', borderOf(t, res.output, "sub-a-test [open]"))
+	contains(t, res.output, "┌╌┐ linked indirectly")
+	isTrue(t, !strings.Contains(res.output, "┏╍┓"), "no available issue is linked indirectly")
+}
+
+func TestGraphFullDrawsAnIndirectAvailableIssueInAHeavyDashedBox(t *testing.T) {
+	r := setUpGraphIssues(t)
+	r.mustRun("new", "spare-task-test", "--parent", "epic-root-test")
+
+	res := r.run("graph", "--full", "sub-a-child-test")
+
+	equal(t, 0, res.exit)
+	equal(t, '╏', borderOf(t, res.output, "spare-task-test [open]"))
+	contains(t, res.output, "┏╍┓ available, linked indirectly")
+}
+
+func TestGraphMarksIndirectIssuesOnlyWithFull(t *testing.T) {
+	r := setUpGraphIssues(t)
+
+	indirect := map[string]bool{}
+	for _, node := range graphJSON(t, r, "--full", "sub-a-child-test").Nodes {
+		indirect[node.Name] = node.Indirect
+	}
+	equal(t, 4, len(indirect))
+	isTrue(t, indirect["sub-b-test"], "a sibling of the path above is indirect")
+	isTrue(t, !indirect["sub-a-child-test"] && !indirect["sub-a-test"] && !indirect["epic-root-test"], "the focus and its path above are direct")
+
+	for _, node := range graphJSON(t, r, "sub-a-child-test").Nodes {
+		isTrue(t, !node.Indirect, "without --full, every drawn issue is direct")
+	}
+
+	res := r.run("graph", "--full", "--mermaid", "sub-a-child-test")
+	contains(t, res.output, "    classDef indirect stroke-dasharray:5 3\n")
+}

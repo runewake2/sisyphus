@@ -19,12 +19,14 @@ type issueGraph struct {
 }
 
 // graphNode is one issue in the graph. Available is true for an issue that is not closed and has
-// no dependency or sub-issue left open, so work on it can start now.
+// no dependency or sub-issue left open, so work on it can start now. Indirect is true for an issue
+// that only --full draws: it is linked to the focus, but is not below it or on its path above it.
 type graphNode struct {
 	Name      string `json:"name"`
 	Title     string `json:"title"`
 	State     string `json:"state"`
 	Available bool   `json:"available,omitempty"`
+	Indirect  bool   `json:"indirect,omitempty"`
 }
 
 // graphEdge points from the issue that comes first to the one that comes after: kind "parent" from
@@ -102,10 +104,11 @@ func buildGraph(x *issueIndex, name string, full bool) issueGraph {
 		return found
 	}
 	connected := reach(below, above)
-	drawn := connected
-	if !full {
-		drawn = reach(below)
-		maps.Copy(drawn, reach(above))
+	direct := reach(below)
+	maps.Copy(direct, reach(above))
+	drawn := direct
+	if full {
+		drawn = connected
 	}
 
 	graph := issueGraph{Focus: name, Hidden: len(connected) - len(drawn)}
@@ -150,6 +153,9 @@ func buildGraph(x *issueIndex, name string, full bool) issueGraph {
 		if !placed[issue] {
 			graph.Nodes = append(graph.Nodes, nodeFor(all, issue))
 		}
+	}
+	for i, node := range graph.Nodes {
+		graph.Nodes[i].Indirect = !direct[node.Name]
 	}
 	return graph
 }
@@ -210,6 +216,7 @@ func splitIssueName(name string) (dir, file string) {
 // points from a parent to a sub-issue; a dotted arrow points from a dependency to the issue that
 // depends on it. The focus issue has the thickest border and an available issue a thicker one, as
 // the double and heavy boxes of the terminal drawing. An available focus issue has the focus border.
+// An issue that is linked only indirectly also has a dashed border.
 func mermaidSource(graph issueGraph) string {
 	ids := map[string]string{}
 	for i, node := range graph.Nodes {
@@ -249,6 +256,16 @@ func mermaidSource(graph issueGraph) string {
 	if len(available) > 0 {
 		b.WriteString("    classDef available stroke-width:3px\n")
 		fmt.Fprintf(&b, "    class %s available\n", strings.Join(available, ","))
+	}
+	var indirect []string
+	for _, node := range graph.Nodes {
+		if node.Indirect {
+			indirect = append(indirect, ids[node.Name])
+		}
+	}
+	if len(indirect) > 0 {
+		b.WriteString("    classDef indirect stroke-dasharray:5 3\n")
+		fmt.Fprintf(&b, "    class %s indirect\n", strings.Join(indirect, ","))
 	}
 	return b.String()
 }

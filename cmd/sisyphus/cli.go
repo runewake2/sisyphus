@@ -313,7 +313,8 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 			"issues are not drawn; --full draws them too. Each box shows the issue's file name and state, " +
 			"inside a rounded box for each directory above it. <name> has a double box (╔═╗), and each " +
 			"available issue has a heavy box (┏━┓): an issue that is not closed and has no open dependency or " +
-			"sub-issue, so work on it can start now.",
+			"sub-issue, so work on it can start now. With --full, an issue that is not below <name> " +
+			"or on its path above has a dashed box (┌╌┐, or ┏╍┓ if it is available).",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := findRoot()

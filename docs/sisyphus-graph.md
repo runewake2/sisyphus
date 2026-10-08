@@ -30,7 +30,7 @@ Every arrow points from the issue that comes first to the issue that comes after
 
 Other issues linked to these, such as a sibling under the same parent, are not drawn. A note under
 the legend says how many. With `--full`, every issue linked to `<name>` by any path of `parent` or
-`depends-on` links is drawn.
+`depends-on` links is drawn, and each issue that only `--full` draws has a dashed box.
 
 So `graph` on an epic draws the whole epic. `graph` on an issue deep in the epic draws only that
 issue's part of it.
@@ -47,10 +47,15 @@ on, so work on it can start now. A dependency that does not exist does not block
 | `╔═╗` double | `<name>` |
 | `┏━┓` heavy | An available issue |
 | `┌─┐` light | Any other issue |
+| `┌╌┐` light dashed | With `--full`, an issue that is not below `<name>` or on its path above |
+| `┏╍┓` heavy dashed | With `--full`, such an issue that is also available |
 | `╭─╮` rounded | A directory, with its name in the top border |
 
 No box is both double and heavy. So if `<name>` is available, its box is double, and the legend
 says `(available)` after its name.
+
+A dashed box has two dashes per character (`╌`, `╎`), and a dotted arrow has three (`┄`, `┆`), so
+the two do not look alike. Unicode has no dashed corners, so a dashed box has solid corners.
 
 Each directory that holds a drawn issue is a rounded box around the issues and directories below
 it, nested as the directories nest. So an issue box shows only the file name of its issue, and the
@@ -143,13 +148,14 @@ one issue. Use `--json` or `--mermaid` when the exact links matter.
 | Option | Effect |
 | --- | --- |
 | `--full` | Draw every issue linked to `<name>`, not only what is below it and the path above it. |
-| `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, and `available`, which is `true` for an available issue and left out otherwise), `edges` (each with `from`, `to`, and `kind`), and `hidden` (how many linked issues are not drawn). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
+| `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, `available`, which is `true` for an available issue and left out otherwise, and `indirect`, which is `true` for an issue that only `--full` draws and left out otherwise), `edges` (each with `from`, `to`, and `kind`), and `hidden` (how many linked issues are not drawn). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
 | `--mermaid` | Print the Mermaid flowchart source instead of drawing it. Paste it into a ` ```mermaid ` block in a Markdown file, and Obsidian or GitHub renders it. The note about issues not drawn becomes a `%%` comment. |
 
 `--json` and `--mermaid` cannot be used together. `--full` works with either.
 
 The epic with `--mermaid`. Each directory becomes a `subgraph`. The `focus` and `available` classes
-give `<name>` and the available issues thicker borders:
+give `<name>` and the available issues thicker borders. With `--full`, the `indirect` class gives
+each issue that only `--full` draws a dashed border:
 
 ```
 graph LR

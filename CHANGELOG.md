@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.24]] - 2026-10-08
+- Draw each issue that only `sisyphus graph --full` adds in a dashed box, and mark it
+  `indirect` in `--json` and `--mermaid`.
+
 ## [[0.0.23]] - 2026-10-08
 - Call an issue that is ready to start "available" instead of "leaf" in `sisyphus graph`, its
   `--json` field, and its `--mermaid` class.

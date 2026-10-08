@@ -32,6 +32,8 @@ const (
 	heavyBox
 	doubleBox
 	roundedBox
+	dashedBox
+	heavyDashedBox
 )
 
 // styleRunes replaces lineRunes on the border of a box that is not light. An arrow leaves a box
@@ -49,6 +51,15 @@ var styleRunes = map[boxStyle]map[uint8]rune{
 	},
 	roundedBox: {
 		down | right: '╭', down | left: '╮', up | right: '╰', up | left: '╯',
+	},
+	// Unicode has no dashed corners or joins, so those stay solid.
+	dashedBox: {
+		up | down: '╎', left | right: '╌',
+	},
+	heavyDashedBox: {
+		up | down: '╏', left | right: '╍',
+		down | right: '┏', down | left: '┓', up | right: '┗', up | left: '┛',
+		up | down | right: '┝',
 	},
 }
 
