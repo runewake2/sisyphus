@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.23]] - 2026-10-08
+- Call an issue that is ready to start "available" instead of "leaf" in `sisyphus graph`, its
+  `--json` field, and its `--mermaid` class.
+
 ## [[0.0.22]] - 2026-10-08
 - Place each issue in `sisyphus graph` one column after the farthest issue that points to it, so
   arrows no longer turn back or run side by side.

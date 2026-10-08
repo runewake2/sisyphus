@@ -18,13 +18,13 @@ type issueGraph struct {
 	Hidden int         `json:"hidden"`
 }
 
-// graphNode is one issue in the graph. Leaf is true for an issue that is not closed and has no
-// dependency or sub-issue left open, so work on it can start now.
+// graphNode is one issue in the graph. Available is true for an issue that is not closed and has
+// no dependency or sub-issue left open, so work on it can start now.
 type graphNode struct {
-	Name  string `json:"name"`
-	Title string `json:"title"`
-	State string `json:"state"`
-	Leaf  bool   `json:"leaf,omitempty"`
+	Name      string `json:"name"`
+	Title     string `json:"title"`
+	State     string `json:"state"`
+	Available bool   `json:"available,omitempty"`
 }
 
 // graphEdge points from the issue that comes first to the one that comes after: kind "parent" from
@@ -71,7 +71,7 @@ func buildGraph(x *issueIndex, name string, full bool) issueGraph {
 		}
 	}
 	for issue, node := range all {
-		node.Leaf = node.State != "closed" && !blocked[issue]
+		node.Available = node.State != "closed" && !blocked[issue]
 		all[issue] = node
 	}
 
@@ -208,8 +208,8 @@ func splitIssueName(name string) (dir, file string) {
 // mermaidSource writes the graph as a Mermaid flowchart. Each subdirectory is a subgraph that holds
 // its issues and its subdirectories, so a node shows only the file name of its issue. A solid arrow
 // points from a parent to a sub-issue; a dotted arrow points from a dependency to the issue that
-// depends on it. The focus issue has the thickest border and a leaf a thicker one, as the double
-// and heavy boxes of the terminal drawing. A focus issue that is also a leaf has the focus border.
+// depends on it. The focus issue has the thickest border and an available issue a thicker one, as
+// the double and heavy boxes of the terminal drawing. An available focus issue has the focus border.
 func mermaidSource(graph issueGraph) string {
 	ids := map[string]string{}
 	for i, node := range graph.Nodes {
@@ -238,17 +238,17 @@ func mermaidSource(graph issueGraph) string {
 		}
 		fmt.Fprintf(&b, "    %s %s %s\n", ids[edge.From], arrow, ids[edge.To])
 	}
-	var leaves []string
+	var available []string
 	for _, node := range graph.Nodes {
-		if node.Leaf && node.Name != graph.Focus {
-			leaves = append(leaves, ids[node.Name])
+		if node.Available && node.Name != graph.Focus {
+			available = append(available, ids[node.Name])
 		}
 	}
 	b.WriteString("    classDef focus stroke-width:5px\n")
 	fmt.Fprintf(&b, "    class %s focus\n", ids[graph.Focus])
-	if len(leaves) > 0 {
-		b.WriteString("    classDef leaf stroke-width:3px\n")
-		fmt.Fprintf(&b, "    class %s leaf\n", strings.Join(leaves, ","))
+	if len(available) > 0 {
+		b.WriteString("    classDef available stroke-width:3px\n")
+		fmt.Fprintf(&b, "    class %s available\n", strings.Join(available, ","))
 	}
 	return b.String()
 }

@@ -234,14 +234,14 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int) 
 	return c.String()
 }
 
-// issueStyle is the border of an issue box: double for the focus issue, heavy for a leaf, and
-// light for the rest. No box is both double and heavy, so a focus issue that is a leaf is double,
-// and the legend tells that it is a leaf.
+// issueStyle is the border of an issue box: double for the focus issue, heavy for an available
+// issue, and light for the rest. No box is both double and heavy, so an available focus issue is
+// double, and the legend tells that it is available.
 func issueStyle(graph issueGraph, node graphNode) boxStyle {
 	switch {
 	case node.Name == graph.Focus:
 		return doubleBox
-	case node.Leaf:
+	case node.Available:
 		return heavyBox
 	}
 	return lightBox
@@ -259,11 +259,11 @@ func drawGraph(graph issueGraph) (string, error) {
 	drawing := render(graph, l, routes, position)
 
 	legend := "╔═╗ " + graph.Focus
-	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Leaf && node.Name == graph.Focus }) {
-		legend += " (a leaf)"
+	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Available && node.Name == graph.Focus }) {
+		legend += " (available)"
 	}
-	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Leaf && node.Name != graph.Focus }) {
-		legend += "   ┏━┓ leaf (ready to start)"
+	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Available && node.Name != graph.Focus }) {
+		legend += "   ┏━┓ available (ready to start)"
 	}
 	if len(graph.Edges) > 0 {
 		legend += "   ──► sub-issue   ┄┄► needed by"

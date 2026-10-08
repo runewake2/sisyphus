@@ -38,19 +38,19 @@ issue's part of it.
 Issues with no path of links to `<name>` are never drawn or counted. A `parent` or `depends-on` link
 to an issue that does not exist is drawn as a box with the state `?`.
 
-Each leaf is in a heavy box. A leaf is an issue that is not closed, whose dependencies are all
-closed, and whose sub-issues are all closed: nothing is left that it waits on, so work on it can
-start now. A dependency that does not exist does not block, as in `sisyphus list --blocked`.
+Each available issue is in a heavy box. An available issue is one that is not closed, whose
+dependencies are all closed, and whose sub-issues are all closed: nothing is left that it waits
+on, so work on it can start now. A dependency that does not exist does not block, as in `sisyphus list --blocked`.
 
 | Box | Issue |
 | --- | --- |
 | `╔═╗` double | `<name>` |
-| `┏━┓` heavy | A leaf |
+| `┏━┓` heavy | An available issue |
 | `┌─┐` light | Any other issue |
 | `╭─╮` rounded | A directory, with its name in the top border |
 
-No box is both double and heavy. So if `<name>` is a leaf, its box is double, and the legend says
-`(a leaf)` after its name.
+No box is both double and heavy. So if `<name>` is available, its box is double, and the legend
+says `(available)` after its name.
 
 Each directory that holds a drawn issue is a rounded box around the issues and directories below
 it, nested as the directories nest. So an issue box shows only the file name of its issue, and the
@@ -69,13 +69,13 @@ On an issue inside an epic:
                        └───────────────────────────┴─►║split-login-form [in-progress]╟───►┃form-validation [open]┃
                                                       ╚══════════════════════════════╝    ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
-╔═╗ split-login-form   ┏━┓ leaf (ready to start)   ──► sub-issue   ┄┄► needed by
+╔═╗ split-login-form   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by
 1 more linked issue is not drawn. Use --full to draw it.
 ```
 
 `split-login-form` is a sub-issue of `auth-overhaul`, depends on `fix-login-bug`, and has the
 sub-issue `form-validation`. Its sibling `session-timeouts` is not drawn. `form-validation` is
-the only leaf drawn: `split-login-form` waits on it, and `auth-overhaul` waits on both.
+the only available issue drawn: `split-login-form` waits on it, and `auth-overhaul` waits on both.
 
 On the epic:
 
@@ -92,7 +92,7 @@ On the epic:
                        └────────────────────────────┴─►│split-login-form [in-progress]├───►┃form-validation [open]┃
                                                        └──────────────────────────────┘    ┗━━━━━━━━━━━━━━━━━━━━━━┛
 
-╔═╗ auth-overhaul   ┏━┓ leaf (ready to start)   ──► sub-issue   ┄┄► needed by
+╔═╗ auth-overhaul   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by
 ```
 
 With issues in directories, here `web/auth/login-epic`, `web/auth/fix-login-bug`,
@@ -123,7 +123,7 @@ With issues in directories, here `web/auth/login-epic`, `web/auth/fix-login-bug`
                                                                                                       │                            │
                                                                                                       ╰────────────────────────────╯
 
-╔═╗ web/auth/login-epic   ┏━┓ leaf (ready to start)   ──► sub-issue   ┄┄► needed by
+╔═╗ web/auth/login-epic   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by
 ```
 
 The drawing flows left to right, so a large family grows down the terminal rather than across it.
@@ -143,13 +143,13 @@ one issue. Use `--json` or `--mermaid` when the exact links matter.
 | Option | Effect |
 | --- | --- |
 | `--full` | Draw every issue linked to `<name>`, not only what is below it and the path above it. |
-| `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, and `leaf`, which is `true` for a leaf and left out otherwise), `edges` (each with `from`, `to`, and `kind`), and `hidden` (how many linked issues are not drawn). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
+| `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, and `available`, which is `true` for an available issue and left out otherwise), `edges` (each with `from`, `to`, and `kind`), and `hidden` (how many linked issues are not drawn). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
 | `--mermaid` | Print the Mermaid flowchart source instead of drawing it. Paste it into a ` ```mermaid ` block in a Markdown file, and Obsidian or GitHub renders it. The note about issues not drawn becomes a `%%` comment. |
 
 `--json` and `--mermaid` cannot be used together. `--full` works with either.
 
-The epic with `--mermaid`. Each directory becomes a `subgraph`. The `focus` and `leaf` classes
-give `<name>` and the leaves thicker borders:
+The epic with `--mermaid`. Each directory becomes a `subgraph`. The `focus` and `available` classes
+give `<name>` and the available issues thicker borders:
 
 ```
 graph LR
@@ -165,8 +165,8 @@ graph LR
     n3 --> n4
     classDef focus stroke-width:5px
     class n0 focus
-    classDef leaf stroke-width:3px
-    class n2,n4 leaf
+    classDef available stroke-width:3px
+    class n2,n4 available
 ```
 
 ## Examples

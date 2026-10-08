@@ -154,7 +154,7 @@ func TestGraphOfAnIssueWithNoRelationsIsOneBox(t *testing.T) {
 
 	equal(t, 0, res.exit)
 	equal(t, '║', borderOf(t, res.output, "lonely-issue-test [open]"))
-	contains(t, res.output, "╔═╗ lonely-issue-test (a leaf)")
+	contains(t, res.output, "╔═╗ lonely-issue-test (available)")
 	equal(t, 2, strings.Count(res.output, "╔")) // The box and the legend.
 	isTrue(t, !strings.Contains(res.output, "needed by"), "no legend for edges that are not drawn")
 }
@@ -210,26 +210,26 @@ func TestGraphPrintsJSON(t *testing.T) {
 	}, graph.Edges)
 }
 
-func TestGraphMarksLeaves(t *testing.T) {
+func TestGraphMarksAvailableIssues(t *testing.T) {
 	r := setUpGraphIssues(t)
 	r.mustRun("new", "waits-on-open-test", "--parent", "epic-root-test", "--depends-on", "sub-a-child-test")
 	r.mustRun("new", "waits-on-closed-test", "--parent", "epic-root-test", "--depends-on", "sub-b-test")
 
 	graph := graphJSON(t, r, "epic-root-test")
 
-	leaves := map[string]bool{}
+	available := map[string]bool{}
 	for _, node := range graph.Nodes {
-		leaves[node.Name] = node.Leaf
+		available[node.Name] = node.Available
 	}
-	isTrue(t, !leaves["epic-root-test"], "an issue with open sub-issues is not a leaf")
-	isTrue(t, !leaves["sub-a-test"], "an issue with an open sub-issue is not a leaf")
-	isTrue(t, leaves["sub-a-child-test"], "an open issue with nothing to wait on is a leaf")
-	isTrue(t, !leaves["sub-b-test"], "a closed issue is not a leaf")
-	isTrue(t, !leaves["waits-on-open-test"], "an issue with an open dependency is not a leaf")
-	isTrue(t, leaves["waits-on-closed-test"], "an issue whose dependencies are all closed is a leaf")
+	isTrue(t, !available["epic-root-test"], "an issue with open sub-issues is not available")
+	isTrue(t, !available["sub-a-test"], "an issue with an open sub-issue is not available")
+	isTrue(t, available["sub-a-child-test"], "an open issue with nothing to wait on is available")
+	isTrue(t, !available["sub-b-test"], "a closed issue is not available")
+	isTrue(t, !available["waits-on-open-test"], "an issue with an open dependency is not available")
+	isTrue(t, available["waits-on-closed-test"], "an issue whose dependencies are all closed is available")
 }
 
-func TestGraphDrawsALeafInAHeavyBox(t *testing.T) {
+func TestGraphDrawsAnAvailableIssueInAHeavyBox(t *testing.T) {
 	r := setUpGraphIssues(t)
 
 	res := r.run("graph", "epic-root-test")
@@ -238,27 +238,27 @@ func TestGraphDrawsALeafInAHeavyBox(t *testing.T) {
 	equal(t, '┃', borderOf(t, res.output, "sub-a-child-test [open]"))
 	equal(t, '│', borderOf(t, res.output, "sub-a-test [open]"))
 	equal(t, '│', borderOf(t, res.output, "sub-b-test [closed]"))
-	contains(t, res.output, "┏━┓ leaf (ready to start)")
+	contains(t, res.output, "┏━┓ available (ready to start)")
 }
 
-func TestGraphDrawsAFocusLeafInADoubleBox(t *testing.T) {
+func TestGraphDrawsAnAvailableFocusInADoubleBox(t *testing.T) {
 	r := setUpGraphIssues(t)
 
 	res := r.run("graph", "sub-a-child-test")
 
 	equal(t, 0, res.exit)
 	equal(t, '║', borderOf(t, res.output, "sub-a-child-test [open]"))
-	contains(t, res.output, "╔═╗ sub-a-child-test (a leaf)")
-	isTrue(t, !strings.Contains(res.output, "┏━┓ leaf"), "no other leaf is drawn")
+	contains(t, res.output, "╔═╗ sub-a-child-test (available)")
+	isTrue(t, !strings.Contains(res.output, "┏━┓ available"), "no other available issue is drawn")
 }
 
-func TestGraphLeavesOutTheLeafLegendWithoutLeaves(t *testing.T) {
+func TestGraphLeavesOutTheAvailableLegendWithoutAvailableIssues(t *testing.T) {
 	r := setUpGraphIssues(t)
 
 	res := r.run("graph", "sub-b-test")
 
 	equal(t, 0, res.exit)
-	isTrue(t, !strings.Contains(res.output, "leaf"), "no leaf is drawn")
+	isTrue(t, !strings.Contains(res.output, "available"), "no available issue is drawn")
 }
 
 // borderOf is the left border character of the box that holds label.
@@ -424,8 +424,8 @@ func TestGraphPrintsMermaidSubgraphs(t *testing.T) {
 		"    n0 --> n1",
 		"    classDef focus stroke-width:5px",
 		"    class n0 focus",
-		"    classDef leaf stroke-width:3px",
-		"    class n1 leaf",
+		"    classDef available stroke-width:3px",
+		"    class n1 available",
 	}, res.lines())
 }
 
