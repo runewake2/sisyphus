@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -302,6 +303,7 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 
 func graphCommand(findRoot func() (string, error)) *cobra.Command {
 	var asJSON, asMermaid, full bool
+	color := "auto"
 	cmd := &cobra.Command{
 		Use:   "graph <name>",
 		Short: "Draw an issue, everything below it, and the path above it.",
@@ -341,7 +343,11 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 				_, err := io.WriteString(cmd.OutOrStdout(), source)
 				return err
 			}
-			drawing, err := drawGraph(graph)
+			colored, err := useColor(color, cmd.OutOrStdout())
+			if err != nil {
+				return err
+			}
+			drawing, err := drawGraph(graph, colored)
 			if err != nil {
 				return err
 			}
@@ -352,8 +358,31 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the nodes and edges as JSON instead of a drawing.")
 	cmd.Flags().BoolVar(&asMermaid, "mermaid", false, "Print Mermaid flowchart source instead of a drawing, for example to paste into a Markdown file.")
 	cmd.Flags().BoolVar(&full, "full", false, "Draw every issue linked to <name> by parent or depends-on, not only what is below it and the path above it.")
+	cmd.Flags().StringVar(&color, "color", color, "Color the drawing: auto (on a terminal, unless NO_COLOR is set), always, or never.")
 	cmd.MarkFlagsMutuallyExclusive("json", "mermaid")
 	return cmd
+}
+
+// useColor decides from the --color value whether a drawing written to out has color. auto means
+// color only on a terminal, and never when NO_COLOR is set (see https://no-color.org) or TERM is dumb.
+func useColor(mode string, out io.Writer) (bool, error) {
+	switch mode {
+	case "always":
+		return true, nil
+	case "never":
+		return false, nil
+	case "auto":
+		if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
+			return false, nil
+		}
+		f, isFile := out.(*os.File)
+		if !isFile {
+			return false, nil
+		}
+		info, err := f.Stat()
+		return err == nil && info.Mode()&os.ModeCharDevice != 0, nil
+	}
+	return false, fmt.Errorf("--color must be auto, always, or never, not %q", mode)
 }
 
 func listCommand(findRoot func() (string, error)) *cobra.Command {

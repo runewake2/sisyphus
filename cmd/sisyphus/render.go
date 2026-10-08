@@ -171,7 +171,7 @@ func abs(n int) int {
 }
 
 // render draws the layout and its arrows.
-func render(graph issueGraph, l *layout, routes []route, position map[lane]int) string {
+func render(graph issueGraph, l *layout, routes []route, position map[lane]int, color bool) string {
 	lanesIn := map[int]int{}
 	for ln, i := range position {
 		lanesIn[ln.gap] = max(lanesIn[ln.gap], i+1)
@@ -208,6 +208,7 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int) 
 	for _, p := range l.issues {
 		p.x = columnX[p.column]
 		width := l.columnWidth[p.column]
+		c.strong = p.node.Name == graph.Focus
 		c.box(p.x, p.y, p.x+width-1, p.y+boxHeight-1, issueStyle(graph, p.node))
 		c.text(p.x+1+(width-2-textWidth(p.name))/2, p.y+1, p.name)
 		c.text(p.x+1+(width-2-textWidth(p.node.State))/2, p.y+2, p.node.State)
@@ -227,12 +228,20 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int) 
 		}
 		points = append(points, end)
 		points = slices.CompactFunc(points, func(p, q [2]int) bool { return p == q })
+		c.strong = attached(graph, r)
 		c.path(r.edge.Kind == dependsOnEdge, points...)
 	}
 	for _, r := range routes {
+		c.strong = attached(graph, r)
 		c.text(r.to.x-1, r.to.mid(), "►")
 	}
-	return c.String()
+	c.strong = false
+	return c.render(color)
+}
+
+// attached tells whether an arrow leaves or enters the focus issue.
+func attached(graph issueGraph, r route) bool {
+	return r.edge.From == graph.Focus || r.edge.To == graph.Focus
 }
 
 // issueStyle is the border of an issue box: double for the focus issue, heavy for an available
@@ -258,11 +267,12 @@ func textWidth(s string) int {
 	return c.text(0, 0, s)
 }
 
-// drawGraph renders the graph as boxes and arrows for the terminal, followed by a legend.
-func drawGraph(graph issueGraph) (string, error) {
+// drawGraph renders the graph as boxes and arrows for the terminal, followed by a legend. With
+// color, the focus issue and the arrows that leave or enter it are bright, and the rest is dim.
+func drawGraph(graph issueGraph, color bool) (string, error) {
 	l := layOut(graph)
 	routes, position := routeEdges(l, graph)
-	drawing := render(graph, l, routes, position)
+	drawing := render(graph, l, routes, position, color)
 
 	legend := "╔═╗ " + graph.Focus
 	if slices.ContainsFunc(graph.Nodes, func(node graphNode) bool { return node.Available && node.Name == graph.Focus }) {

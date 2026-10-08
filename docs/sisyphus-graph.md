@@ -6,7 +6,7 @@ finish it can be reviewed at a glance.
 ## Usage
 
 ```bash
-sisyphus graph <name> [--full] [--json | --mermaid]
+sisyphus graph <name> [--full] [--color auto|always|never] [--json | --mermaid]
 ```
 
 `<name>` is any form of an existing issue (see [[commands#Naming an issue]]).
@@ -159,7 +159,16 @@ one issue. Use `--json` or `--mermaid` when the exact links matter.
 | `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, `available`, which is `true` for an available issue and left out otherwise, and `indirect`, which is `true` for an issue that only `--full` draws and left out otherwise), `edges` (each with `from`, `to`, and `kind`), and `hidden` (how many linked issues are not drawn). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
 | `--mermaid` | Print the Mermaid flowchart source instead of drawing it. Paste it into a ` ```mermaid ` block in a Markdown file, and Obsidian or GitHub renders it. The note about issues not drawn becomes a `%%` comment. |
 
+| `--color` | `auto` (the default), `always`, or `never`. With `auto`, the drawing has color only on a terminal, and not when `NO_COLOR` is set or `TERM` is `dumb`. `--json` and `--mermaid` output never has color. |
+
 `--json` and `--mermaid` cannot be used together. `--full` works with either.
+
+## Color
+
+As of 0.0.26, color is an experiment. `<name>` and each arrow that leaves or enters it are bold
+bright cyan, and the rest of the drawing is gray, so the issue and its direct links stand out.
+Where an arrow shares a line with the arrows of other issues, only the part that leads to or
+from `<name>` is bright. The legend has no color. Each colored line resets the color at its end.
 
 The epic with `--mermaid`. Each directory becomes a `subgraph`. The `focus` and `available` classes
 give `<name>` and the available issues thicker borders. With `--full`, the `indirect` class gives

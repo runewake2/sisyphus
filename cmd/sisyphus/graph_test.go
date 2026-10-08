@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 // setUpGraphIssues makes an epic with two sub-issues, where sub-b depends on sub-a, and sub-a has a
@@ -523,4 +524,108 @@ func TestGraphMarksIndirectIssuesOnlyWithFull(t *testing.T) {
 
 	res := r.run("graph", "--full", "--mermaid", "sub-a-child-test")
 	contains(t, res.output, "    classDef indirect stroke-dasharray:5 3\n")
+}
+
+// coloredCell is one character of a colored drawing, and whether it has strongColor.
+type coloredCell struct {
+	r      rune
+	strong bool
+}
+
+// decodeColors splits a colored drawing into lines of characters, and checks that each colored
+// line resets at its end.
+func decodeColors(t *testing.T, output string) [][]coloredCell {
+	t.Helper()
+	var lines [][]coloredCell
+	for _, line := range strings.Split(strings.TrimRight(output, "\n"), "\n") {
+		if strings.Contains(line, "\x1b") {
+			isTrue(t, strings.HasSuffix(line, resetColor), "a colored line resets at its end")
+		}
+		var cells []coloredCell
+		strong := false
+		for len(line) > 0 {
+			switch {
+			case strings.HasPrefix(line, strongColor):
+				strong, line = true, line[len(strongColor):]
+			case strings.HasPrefix(line, weakColor):
+				strong, line = false, line[len(weakColor):]
+			case strings.HasPrefix(line, resetColor):
+				strong, line = false, line[len(resetColor):]
+			default:
+				r, size := utf8.DecodeRuneInString(line)
+				cells = append(cells, coloredCell{r: r, strong: strong})
+				line = line[size:]
+			}
+		}
+		lines = append(lines, cells)
+	}
+	return lines
+}
+
+// strength finds text in the drawing and tells whether all of it is strong, or none of it.
+func strength(t *testing.T, lines [][]coloredCell, text string) (all, none bool) {
+	t.Helper()
+	want := []rune(text)
+	for _, line := range lines {
+		for x := 0; x+len(want) <= len(line); x++ {
+			match := true
+			for i, r := range want {
+				if line[x+i].r != r {
+					match = false
+					break
+				}
+			}
+			if !match {
+				continue
+			}
+			all, none = true, true
+			for i := range want {
+				all = all && line[x+i].strong
+				none = none && !line[x+i].strong
+			}
+			return all, none
+		}
+	}
+	t.Fatalf("no %q in the drawing", text)
+	return false, false
+}
+
+func TestGraphColorsTheFocusAndItsArrows(t *testing.T) {
+	r := setUpGraphIssues(t)
+
+	res := r.run("graph", "--color", "always", "sub-a-test")
+
+	equal(t, 0, res.exit)
+	lines := decodeColors(t, res.output)
+	all, _ := strength(t, lines, "║sub-a-test╟")
+	isTrue(t, all, "the focus box is strong")
+	all, _ = strength(t, lines, "─►║sub-a-test")
+	isTrue(t, all, "the arrow into the focus is strong")
+	all, _ = strength(t, lines, "╟─┬─►")
+	isTrue(t, all, "the arrows out of the focus are strong")
+	for _, weak := range []string{"epic-root-test", "sub-a-child-test", "sub-b-test", "┌──────────────┐"} {
+		_, none := strength(t, lines, weak)
+		isTrue(t, none, weak+" is weak")
+	}
+	_, none := strength(t, lines, "╗ sub-a-test   ┏━┓ available")
+	isTrue(t, none, "the legend has no color")
+}
+
+func TestGraphHasNoColorUnlessAsked(t *testing.T) {
+	r := setUpGraphIssues(t)
+
+	for _, args := range [][]string{{"graph", "sub-a-test"}, {"graph", "--color", "never", "sub-a-test"}} {
+		res := r.run(args...)
+		equal(t, 0, res.exit)
+		isTrue(t, !strings.Contains(res.output, "\x1b"), "no color in output that is not a terminal")
+	}
+}
+
+func TestGraphRejectsAnUnknownColorMode(t *testing.T) {
+	r := setUpGraphIssues(t)
+
+	res := r.run("graph", "--color", "purple", "sub-a-test")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, `--color must be auto, always, or never, not "purple"`)
 }

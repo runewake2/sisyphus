@@ -72,12 +72,23 @@ type cell struct {
 	text         rune
 	continuation bool
 	style        boxStyle
+	strong       bool
 }
 
-// canvas is a grid of cells that grows when something is drawn outside it.
+// canvas is a grid of cells that grows when something is drawn outside it. While strong is set,
+// each cell that is drawn is strong, and stays strong when a weak drawing crosses it.
 type canvas struct {
-	cells [][]cell
+	cells  [][]cell
+	strong bool
 }
+
+// The ANSI colors of a colored drawing. Each line resets at its end, so a line that is cut or
+// pasted alone does not color what follows it.
+const (
+	strongColor = "\x1b[1;96m"
+	weakColor   = "\x1b[90m"
+	resetColor  = "\x1b[0m"
+)
 
 func (c *canvas) at(x, y int) *cell {
 	for len(c.cells) <= y {
@@ -86,7 +97,9 @@ func (c *canvas) at(x, y int) *cell {
 	for len(c.cells[y]) <= x {
 		c.cells[y] = append(c.cells[y], cell{})
 	}
-	return &c.cells[y][x]
+	cl := &c.cells[y][x]
+	cl.strong = cl.strong || c.strong
+	return cl
 }
 
 // line draws a horizontal or vertical line from (x1, y1) to (x2, y2). A cell shows a dotted
@@ -160,30 +173,60 @@ func (c *canvas) text(x, y int, s string) int {
 	return x
 }
 
-func (c *canvas) String() string {
+func (cl cell) rune() rune {
+	switch {
+	case cl.text != 0:
+		return cl.text
+	case cl.lines == 0:
+		return ' '
+	case cl.solid == 0 && cl.lines&(left|right) == cl.lines:
+		return '┄'
+	case cl.solid == 0 && cl.lines&(up|down) == cl.lines:
+		return '┆'
+	}
+	if r, styled := styleRunes[cl.style][cl.lines]; styled {
+		return r
+	}
+	return lineRunes[cl.lines]
+}
+
+// render writes the canvas as text. With color, strong cells have strongColor and the rest
+// weakColor.
+func (c *canvas) render(color bool) string {
 	var lines []string
 	for _, row := range c.cells {
-		var b strings.Builder
-		for _, cl := range row {
-			switch {
-			case cl.continuation:
-			case cl.text != 0:
-				b.WriteRune(cl.text)
-			case cl.lines == 0:
-				b.WriteByte(' ')
-			case cl.solid == 0 && cl.lines&(left|right) == cl.lines:
-				b.WriteRune('┄')
-			case cl.solid == 0 && cl.lines&(up|down) == cl.lines:
-				b.WriteRune('┆')
-			default:
-				r, styled := styleRunes[cl.style][cl.lines]
-				if !styled {
-					r = lineRunes[cl.lines]
-				}
-				b.WriteRune(r)
-			}
+		last := len(row) - 1
+		for last >= 0 && (row[last].continuation || row[last].rune() == ' ') {
+			last--
 		}
-		lines = append(lines, strings.TrimRight(b.String(), " "))
+		var b strings.Builder
+		current := ""
+		for _, cl := range row[:last+1] {
+			if cl.continuation {
+				continue
+			}
+			r := cl.rune()
+			if color && r != ' ' {
+				want := weakColor
+				if cl.strong {
+					want = strongColor
+				}
+				if want != current {
+					if current != "" {
+						b.WriteString(resetColor)
+					}
+					b.WriteString(want)
+					current = want
+				}
+			}
+			b.WriteRune(r)
+		}
+		if current != "" {
+			b.WriteString(resetColor)
+		}
+		lines = append(lines, b.String())
 	}
 	return strings.TrimRight(strings.Join(lines, "\n"), "\n")
 }
+
+func (c *canvas) String() string { return c.render(false) }

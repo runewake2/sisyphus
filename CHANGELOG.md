@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.26]] - 2026-10-08
+- Color `<name>` and its arrows bold in `sisyphus graph` on a terminal, and the rest gray, as an
+  experiment; `--color auto|always|never` decides.
+
 ## [[0.0.25]] - 2026-10-08
 - Show the issue state on a second line below the name in `sisyphus graph` boxes, so graphs are
   narrower.
