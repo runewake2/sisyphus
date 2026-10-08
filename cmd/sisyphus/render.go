@@ -37,7 +37,7 @@ type stub struct {
 // covers tells whether an issue box in one of the columns from first to last covers line y.
 func (l *layout) covers(first, last, y int) bool {
 	for _, p := range l.issues {
-		if p.column >= first && p.column <= last && y >= p.y && y <= p.y+2 {
+		if p.column >= first && p.column <= last && y >= p.y && y < p.y+boxHeight {
 			return true
 		}
 	}
@@ -208,8 +208,9 @@ func render(graph issueGraph, l *layout, routes []route, position map[lane]int) 
 	for _, p := range l.issues {
 		p.x = columnX[p.column]
 		width := l.columnWidth[p.column]
-		c.box(p.x, p.y, p.x+width-1, p.y+2, issueStyle(graph, p.node))
-		c.text(p.x+1+(width-2-textWidth(p.label))/2, p.y+1, p.label)
+		c.box(p.x, p.y, p.x+width-1, p.y+boxHeight-1, issueStyle(graph, p.node))
+		c.text(p.x+1+(width-2-textWidth(p.name))/2, p.y+1, p.name)
+		c.text(p.x+1+(width-2-textWidth(p.node.State))/2, p.y+2, p.node.State)
 	}
 	for _, r := range routes {
 		start := [2]int{r.from.x + l.columnWidth[r.from.column] - 1, r.from.mid()}

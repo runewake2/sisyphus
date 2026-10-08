@@ -58,21 +58,23 @@ A dashed box has two dashes per character (`╌`, `╎`), and a dotted arrow has
 the two do not look alike. Unicode has no dashed corners, so a dashed box has solid corners.
 
 Each directory that holds a drawn issue is a rounded box around the issues and directories below
-it, nested as the directories nest. So an issue box shows only the file name of its issue, and the
-legend gives the full name of `<name>`.
+it, nested as the directories nest. So an issue box shows only the file name of its issue, with
+its state on the line below, and the legend gives the full name of `<name>`.
 
 ## Output
 
 On an issue inside an epic:
 
 ```
-┌────────────────────┐    ┌──────────────────────┐
-│auth-overhaul [open]├─┬─►│fix-login-bug [closed]├┄┐
-└────────────────────┘ │  └──────────────────────┘ ┆
-                       │                           ┆
-                       │                           ┆  ╔══════════════════════════════╗    ┏━━━━━━━━━━━━━━━━━━━━━━┓
-                       └───────────────────────────┴─►║split-login-form [in-progress]╟───►┃form-validation [open]┃
-                                                      ╚══════════════════════════════╝    ┗━━━━━━━━━━━━━━━━━━━━━━┛
+┌─────────────┐    ┌─────────────┐
+│auth-overhaul├─┬─►│fix-login-bug├┄┐
+│    open     │ │  │   closed    │ ┆
+└─────────────┘ │  └─────────────┘ ┆
+                │                  ┆
+                │                  ┆  ╔════════════════╗    ┏━━━━━━━━━━━━━━━┓
+                └──────────────────┴─►║split-login-form╟───►┃form-validation┃
+                                      ║  in-progress   ║    ┃     open      ┃
+                                      ╚════════════════╝    ┗━━━━━━━━━━━━━━━┛
 
 ╔═╗ split-login-form   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by
 1 more linked issue is not drawn. Use --full to draw it.
@@ -85,17 +87,20 @@ the only available issue drawn: `split-login-form` waits on it, and `auth-overha
 On the epic:
 
 ```
-╔════════════════════╗    ┌───────────────────────┐
-║auth-overhaul [open]╟─┬─►│fix-login-bug [closed] ├┄┐
-╚════════════════════╝ │  └───────────────────────┘ ┆
-                       │                            ┆
-                       │  ┏━━━━━━━━━━━━━━━━━━━━━━━┓ ┆
-                       ├─►┃session-timeouts [open]┃ ┆
-                       │  ┗━━━━━━━━━━━━━━━━━━━━━━━┛ ┆
-                       │                            ┆
-                       │                            ┆  ┌──────────────────────────────┐    ┏━━━━━━━━━━━━━━━━━━━━━━┓
-                       └────────────────────────────┴─►│split-login-form [in-progress]├───►┃form-validation [open]┃
-                                                       └──────────────────────────────┘    ┗━━━━━━━━━━━━━━━━━━━━━━┛
+╔═════════════╗    ┌────────────────┐
+║auth-overhaul╟─┬─►│ fix-login-bug  ├┄┐
+║    open     ║ │  │     closed     │ ┆
+╚═════════════╝ │  └────────────────┘ ┆
+                │                     ┆
+                │  ┏━━━━━━━━━━━━━━━━┓ ┆
+                ├─►┃session-timeouts┃ ┆
+                │  ┃      open      ┃ ┆
+                │  ┗━━━━━━━━━━━━━━━━┛ ┆
+                │                     ┆
+                │                     ┆  ┌────────────────┐    ┏━━━━━━━━━━━━━━━┓
+                └─────────────────────┴─►│split-login-form├───►┃form-validation┃
+                                         │  in-progress   │    ┃     open      ┃
+                                         └────────────────┘    ┗━━━━━━━━━━━━━━━┛
 
 ╔═╗ auth-overhaul   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by
 ```
@@ -104,29 +109,32 @@ With issues in directories, here `web/auth/login-epic`, `web/auth/fix-login-bug`
 `web/split-login-form`, and `mobile/add-dark-mode`:
 
 ```
-╭─ web ──────────────────────────────────────────────────────────────────────────────────────────╮
-│                                                                                                │
-│ ╭─ auth ────────────────────────────────────────────────╮                                      │
-│ │                                                       │                                      │
-│ │ ╔═════════════════╗            ┏━━━━━━━━━━━━━━━━━━━━┓ │                                      │
-│ │ ║login-epic [open]╟─────┬─────►┃fix-login-bug [open]┝┄┼┄┄┄┐                                  │
-│ │ ╚═════════════════╝     │      ┗━━━━━━━━━━━━━━━━━━━━┛ │   ┆                                  │
-│ │                         │                             │   ┆                                  │
-│ ╰─────────────────────────┼─────────────────────────────╯   ┆                                  │
-│                           │                                 ┆                                  │
-│                           │                                 ┆      ┌───────────────────────┐   │
-│                           └─────────────────────────────────┴─────►│split-login-form [open]├┄┄┄┼┄┐
-│                                                                    └───────────────────────┘   │ ┆
-│                                                                                                │ ┆
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯ ┆
-                                                                                                   ┆
-                                                                                                   ┆  ╭─ mobile ───────────────────╮
-                                                                                                   ┆  │                            │
-                                                                                                   ┆  │   ┌────────────────────┐   │
-                                                                                                   └┄┄┼┄┄►│add-dark-mode [open]│   │
-                                                                                                      │   └────────────────────┘   │
-                                                                                                      │                            │
-                                                                                                      ╰────────────────────────────╯
+╭─ web ─────────────────────────────────────────────────────────────────────╮
+│                                                                           │
+│ ╭─ auth ──────────────────────────────────╮                               │
+│ │                                         │                               │
+│ │ ╔══════════╗            ┏━━━━━━━━━━━━━┓ │                               │
+│ │ ║login-epic╟─────┬─────►┃fix-login-bug┝┄┼┄┄┄┐                           │
+│ │ ║   open   ║     │      ┃    open     ┃ │   ┆                           │
+│ │ ╚══════════╝     │      ┗━━━━━━━━━━━━━┛ │   ┆                           │
+│ │                  │                      │   ┆                           │
+│ ╰──────────────────┼──────────────────────╯   ┆                           │
+│                    │                          ┆                           │
+│                    │                          ┆      ┌────────────────┐   │
+│                    └──────────────────────────┴─────►│split-login-form├┄┄┄┼┄┐
+│                                                      │      open      │   │ ┆
+│                                                      └────────────────┘   │ ┆
+│                                                                           │ ┆
+╰───────────────────────────────────────────────────────────────────────────╯ ┆
+                                                                              ┆
+                                                                              ┆  ╭─ mobile ────────────╮
+                                                                              ┆  │                     │
+                                                                              ┆  │   ┌─────────────┐   │
+                                                                              └┄┄┼┄┄►│add-dark-mode│   │
+                                                                                 │   │    open     │   │
+                                                                                 │   └─────────────┘   │
+                                                                                 │                     │
+                                                                                 ╰─────────────────────╯
 
 ╔═╗ web/auth/login-epic   ┏━┓ available (ready to start)   ──► sub-issue   ┄┄► needed by
 ```

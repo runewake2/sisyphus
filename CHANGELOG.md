@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.25]] - 2026-10-08
+- Show the issue state on a second line below the name in `sisyphus graph` boxes, so graphs are
+  narrower.
+
 ## [[0.0.24]] - 2026-10-08
 - Draw each issue that only `sisyphus graph --full` adds in a dashed box, and mark it
   `indirect` in `--json` and `--mermaid`.

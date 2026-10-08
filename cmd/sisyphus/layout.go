@@ -12,16 +12,24 @@ import (
 // lines that no other directory's issues enter. So the box of a directory holds exactly its own
 // issues, and the boxes of two sibling directories cannot overlap.
 
-// placed is one issue box. x and y are its top left corner, and the box is 3 lines high.
+// An issue box shows the file name of its issue on one line and the state on the next, so a long
+// state such as in-progress does not widen the box.
+const (
+	boxHeight = 4
+	rowPitch  = boxHeight + 1
+)
+
+// placed is one issue box. x and y are its top left corner.
 type placed struct {
 	node   graphNode
 	index  int
-	label  string
+	name   string
 	column int
 	row    int
 	x, y   int
 }
 
+// mid is the line where arrows leave and enter the box: the line of the name.
 func (p *placed) mid() int { return p.y + 1 }
 
 // frame is the box of one directory. depth is 1 for a directory directly below a state directory.
@@ -73,14 +81,16 @@ func layOut(graph issueGraph) *layout {
 	l := &layout{byName: map[string]*placed{}}
 	column := columnsOf(graph)
 	for i, node := range graph.Nodes {
-		p := &placed{node: node, index: i, label: nodeLabel(node), column: column[node.Name]}
+		_, file := splitIssueName(node.Name)
+		p := &placed{node: node, index: i, name: file, column: column[node.Name]}
 		l.issues = append(l.issues, p)
 		l.byName[node.Name] = p
 		l.columns = max(l.columns, p.column+1)
 	}
 	l.columnWidth = make([]int, l.columns)
 	for _, p := range l.issues {
-		l.columnWidth[p.column] = max(l.columnWidth[p.column], runewidth.StringWidth(p.label)+2)
+		width := max(runewidth.StringWidth(p.name), runewidth.StringWidth(p.node.State)) + 2
+		l.columnWidth[p.column] = max(l.columnWidth[p.column], width)
 	}
 
 	// Lines go down the directory tree in order of each part's first issue in link order, so
@@ -180,12 +190,12 @@ func layOut(graph issueGraph) *layout {
 		}
 		for _, node := range d.issues {
 			p := l.byName[node.Name]
-			p.y = y + 4*p.row
+			p.y = y + rowPitch*p.row
 		}
 		for r := 1; r < rows; r++ {
-			l.blank = append(l.blank, y+4*r-1)
+			l.blank = append(l.blank, y+rowPitch*r-1)
 		}
-		y += 4*rows - 1
+		y += rowPitch*rows - 1
 	}
 	placeDirectory = func(d *directory, depth int) {
 		type part struct {

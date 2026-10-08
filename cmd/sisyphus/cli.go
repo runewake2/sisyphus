@@ -310,7 +310,7 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 			"arrows from a parent to its sub-issues, dotted arrows from an issue to the issues that " +
 			"depend on it. Below <name> are its sub-issues and dependents, all the way down; above it " +
 			"are its parents and dependencies, all the way up. A note tells how many other linked " +
-			"issues are not drawn; --full draws them too. Each box shows the issue's file name and state, " +
+			"issues are not drawn; --full draws them too. Each box shows the issue's file name, with its state on the line below, " +
 			"inside a rounded box for each directory above it. <name> has a double box (╔═╗), and each " +
 			"available issue has a heavy box (┏━┓): an issue that is not closed and has no open dependency or " +
 			"sub-issue, so work on it can start now. With --full, an issue that is not below <name> " +

@@ -49,11 +49,12 @@ func TestGraphOfAnEpicDrawsEverythingBelowIt(t *testing.T) {
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
-	equal(t, '║', borderOf(t, res.output, "epic-root-test [open]"))
-	contains(t, res.output, "sub-a-test [open]")
-	contains(t, res.output, "sub-a-child-test [open]")
-	contains(t, res.output, "sub-b-test [closed]")
+	equal(t, '║', borderOf(t, res.output, "epic-root-test"))
+	equal(t, "open", stateOf(t, res.output, "sub-a-test"))
+	equal(t, "open", stateOf(t, res.output, "sub-a-child-test"))
+	equal(t, "closed", stateOf(t, res.output, "sub-b-test"))
 	contains(t, res.output, "──► sub-issue   ┄┄► needed by")
+	isTrue(t, !strings.Contains(res.output, "["), "the state is on its own line, not after the name")
 	isTrue(t, !strings.Contains(res.output, "not drawn"), "nothing is hidden")
 }
 
@@ -72,9 +73,9 @@ func TestGraphLeavesOutIssuesOffThePathAbove(t *testing.T) {
 	res := r.run("graph", "sub-b-test")
 
 	equal(t, 0, res.exit)
-	equal(t, '║', borderOf(t, res.output, "sub-b-test [closed]"))
-	contains(t, res.output, "sub-a-test [open]")
-	contains(t, res.output, "epic-root-test [open]")
+	equal(t, '║', borderOf(t, res.output, "sub-b-test"))
+	equal(t, "open", stateOf(t, res.output, "sub-a-test"))
+	equal(t, "open", stateOf(t, res.output, "epic-root-test"))
 	isTrue(t, !strings.Contains(res.output, "sub-a-child-test"), "a sibling's sub-issue is not drawn")
 	contains(t, res.output, "1 more linked issue is not drawn. Use --full to draw it.")
 }
@@ -98,7 +99,7 @@ func TestGraphFullDrawsEveryConnectedIssue(t *testing.T) {
 	res := r.run("graph", "--full", "sub-a-child-test")
 
 	equal(t, 0, res.exit)
-	contains(t, res.output, "sub-b-test [closed]")
+	equal(t, "closed", stateOf(t, res.output, "sub-b-test"))
 	isTrue(t, !strings.Contains(res.output, "unrelated-issue-test"), "an unconnected issue is not drawn")
 	isTrue(t, !strings.Contains(res.output, "not drawn"), "nothing is hidden")
 }
@@ -120,8 +121,8 @@ func TestGraphMarksTheRequestedIssueAsFocus(t *testing.T) {
 	res := r.run("graph", "sub-a-test")
 
 	equal(t, 0, res.exit)
-	equal(t, '║', borderOf(t, res.output, "sub-a-test [open]"))
-	equal(t, '│', borderOf(t, res.output, "epic-root-test [open]"))
+	equal(t, '║', borderOf(t, res.output, "sub-a-test"))
+	equal(t, '│', borderOf(t, res.output, "epic-root-test"))
 	equal(t, 1, strings.Count(res.output, "╔═╗ sub-a-test"))
 	equal(t, 2, strings.Count(res.output, "╔")) // The focus box and the legend.
 }
@@ -153,7 +154,7 @@ func TestGraphOfAnIssueWithNoRelationsIsOneBox(t *testing.T) {
 	res := r.run("graph", "lonely-issue-test")
 
 	equal(t, 0, res.exit)
-	equal(t, '║', borderOf(t, res.output, "lonely-issue-test [open]"))
+	equal(t, '║', borderOf(t, res.output, "lonely-issue-test"))
 	contains(t, res.output, "╔═╗ lonely-issue-test (available)")
 	equal(t, 2, strings.Count(res.output, "╔")) // The box and the legend.
 	isTrue(t, !strings.Contains(res.output, "needed by"), "no legend for edges that are not drawn")
@@ -180,7 +181,7 @@ func TestGraphAcceptsEveryFormOfTheName(t *testing.T) {
 			res := r.run("graph", reference)
 
 			equal(t, 0, res.exit)
-			equal(t, '║', borderOf(t, res.output, "sub-a-test [open]"))
+			equal(t, '║', borderOf(t, res.output, "sub-a-test"))
 		})
 	}
 }
@@ -235,9 +236,9 @@ func TestGraphDrawsAnAvailableIssueInAHeavyBox(t *testing.T) {
 	res := r.run("graph", "epic-root-test")
 
 	equal(t, 0, res.exit)
-	equal(t, '┃', borderOf(t, res.output, "sub-a-child-test [open]"))
-	equal(t, '│', borderOf(t, res.output, "sub-a-test [open]"))
-	equal(t, '│', borderOf(t, res.output, "sub-b-test [closed]"))
+	equal(t, '┃', borderOf(t, res.output, "sub-a-child-test"))
+	equal(t, '│', borderOf(t, res.output, "sub-a-test"))
+	equal(t, '│', borderOf(t, res.output, "sub-b-test"))
 	contains(t, res.output, "┏━┓ available (ready to start)")
 }
 
@@ -247,7 +248,7 @@ func TestGraphDrawsAnAvailableFocusInADoubleBox(t *testing.T) {
 	res := r.run("graph", "sub-a-child-test")
 
 	equal(t, 0, res.exit)
-	equal(t, '║', borderOf(t, res.output, "sub-a-child-test [open]"))
+	equal(t, '║', borderOf(t, res.output, "sub-a-child-test"))
 	contains(t, res.output, "╔═╗ sub-a-child-test (available)")
 	isTrue(t, !strings.Contains(res.output, "┏━┓ available"), "no other available issue is drawn")
 }
@@ -261,17 +262,48 @@ func TestGraphLeavesOutTheAvailableLegendWithoutAvailableIssues(t *testing.T) {
 	isTrue(t, !strings.Contains(res.output, "available"), "no available issue is drawn")
 }
 
-// borderOf is the left border character of the box that holds label.
-func borderOf(t *testing.T, drawing, label string) rune {
+// issueBox finds the box of the issue with file name name. It returns the box's left border
+// character and the state on the line below the name.
+func issueBox(t *testing.T, drawing, name string) (rune, string) {
 	t.Helper()
-	for _, line := range strings.Split(drawing, "\n") {
-		if before, _, found := strings.Cut(line, label); found {
-			left := []rune(strings.TrimRight(before, " "))
-			return left[len(left)-1]
+	lines := strings.Split(drawing, "\n")
+	for y, line := range lines {
+		runes := []rune(line)
+		for x := 0; x+len([]rune(name)) <= len(runes); x++ {
+			if string(runes[x:x+len([]rune(name))]) != name {
+				continue
+			}
+			left := x - 1
+			for left >= 0 && runes[left] == ' ' {
+				left--
+			}
+			if left < 0 || !strings.ContainsRune("│┃║╎╏", runes[left]) || y+1 >= len(lines) {
+				continue
+			}
+			below := []rune(lines[y+1])
+			end := left + 1
+			for end < len(below) && !strings.ContainsRune("│┃║╎╏├┝╟┤", below[end]) {
+				end++
+			}
+			return runes[left], strings.TrimSpace(string(below[left+1 : end]))
 		}
 	}
-	t.Fatalf("no box holds %q:\n%s", label, drawing)
-	return 0
+	t.Fatalf("no box holds %q:\n%s", name, drawing)
+	return 0, ""
+}
+
+// borderOf is the left border character of the box of the issue with file name name.
+func borderOf(t *testing.T, drawing, name string) rune {
+	t.Helper()
+	border, _ := issueBox(t, drawing, name)
+	return border
+}
+
+// stateOf is the state shown in the box of the issue with file name name.
+func stateOf(t *testing.T, drawing, name string) string {
+	t.Helper()
+	_, state := issueBox(t, drawing, name)
+	return state
 }
 
 // frame is the area inside the border of one directory box, in line and column numbers.
@@ -336,7 +368,7 @@ func TestGraphDrawsEachDirectoryAsABox(t *testing.T) {
 	for _, name := range []string{"web", "auth", "mobile"} {
 		equal(t, 1, len(frames[name]))
 	}
-	contains(t, drawing, "login-epic [open]")
+	equal(t, "open", stateOf(t, drawing, "login-epic"))
 	isTrue(t, !strings.Contains(drawing, "web/"), "a box shows only the file name of its issue")
 	contains(t, legend, "╔═╗ web/auth/login-epic")
 }
@@ -367,12 +399,12 @@ func TestGraphDirectoryBoxHoldsOnlyItsIssues(t *testing.T) {
 	isTrue(t, !plugins.holds(top.top, top.left) && !plugins.holds(top.bottom, top.right), "github is outside plugins")
 
 	for label, inside := range map[string][]frameArea{
-		"integration-plugins [open]": {plugins},
-		"plugin-protocol [open]":     {plugins},
-		"plugin-runner [open]":       {plugins},
-		"github-plugin [open]":       {plugins, nested},
-		"intake-workflow [open]":     {top},
-		"sync-workflow [open]":       {top},
+		"integration-plugins": {plugins},
+		"plugin-protocol":     {plugins},
+		"plugin-runner":       {plugins},
+		"github-plugin":       {plugins, nested},
+		"intake-workflow":     {top},
+		"sync-workflow":       {top},
 	} {
 		y, x := position(t, drawing, label)
 		for _, f := range []frameArea{plugins, nested, top} {
@@ -457,8 +489,8 @@ func TestGraphFullDrawsAnIndirectIssueInADashedBox(t *testing.T) {
 	res := r.run("graph", "--full", "sub-a-child-test")
 
 	equal(t, 0, res.exit)
-	equal(t, '╎', borderOf(t, res.output, "sub-b-test [closed]"))
-	equal(t, '│', borderOf(t, res.output, "sub-a-test [open]"))
+	equal(t, '╎', borderOf(t, res.output, "sub-b-test"))
+	equal(t, '│', borderOf(t, res.output, "sub-a-test"))
 	contains(t, res.output, "┌╌┐ linked indirectly")
 	isTrue(t, !strings.Contains(res.output, "┏╍┓"), "no available issue is linked indirectly")
 }
@@ -470,7 +502,7 @@ func TestGraphFullDrawsAnIndirectAvailableIssueInAHeavyDashedBox(t *testing.T) {
 	res := r.run("graph", "--full", "sub-a-child-test")
 
 	equal(t, 0, res.exit)
-	equal(t, '╏', borderOf(t, res.output, "spare-task-test [open]"))
+	equal(t, '╏', borderOf(t, res.output, "spare-task-test"))
 	contains(t, res.output, "┏╍┓ available, linked indirectly")
 }
 
