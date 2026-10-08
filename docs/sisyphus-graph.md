@@ -1,43 +1,133 @@
 # sisyphus graph
 
-Print the whole family tree of an issue, so a large task and its sub-issues can be reviewed at a
-glance.
+Draw an issue, everything below it, and the path above it, so a large task and what it takes to
+finish it can be reviewed at a glance.
 
 ## Usage
 
 ```bash
-sisyphus graph <name> [--json]
+sisyphus graph <name> [--full] [--json | --mermaid]
 ```
 
 `<name>` is any form of an existing issue (see [[commands#Naming an issue]]).
 
 ## What it does
 
-1. Walks up from `<name>` through `parent` to the top-most ancestor.
-2. Prints that ancestor and every issue below it, at any depth, with its state.
-3. Marks `<name>` itself, and shows each issue's `depends-on` issues next to it.
+Every arrow points from the issue that comes first to the issue that comes after it:
 
-Sub-issues are sorted by name. A `depends-on` issue is named even when it is outside the tree.
-If the parent links contain a cycle (only possible after editing files by hand), the walk stops at
-the repeated issue, which is shown with the state `?` (in JSON, with the title `(cycle; see parent)`).
+- A solid arrow goes from a parent to its sub-issue, so an epic points to its tasks and a task to
+  its sub-tasks.
+- A dotted arrow goes from an issue to the issue that depends on it. The issue it points to cannot
+  start until the issue it comes from closes.
+
+`sisyphus graph <name>` then draws:
+
+1. `<name>`, marked with 📍.
+2. Everything below `<name>`: its sub-issues and the issues that depend on it, and theirs, all the
+   way down.
+3. The path above `<name>`: its parent and the issues it depends on, and theirs, all the way up.
+   This is what it takes to get to `<name>`.
+
+Other issues linked to these, such as a sibling under the same parent, are not drawn. A note under
+the legend says how many. With `--full`, every issue linked to `<name>` by any path of `parent` or
+`depends-on` links is drawn.
+
+So `graph` on an epic draws the whole epic. `graph` on an issue deep in the epic draws only that
+issue's part of it.
+
+Issues with no path of links to `<name>` are never drawn or counted. A `parent` or `depends-on` link
+to an issue that does not exist is drawn as a box with the state `?`.
+
+Each leaf is marked with 🍃. A leaf is an issue that is not closed, whose dependencies are all
+closed, and whose sub-issues are all closed: nothing is left that it waits on, so work on it can
+start now. A dependency that does not exist does not block, as in `sisyphus list --blocked`. An
+issue that is both `<name>` and a leaf is marked 📍🍃.
 
 ## Output
 
+On an issue inside an epic:
+
 ```
-auth-overhaul [open]
-├── fix-login-bug [closed]
-├── split-login-form [in-progress]  <-- you asked about this one  (depends on: fix-login-bug)
-│   └── form-validation [open]
-└── session-timeouts [open]
+┌────────────────────┐     ┌─────────────────────────────────┐     ┌─────────────────────────┐
+│auth-overhaul [open]├────►│      fix-login-bug [closed]     │     │🍃 form-validation [open]│
+└──────────┬─────────┘     └────────────────┬────────────────┘     └─────────────────────────┘
+           │                                ┆                                   ▲
+           │                                ┆                                   │
+           │                                ▼                                   │
+           │               ┌─────────────────────────────────┐                  │
+           └──────────────►│📍 split-login-form [in-progress]├──────────────────┘
+                           └─────────────────────────────────┘
+
+📍 split-login-form   🍃 leaf (ready to start)   ──► sub-issue   ┄┄► needed by
+1 more linked issue is not drawn. Use --full to draw it.
 ```
 
-With `--json`, nested objects with `name`, `title`, `state`, `focus` (true for `<name>`),
-`depends-on`, and `children`.
+`split-login-form` is a sub-issue of `auth-overhaul`, depends on `fix-login-bug`, and has the
+sub-issue `form-validation`. Its sibling `session-timeouts` is not drawn. `form-validation` is
+the only leaf drawn: `split-login-form` waits on it, and `auth-overhaul` waits on both.
+
+On the epic:
+
+```
+┌───────────────────────┐     ┌──────────────────────────────┐     ┌─────────────────────────┐
+│📍 auth-overhaul [open]├────►│    fix-login-bug [closed]    │     │🍃 form-validation [open]│
+└───────────┬───────────┘     └───────────────┬──────────────┘     └─────────────────────────┘
+            │                                 ┆                                 ▲
+            │                                 └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┐               │
+            │                                                   ┆               │
+            │                 ┌──────────────────────────────┐  ┆               │
+            ├────────────────►│  🍃 session-timeouts [open]  │  ┆               │
+            │                 └──────────────────────────────┘  ┆               │
+            │                                                   ┆               │
+            │                                 ┌┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘               │
+            │                                 ▼                                 │
+            │                 ┌──────────────────────────────┐                  │
+            └────────────────►│split-login-form [in-progress]├──────────────────┘
+                              └──────────────────────────────┘
+
+📍 auth-overhaul   🍃 leaf (ready to start)   ──► sub-issue   ┄┄► needed by
+```
+
+The drawing flows left to right, so a large family grows down the terminal rather than across it.
+Each issue is placed in the column after the first issue that points to it, so an epic's sub-issues
+share one column even when they depend on each other. Where two arrows share a path, one can be
+drawn over the other. Use `--json` or `--mermaid` when the exact links matter.
+
+The drawing is made by [mermaid-ascii](https://github.com/AlexanderGrooff/mermaid-ascii) (MIT
+license) from the same Mermaid source that `--mermaid` prints.
+
+## Options
+
+| Option | Effect |
+| --- | --- |
+| `--full` | Draw every issue linked to `<name>`, not only what is below it and the path above it. |
+| `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, and `leaf`, which is `true` for a leaf and left out otherwise), `edges` (each with `from`, `to`, and `kind`), and `hidden` (how many linked issues are not drawn). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
+| `--mermaid` | Print the Mermaid flowchart source instead of drawing it. Paste it into a ` ```mermaid ` block in a Markdown file, and Obsidian or GitHub renders it. The note about issues not drawn becomes a `%%` comment. |
+
+`--json` and `--mermaid` cannot be used together. `--full` works with either.
+
+The epic with `--mermaid`:
+
+```
+graph LR
+    n0["📍 auth-overhaul [open]"]
+    n1["fix-login-bug [closed]"]
+    n2["🍃 session-timeouts [open]"]
+    n3["split-login-form [in-progress]"]
+    n4["🍃 form-validation [open]"]
+    n0 --> n1
+    n0 --> n2
+    n0 --> n3
+    n1 -.-> n3
+    n3 --> n4
+```
 
 ## Examples
 
 ```bash
-sisyphus graph auth-overhaul
-sisyphus graph split-login-form     # same tree, marked at split-login-form
+sisyphus graph auth-overhaul               # the whole epic
+sisyphus graph split-login-form            # its part of the epic
+sisyphus graph split-login-form --full     # everything linked to it
 sisyphus graph auth-overhaul --json
+sisyphus graph auth-overhaul --mermaid > auth-overhaul-graph.txt
 ```

@@ -287,14 +287,18 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 }
 
 func graphCommand(findRoot func() (string, error)) *cobra.Command {
-	var asJSON bool
+	var asJSON, asMermaid, full bool
 	cmd := &cobra.Command{
 		Use:   "graph <name>",
-		Short: "Show an issue's whole family tree as a terminal tree.",
-		Long: "Show an issue's whole family tree as a terminal tree: walk up to the root ancestor (by " +
-			"parent), then print every descendant with its state, marking <name> itself. Each node also " +
-			"shows what it depends on, if anything, so a large task and its sub-issues can be reviewed " +
-			"at a glance.",
+		Short: "Draw an issue, everything below it, and the path above it.",
+		Long: "Draw <name>, everything below it, and the path above it as boxes and arrows in the " +
+			"terminal. Arrows point from the issue that comes first to the one that comes after: solid " +
+			"arrows from a parent to its sub-issues, dotted arrows from an issue to the issues that " +
+			"depend on it. Below <name> are its sub-issues and dependents, all the way down; above it " +
+			"are its parents and dependencies, all the way up. A note tells how many other linked " +
+			"issues are not drawn; --full draws them too. Each box shows the issue's name and state. " +
+			"<name> itself is marked with \"📍\", and each leaf with \"🍃\": an issue that is not closed " +
+			"and has no open dependency or sub-issue, so work on it can start now.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := findRoot()
@@ -304,45 +308,34 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 			if _, err := findIssue(root, issueName(args[0])); err != nil {
 				return err
 			}
-			graph := buildGraph(root, issueName(args[0]))
-			if asJSON {
+			graph := buildGraph(root, issueName(args[0]), full)
+			switch {
+			case asJSON:
 				encoder := json.NewEncoder(cmd.OutOrStdout())
 				encoder.SetEscapeHTML(false)
 				encoder.SetIndent("", "  ")
 				return encoder.Encode(graph)
+			case asMermaid:
+				source := mermaidSource(graph)
+				if note := hiddenNote(graph); note != "" {
+					source += "    %% " + note + "\n"
+				}
+				_, err := io.WriteString(cmd.OutOrStdout(), source)
+				return err
 			}
-			writeGraph(cmd.OutOrStdout(), graph, "", true, true)
-			return nil
+			drawing, err := drawGraph(graph)
+			if err != nil {
+				return err
+			}
+			_, err = io.WriteString(cmd.OutOrStdout(), drawing)
+			return err
 		},
 	}
-	cmd.Flags().BoolVar(&asJSON, "json", false, "Print JSON instead of a tree.")
+	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the nodes and edges as JSON instead of a drawing.")
+	cmd.Flags().BoolVar(&asMermaid, "mermaid", false, "Print Mermaid flowchart source instead of a drawing, for example to paste into a Markdown file.")
+	cmd.Flags().BoolVar(&full, "full", false, "Draw every issue linked to <name> by parent or depends-on, not only what is below it and the path above it.")
+	cmd.MarkFlagsMutuallyExclusive("json", "mermaid")
 	return cmd
-}
-
-// writeGraph prints node and its children as a terminal tree, in the style of the "tree" command.
-func writeGraph(out io.Writer, node graphNode, prefix string, isLast, isRoot bool) {
-	label := node.Name + " [" + node.State + "]"
-	if node.Focus {
-		label += "  <-- you asked about this one"
-	}
-	if len(node.DependsOn) > 0 {
-		label += "  (depends on: " + strings.Join(node.DependsOn, ", ") + ")"
-	}
-	childPrefix := prefix
-	if isRoot {
-		fmt.Fprintln(out, label)
-	} else {
-		connector := "├── "
-		childPrefix += "│   "
-		if isLast {
-			connector = "└── "
-			childPrefix = prefix + "    "
-		}
-		fmt.Fprintln(out, prefix+connector+label)
-	}
-	for i, child := range node.Children {
-		writeGraph(out, child, childPrefix, i == len(node.Children)-1, false)
-	}
 }
 
 func listCommand(findRoot func() (string, error)) *cobra.Command {

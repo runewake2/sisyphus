@@ -53,7 +53,7 @@ func registerTools(server *mcp.Server) {
 	}, searchHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_graph",
-		Description: "Show a sisyphus issue's whole family tree: its root ancestor, every descendant with its state, and any depends-on edges.",
+		Description: "Draw a sisyphus issue, everything below it (sub-issues and dependents, all the way down), and the path above it (parents and dependencies, all the way up), with their states, and say how many other linked issues are not drawn. Leaves (not closed, with no open dependency or sub-issue, so ready to start) are marked with \"🍃\" (and the issue itself with \"📍\") and have leaf: true in JSON. With full, draw every linked issue. Arrows point from the issue that comes first: solid from a parent to a sub-issue, dotted from a dependency to the issue that depends on it.",
 	}, graphHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_parent",
@@ -241,14 +241,18 @@ func searchHandler(_ context.Context, _ *mcp.CallToolRequest, in searchArgs) (*m
 }
 
 type graphArgs struct {
-	Dir  string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name string `json:"name" jsonschema:"The issue name, [[name]], #name, or a path to the issue."`
-	JSON bool   `json:"json,omitempty" jsonschema:"Return JSON instead of the human-readable tree."`
+	Dir     string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Name    string `json:"name" jsonschema:"The issue name, [[name]], #name, or a path to the issue."`
+	JSON    bool   `json:"json,omitempty" jsonschema:"Return the nodes and edges as JSON instead of a drawing."`
+	Mermaid bool   `json:"mermaid,omitempty" jsonschema:"Return Mermaid flowchart source instead of a drawing."`
+	Full    bool   `json:"full,omitempty" jsonschema:"Draw every linked issue, not only what is below this issue and the path above it."`
 }
 
 func graphHandler(_ context.Context, _ *mcp.CallToolRequest, in graphArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"graph", in.Name}
 	args = appendBoolFlag(args, "--json", in.JSON)
+	args = appendBoolFlag(args, "--mermaid", in.Mermaid)
+	args = appendBoolFlag(args, "--full", in.Full)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err

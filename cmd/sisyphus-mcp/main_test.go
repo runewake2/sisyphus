@@ -129,9 +129,14 @@ func TestToolsCreateShowListSearchGraph(t *testing.T) {
 		t.Errorf("search for 'login' did not find fix-login-bug: %s", search)
 	}
 
-	graph := callTool(t, session, "sisyphus_graph", map[string]any{"dir": dir, "name": "sub-issue-test"})
+	graph := callTool(t, session, "sisyphus_graph", map[string]any{"dir": dir, "name": "sub-issue-test", "full": true})
 	if !strings.Contains(graph, "fix-login-bug") || !strings.Contains(graph, "sub-issue-test") {
 		t.Errorf("graph did not show both issues: %s", graph)
+	}
+
+	source := callTool(t, session, "sisyphus_graph", map[string]any{"dir": dir, "name": "sub-issue-test", "mermaid": true, "full": true})
+	if !strings.HasPrefix(source, "graph LR") || !strings.Contains(source, "📍🍃 sub-issue-test") {
+		t.Errorf("graph did not return Mermaid source: %s", source)
 	}
 }
 

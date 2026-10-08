@@ -24,7 +24,7 @@ commands. If `sisyphus` is missing, every tool returns an error that says how to
 | `sisyphus_show` | [[sisyphus-show]] | JSON (`text: true` for text) |
 | `sisyphus_list` | [[sisyphus-list]] | JSON (`text: true` for the table) |
 | `sisyphus_search` | [[sisyphus-search]] | JSON (`text: true` for text) |
-| `sisyphus_graph` | [[sisyphus-graph]] | the text diagram (`json: true` for JSON) |
+| `sisyphus_graph` | [[sisyphus-graph]] | the drawing (`full: true` for every linked issue, `json: true` for JSON, `mermaid: true` for Mermaid source) |
 | `sisyphus_parent` | [[sisyphus-parent]] | text |
 | `sisyphus_depends_on` | [[sisyphus-depends-on]] | text |
 | `sisyphus_remote` | [[sisyphus-remote]] | text |

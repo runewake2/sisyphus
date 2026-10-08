@@ -27,7 +27,7 @@ The list is written as quoted wikilinks: `depends-on: ["[[fix-login-bug]]", "[[s
 
 - `sisyphus list --blocked` lists issues that depend on an issue that is not closed yet.
 - Closing an issue that open or in-progress issues still depend on gives a warning.
-- [[sisyphus-graph]] shows each issue's dependencies next to it.
+- [[sisyphus-graph]] draws each dependency as a dotted arrow to the issue that depends on it.
 
 ## Output
 

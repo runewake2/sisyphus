@@ -188,7 +188,7 @@ sisyphus new "$name" --remote <url> --context "<background text>"
 sisyphus remote <issue-name> <url>                   # pin it to a GitHub issue or Jira ticket
 sisyphus depends-on <issue-name> <blocking-issue-name>   # cannot start until that issue closes
 sisyphus list --blocked                               # issues with an open dependency
-sisyphus graph <issue-name>                           # its family tree, as a terminal tree
+sisyphus graph <issue-name> [--full]                  # it, all below it, and the path above it
 sisyphus list --state open,in-progress --priority critical,high
 sisyphus search "timeout" --section summary          # search (and return) just the Summary
 sisyphus resolve "[[CONTRIBUTING#Issues]]"

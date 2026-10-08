@@ -39,10 +39,12 @@ sisyphus depends-on <issue-name> <blocking-issue-name>
 sisyphus remote <issue-name> <url>
 ```
 
-View a large task's whole family tree in the terminal:
+Draw an issue, everything below it, and the path above it in the terminal. On an epic, that is the
+whole epic:
 
 ```bash
 sisyphus graph <issue-name>
+sisyphus graph <issue-name> --full
 ```
 
 Check wikilinks:

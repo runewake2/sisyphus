@@ -14,7 +14,7 @@ sisyphus is a command-line issue manager. Every issue is one Markdown file with 
 | [[sisyphus-show]] | Print one issue. |
 | [[sisyphus-list]] | List and filter issues. |
 | [[sisyphus-search]] | Search issues by content and filters. |
-| [[sisyphus-graph]] | Print an issue's whole family tree. |
+| [[sisyphus-graph]] | Draw an issue, everything below it, and the path above it. |
 | [[sisyphus-parent]] | Set or remove an issue's parent. |
 | [[sisyphus-depends-on]] | Add or remove an issue that must close first. |
 | [[sisyphus-remote]] | Pin an issue to an external ticket URL. |

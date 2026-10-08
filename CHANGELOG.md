@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.16]] - 2026-10-08
+- Draw `sisyphus graph` as a real dependency graph: everything below an issue and the path above
+  it, with leaves marked, every linked issue with `--full`, plus `--mermaid` output and a new JSON format.
+
 ## [[0.0.15]] - 2026-10-07
 - Suggest `bug` and `feature` as built-in tags in the template and in `--tags` help.
 
