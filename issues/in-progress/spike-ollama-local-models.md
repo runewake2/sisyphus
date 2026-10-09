@@ -71,6 +71,18 @@ the `qwen3` family, `llama3.1` / `llama3.2`, `mistral` / `mistral-nemo`, `granit
 
 - 2026-10-09: Spike started. The test sandbox has 64 CPU cores, 31 GB RAM, and no GPU, so only
   CPU inference is possible there, and speed results are a lower bound.
+- 2026-10-09: CPU runs in the sandbox were too slow (about 110 s for each task with qwen3:4b) and
+  put too much load on the machine. The spike now uses Ollama on a Windows GPU workstation that a
+  person also uses. To keep the load low: one model at a time, a 25% duty cycle (rest between
+  tasks), only models that fit fully in VRAM, and each model is deleted after its run.
+- 2026-10-09: The model list is reduced to the models most likely to work well, plus one fast model:
+  qwen3:4b (fast), qwen3:8b, qwen3.5:9b, ministral-3:8b, qwen3:14b, and gpt-oss:20b (only if it
+  fits in VRAM).
+- 2026-10-09: Cloud models (claude-opus-5-5, claude-opus-5, claude-sonnet-5) are added as a
+  reference. They are blocked until the API key of the sandbox stops returning HTTP 429.
+- First result: small models give the optional `dir` tool argument junk values (for example
+  "sisyphus-mcp"), which makes the call fail. Hiding `dir` from the tool schema is one of the
+  tested settings.
 
 ## Resolution
 
