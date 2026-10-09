@@ -1,0 +1,1479 @@
+{
+ "model": "qwen3:8b",
+ "label": "qwen3_8b__think-off__prompt-basic__tools-all__schema-raw",
+ "config": {
+  "model": "qwen3:8b",
+  "backend": "ollama",
+  "effort": "medium",
+  "think": "off",
+  "prompt": "basic",
+  "tools": "all",
+  "schema": "raw",
+  "oracle": false,
+  "temperature": 0.2,
+  "num_ctx": 8192,
+  "num_thread": 0,
+  "max_turns": 8,
+  "repeats": 2,
+  "seed": 7
+ },
+ "info": {
+  "capabilities": [
+   "completion",
+   "tools",
+   "thinking"
+  ],
+  "parameter_size": "8.2B",
+  "quantization": "Q4_K_M",
+  "family": "qwen3"
+ },
+ "loaded_bytes": {
+  "size": 6295440588,
+  "size_vram": 6295440588
+ },
+ "pass_rate": 0.6428571428571429,
+ "mean_score": 0.7976190476190476,
+ "by_kind": {
+  "read": 0.6,
+  "write": 0.5714285714285714,
+  "multi": 1.0
+ },
+ "by_task": {
+  "t01": 1.0,
+  "t02": 1.0,
+  "t03": 0.0,
+  "t04": 1.0,
+  "t05": 0.0,
+  "t06": 1.0,
+  "t07": 1.0,
+  "t08": 0.0,
+  "t09": 0.0,
+  "t10": 1.0,
+  "t11": 1.0,
+  "t12": 0.0,
+  "t13": 1.0,
+  "t14": 1.0
+ },
+ "tool_calls": 38,
+ "tool_call_errors": 12,
+ "unknown_tool_calls": 0,
+ "no_tool_runs": 0,
+ "text_tool_call_runs": 0,
+ "errors": 0,
+ "gen_tok_per_s": 90.83,
+ "prompt_tok_per_s": 71812.7,
+ "mean_wall_s": 1.2,
+ "mean_eval_tokens": 89.6,
+ "runs": [
+  {
+   "task": "t01",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "dir": ".",
+      "priority": "high,critical",
+      "state": "open",
+      "text": true
+     },
+     "out": "name               title                               state  priority  owner  tags\n-----------------  ----------------------------------  -----  --------  -----  ---------\nmigrate-database   Migrate to Postgres 17              open   critical         db\nauth-epic          Rework authentication               open   high             auth\nfix-login-timeout  Fix login timeout on slow networks  open   high             bug, auth",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6708,
+   "eval_tokens": 98,
+   "eval_s": 6.987445,
+   "prompt_s": 1.303519,
+   "load_s": 0.0203898,
+   "error": null,
+   "final": "Here are the open issues with high or critical priority:\n\n1. **migrate-database** - Migrate to Postgres 17\n2. **auth-epic** - Rework authentication\n3. **fix-login-timeout** - Fix login timeout on slow networks",
+   "wall_s": 8.37,
+   "checks": [
+    {
+     "ok": true,
+     "what": "mentions fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "mentions auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "mentions migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "does not list add-password-reset (medium)"
+    },
+    {
+     "ok": true,
+     "what": "does not list update-docs-site (in-progress, low)"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t02",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "timeout",
+      "text": true
+     },
+     "out": "fix-login-timeout: Fix login timeout on slow networks\n# Fix login timeout on slow networks\n\n## Summary\n\nLogin requests fail with a timeout after 5 seconds on slow mobile networks.\n\n## Context\n\n<Give the background that an agent needs to start the work without other help.\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\n\n## Acceptance criteria\n\n<Each item is one condition that must be true before the issue is complete.>\n\n- [ ] <Condition>\n\n## Out of scope\n\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\n\n## Notes\n\n<Record progress, findings, and open questions here while the work continues.>\n\n## Resolution\n\n<Complete this section when you close the issue.\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6863,
+   "eval_tokens": 42,
+   "eval_s": 0.329229,
+   "prompt_s": 0.215336,
+   "load_s": 0.0169107,
+   "error": null,
+   "final": "The issue about a timeout is named `fix-login-timeout`.",
+   "wall_s": 0.62,
+   "checks": [
+    {
+     "ok": true,
+     "what": "names fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t03",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "text": true,
+      "dir": ".",
+      "name": "docs/site"
+     },
+     "out": "Error: No issue named 'docs/site' in issues/open, issues/in-progress, or issues/closed.",
+     "ok": false
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "text": true,
+      "dir": ".",
+      "query": "docs/site"
+     },
+     "out": "",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 10043,
+   "eval_tokens": 85,
+   "eval_s": 0.651783,
+   "prompt_s": 0.059918,
+   "load_s": 0.0252683,
+   "error": null,
+   "final": "The issue \"docs/site\" does not exist in the repository. Please verify the name and try again.",
+   "wall_s": 0.83,
+   "checks": [
+    {
+     "ok": false,
+     "what": "owner alice"
+    },
+    {
+     "ok": false,
+     "what": "bookmark ai/docs-theme"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.3333333333333333,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t04",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_graph",
+     "args": {
+      "name": "auth-epic",
+      "full": false
+     },
+     "out": "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557    \u250f\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2513\n\u2551auth-epic\u255f\u2501\u2533\u2501\u25ba\u2503add-password-reset\u2503\n\u2551  open   \u2551 \u2503  \u2503       open       \u2503\n\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d \u2503  \u2517\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u251b\n            \u2503\n            \u2503  \u250f\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2513\n            \u2517\u2501\u25ba\u2503fix-login-timeout \u2503\n               \u2503       open       \u2503\n               \u2517\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u251b\n\n\u2554\u2550\u2557 auth-epic   \u250f\u2501\u2513 available (ready to start)   \u2500\u2500\u25ba sub-issue   \u2504\u2504\u25ba needed by   \u2501\u2501\u25ba work path\nstart now: add-password-reset, fix-login-timeout",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6805,
+   "eval_tokens": 74,
+   "eval_s": 0.648258,
+   "prompt_s": 0.064733,
+   "load_s": 0.0177326,
+   "error": null,
+   "final": "The sub-issues of `auth-epic` are:\n\n1. `add-password-reset` (open)\n2. `fix-login-timeout` (open)\n\nBoth are available and ready to start.",
+   "wall_s": 0.79,
+   "checks": [
+    {
+     "ok": true,
+     "what": "fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "add-password-reset"
+    },
+    {
+     "ok": true,
+     "what": "does not list migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t05",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "dir": "/path/to/repo",
+      "query": "payment processing"
+     },
+     "out": "sisyphus search --json payment processing: chdir /path/to/repo: no such file or directory",
+     "ok": false
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6636,
+   "eval_tokens": 63,
+   "eval_s": 0.561699,
+   "prompt_s": 0.045821,
+   "load_s": 0.0164544,
+   "error": null,
+   "final": "It seems there was an error with the directory path. Let me try again with the correct directory. Could you please specify the correct repository directory?",
+   "wall_s": 0.68,
+   "checks": [
+    {
+     "ok": false,
+     "what": "answers no"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.5,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t06",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_new",
+     "args": {
+      "effort": "small",
+      "tags": "auth,feature",
+      "dir": ".",
+      "name": "add-rate-limiting-to-login-api",
+      "priority": "high"
+     },
+     "out": "issues/open/add-rate-limiting-to-login-api.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6679,
+   "eval_tokens": 86,
+   "eval_s": 0.7731129999999999,
+   "prompt_s": 0.0463,
+   "load_s": 0.018336699999999997,
+   "error": null,
+   "final": "The new issue \"add-rate-limiting-to-login-api\" has been created in the `issues/open` directory. You can now start working on it.",
+   "wall_s": 0.89,
+   "checks": [
+    {
+     "ok": true,
+     "what": "exactly one new issue (got ['add-rate-limiting-to-login-api'])"
+    },
+    {
+     "ok": true,
+     "what": "title/name mentions rate limiting"
+    },
+    {
+     "ok": true,
+     "what": "priority high"
+    },
+    {
+     "ok": true,
+     "what": "effort small"
+    },
+    {
+     "ok": true,
+     "what": "tags auth+feature"
+    },
+    {
+     "ok": true,
+     "what": "state open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t07",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "dir": ".",
+      "name": "fix-login-timeout",
+      "owner": "bob",
+      "bookmark": "ai/login-timeout",
+      "state": "in-progress"
+     },
+     "out": "issues/in-progress/fix-login-timeout.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6662,
+   "eval_tokens": 109,
+   "eval_s": 0.9296949999999999,
+   "prompt_s": 0.044934,
+   "load_s": 0.0171727,
+   "error": null,
+   "final": "The issue `fix-login-timeout` is now in the `in-progress` state, owned by `bob`, and the bookmark is set to `ai/login-timeout`. The file `issues/in-progress/fix-login-timeout.md` has been updated to reflect these changes.",
+   "wall_s": 1.05,
+   "checks": [
+    {
+     "ok": true,
+     "what": "in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner bob"
+    },
+    {
+     "ok": true,
+     "what": "bookmark set"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t08",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "docs/site-theme-update",
+      "state": "closed",
+      "resolution": "completed"
+     },
+     "out": "Error: No issue named 'docs/site-theme-update' in issues/open, issues/in-progress, or issues/closed.",
+     "ok": false
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "docs/site-theme-update",
+      "dir": "/path/to/repo"
+     },
+     "out": "sisyphus search --json docs/site-theme-update: chdir /path/to/repo: no such file or directory",
+     "ok": false
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 10072,
+   "eval_tokens": 104,
+   "eval_s": 0.869186,
+   "prompt_s": 0.067644,
+   "load_s": 0.0271461,
+   "error": null,
+   "final": "The error indicates that the repository path is incorrect or the directory does not exist. Please provide the correct repository path so I can proceed with the search.",
+   "wall_s": 1.05,
+   "checks": [
+    {
+     "ok": false,
+     "what": "closed"
+    },
+    {
+     "ok": false,
+     "what": "resolution completed"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.3333333333333333,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t09",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "password-reset-feature",
+      "state": "closed",
+      "resolution": "abandoned"
+     },
+     "out": "Error: No issue named 'password-reset-feature' in issues/open, issues/in-progress, or issues/closed.",
+     "ok": false
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6652,
+   "eval_tokens": 67,
+   "eval_s": 0.569149,
+   "prompt_s": 0.045651,
+   "load_s": 0.0174343,
+   "error": null,
+   "final": "The issue \"password-reset-feature\" could not be found in the specified directories. Please provide more details or check the name of the issue.",
+   "wall_s": 0.7,
+   "checks": [
+    {
+     "ok": false,
+     "what": "closed"
+    },
+    {
+     "ok": false,
+     "what": "resolution abandoned"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.3333333333333333,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t10",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_parent",
+     "args": {
+      "dir": ".",
+      "name": "migrate-database",
+      "parent": "auth-epic"
+     },
+     "out": "issues/open/migrate-database.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6635,
+   "eval_tokens": 83,
+   "eval_s": 0.734124,
+   "prompt_s": 0.038438,
+   "load_s": 0.017148200000000002,
+   "error": null,
+   "final": "The issue `migrate-database` has been successfully made a sub-issue of `auth-epic`. The file `issues/open/migrate-database.md` has been created or updated to reflect this change.",
+   "wall_s": 0.85,
+   "checks": [
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t11",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_depends_on",
+     "args": {
+      "blockingIssue": "migrate-database",
+      "name": "add-password-reset"
+     },
+     "out": "issues/open/add-password-reset.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6639,
+   "eval_tokens": 72,
+   "eval_s": 0.660941,
+   "prompt_s": 0.045856,
+   "load_s": 0.0194006,
+   "error": null,
+   "final": "The dependency has been recorded. The issue `add-password-reset` now depends on `migrate-database`, and it is listed in the `issues/open` directory.",
+   "wall_s": 0.79,
+   "checks": [
+    {
+     "ok": true,
+     "what": "depends-on migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "direction correct"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t12",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "dir": ".",
+      "name": "migrate-database",
+      "priority": "medium"
+     },
+     "out": "validating \"arguments\": validating root: required: missing properties: [\"state\"]",
+     "ok": false
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6634,
+   "eval_tokens": 89,
+   "eval_s": 0.791884,
+   "prompt_s": 0.038292,
+   "load_s": 0.0180622,
+   "error": null,
+   "final": "The `sisyphus_update` function requires the `state` parameter to be specified when updating an issue. Please provide the new state for the issue \"migrate-database\" (e.g., `open`, `in-progress`, or `closed`).",
+   "wall_s": 0.9,
+   "checks": [
+    {
+     "ok": false,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.6666666666666666,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t13",
+   "kind": "multi",
+   "calls": [
+    {
+     "tool": "sisyphus_new",
+     "args": {
+      "dir": ".",
+      "name": "audit-session-tokens",
+      "parent": "auth-epic",
+      "priority": "medium",
+      "title": "Audit session tokens"
+     },
+     "out": "issues/open/audit-session-tokens.md",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_depends_on",
+     "args": {
+      "blockingIssue": "fix-login-timeout",
+      "dir": ".",
+      "name": "audit-session-tokens"
+     },
+     "out": "issues/open/audit-session-tokens.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6747,
+   "eval_tokens": 143,
+   "eval_s": 1.180961,
+   "prompt_s": 0.054233,
+   "load_s": 0.019442,
+   "error": null,
+   "final": "The issue \"audit-session-tokens\" has been created successfully under the \"auth-epic\" and depends on \"fix-login-timeout\". You can find it in the `issues/open/audit-session-tokens.md` file.",
+   "wall_s": 1.32,
+   "checks": [
+    {
+     "ok": true,
+     "what": "audit-session-tokens exists"
+    },
+    {
+     "ok": true,
+     "what": "title"
+    },
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "depends-on fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t14",
+   "kind": "multi",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "dir": ".",
+      "state": "open",
+      "priority": "critical",
+      "text": true
+     },
+     "out": "name              title                   state  priority  owner  tags\n----------------  ----------------------  -----  --------  -----  ----\nmigrate-database  Migrate to Postgres 17  open   critical         db",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "dir": ".",
+      "name": "migrate-database",
+      "owner": "carol",
+      "bookmark": "ai/db",
+      "state": "in-progress"
+     },
+     "out": "issues/in-progress/migrate-database.md",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "dir": ".",
+      "name": "migrate-database",
+      "text": true
+     },
+     "out": "title:      Migrate to Postgres 17\nstate:      in-progress\npriority:   critical\neffort:     medium\ntags:       [db]\nowner:      carol\napprover:   \nbookmark:   ai/db\nparent:     \ndepends-on: []\nremote:     \nmetadata:   {}\n\n# Migrate to Postgres 17\n\n## Summary\n\nUpgrade the production database from Postgres 15 to Postgres 17.\n\n## Context\n\n<Give the background that an agent needs to start the work without other help.\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\n\n## Acceptance criteria\n\n<Each item is one condition that must be true before the issue is complete.>\n\n- [ ] <Condition>\n\n## Out of scope\n\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\n\n## Notes\n\n<Record progress, findings, and open questions here while the work continues.>\n\n## Resolution\n\n<Complete this section when you close the issue.\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>",
+     "ok": true
+    }
+   ],
+   "turns": 4,
+   "prompt_tokens": 13942,
+   "eval_tokens": 134,
+   "eval_s": 1.14652,
+   "prompt_s": 0.127908,
+   "load_s": 0.036459,
+   "error": null,
+   "final": "The title of the critical issue is **\"Migrate to Postgres 17\"**.",
+   "wall_s": 1.44,
+   "checks": [
+    {
+     "ok": true,
+     "what": "migrate-database in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner carol"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/db"
+    },
+    {
+     "ok": true,
+     "what": "answer gives title"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t01",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "dir": ".",
+      "priority": "high,critical",
+      "state": "open",
+      "text": true
+     },
+     "out": "name               title                               state  priority  owner  tags\n-----------------  ----------------------------------  -----  --------  -----  ---------\nmigrate-database   Migrate to Postgres 17              open   critical         db\nauth-epic          Rework authentication               open   high             auth\nfix-login-timeout  Fix login timeout on slow networks  open   high             bug, auth",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6708,
+   "eval_tokens": 111,
+   "eval_s": 0.9648270000000001,
+   "prompt_s": 0.05348,
+   "load_s": 0.0186206,
+   "error": null,
+   "final": "Here are the open issues with high or critical priority:\n\n1. **migrate-database** - Migrate to Postgres 17 (Priority: critical)\n2. **auth-epic** - Rework authentication (Priority: high)\n3. **fix-login-timeout** - Fix login timeout on slow networks (Priority: high)",
+   "wall_s": 1.1,
+   "checks": [
+    {
+     "ok": true,
+     "what": "mentions fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "mentions auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "mentions migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "does not list add-password-reset (medium)"
+    },
+    {
+     "ok": true,
+     "what": "does not list update-docs-site (in-progress, low)"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t02",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "timeout",
+      "text": true
+     },
+     "out": "fix-login-timeout: Fix login timeout on slow networks\n# Fix login timeout on slow networks\n\n## Summary\n\nLogin requests fail with a timeout after 5 seconds on slow mobile networks.\n\n## Context\n\n<Give the background that an agent needs to start the work without other help.\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\n\n## Acceptance criteria\n\n<Each item is one condition that must be true before the issue is complete.>\n\n- [ ] <Condition>\n\n## Out of scope\n\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\n\n## Notes\n\n<Record progress, findings, and open questions here while the work continues.>\n\n## Resolution\n\n<Complete this section when you close the issue.\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6863,
+   "eval_tokens": 42,
+   "eval_s": 0.41867200000000004,
+   "prompt_s": 0.074181,
+   "load_s": 0.0160455,
+   "error": null,
+   "final": "The issue about a timeout is named `fix-login-timeout`.",
+   "wall_s": 0.57,
+   "checks": [
+    {
+     "ok": true,
+     "what": "names fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t03",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "dir": ".",
+      "name": "docs/site",
+      "text": true
+     },
+     "out": "Error: No issue named 'docs/site' in issues/open, issues/in-progress, or issues/closed.",
+     "ok": false
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "dir": ".",
+      "query": "docs/site",
+      "text": true
+     },
+     "out": "",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 10043,
+   "eval_tokens": 85,
+   "eval_s": 0.660418,
+   "prompt_s": 0.057753,
+   "load_s": 0.024693100000000003,
+   "error": null,
+   "final": "The issue \"docs/site\" does not exist in the repository. Please verify the name and try again.",
+   "wall_s": 0.83,
+   "checks": [
+    {
+     "ok": false,
+     "what": "owner alice"
+    },
+    {
+     "ok": false,
+     "what": "bookmark ai/docs-theme"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.3333333333333333,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t04",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_graph",
+     "args": {
+      "name": "auth-epic",
+      "full": false
+     },
+     "out": "\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557    \u250f\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2513\n\u2551auth-epic\u255f\u2501\u2533\u2501\u25ba\u2503add-password-reset\u2503\n\u2551  open   \u2551 \u2503  \u2503       open       \u2503\n\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d \u2503  \u2517\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u251b\n            \u2503\n            \u2503  \u250f\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2513\n            \u2517\u2501\u25ba\u2503fix-login-timeout \u2503\n               \u2503       open       \u2503\n               \u2517\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u251b\n\n\u2554\u2550\u2557 auth-epic   \u250f\u2501\u2513 available (ready to start)   \u2500\u2500\u25ba sub-issue   \u2504\u2504\u25ba needed by   \u2501\u2501\u25ba work path\nstart now: add-password-reset, fix-login-timeout",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6805,
+   "eval_tokens": 74,
+   "eval_s": 0.618964,
+   "prompt_s": 0.064835,
+   "load_s": 0.017939999999999998,
+   "error": null,
+   "final": "The sub-issues of `auth-epic` are:\n\n1. `add-password-reset` (open)\n2. `fix-login-timeout` (open)\n\nBoth are available and ready to start.",
+   "wall_s": 0.76,
+   "checks": [
+    {
+     "ok": true,
+     "what": "fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "add-password-reset"
+    },
+    {
+     "ok": true,
+     "what": "does not list migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t05",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "payment processing",
+      "dir": "/path/to/repo"
+     },
+     "out": "sisyphus search --json payment processing: chdir /path/to/repo: no such file or directory",
+     "ok": false
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6636,
+   "eval_tokens": 63,
+   "eval_s": 0.587991,
+   "prompt_s": 0.043968,
+   "load_s": 0.0177021,
+   "error": null,
+   "final": "It seems there was an error with the directory path. Let me try again with the correct directory. Could you please specify the correct repo directory?",
+   "wall_s": 0.7,
+   "checks": [
+    {
+     "ok": false,
+     "what": "answers no"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.5,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t06",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_new",
+     "args": {
+      "dir": ".",
+      "name": "add-rate-limiting-to-login-api",
+      "priority": "high",
+      "effort": "small",
+      "tags": "auth,feature"
+     },
+     "out": "issues/open/add-rate-limiting-to-login-api.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6679,
+   "eval_tokens": 86,
+   "eval_s": 0.673454,
+   "prompt_s": 0.039002999999999996,
+   "load_s": 0.0174735,
+   "error": null,
+   "final": "The new issue \"add-rate-limiting-to-login-api\" has been created in the `issues/open` directory. You can now start working on it.",
+   "wall_s": 0.78,
+   "checks": [
+    {
+     "ok": true,
+     "what": "exactly one new issue (got ['add-rate-limiting-to-login-api'])"
+    },
+    {
+     "ok": true,
+     "what": "title/name mentions rate limiting"
+    },
+    {
+     "ok": true,
+     "what": "priority high"
+    },
+    {
+     "ok": true,
+     "what": "effort small"
+    },
+    {
+     "ok": true,
+     "what": "tags auth+feature"
+    },
+    {
+     "ok": true,
+     "what": "state open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t07",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "state": "in-progress",
+      "dir": ".",
+      "name": "fix-login-timeout",
+      "owner": "bob",
+      "bookmark": "ai/login-timeout"
+     },
+     "out": "issues/in-progress/fix-login-timeout.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6662,
+   "eval_tokens": 109,
+   "eval_s": 0.940187,
+   "prompt_s": 0.046476,
+   "load_s": 0.0153923,
+   "error": null,
+   "final": "The issue \"fix-login-timeout\" is now in the \"in-progress\" state, owned by \"bob\", and the bookmark is set to \"ai/login-timeout\". The file `issues/in-progress/fix-login-timeout.md` has been updated to reflect these changes.",
+   "wall_s": 1.06,
+   "checks": [
+    {
+     "ok": true,
+     "what": "in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner bob"
+    },
+    {
+     "ok": true,
+     "what": "bookmark set"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t08",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "docs/site-theme-update",
+      "state": "closed",
+      "resolution": "completed"
+     },
+     "out": "Error: No issue named 'docs/site-theme-update' in issues/open, issues/in-progress, or issues/closed.",
+     "ok": false
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "docs/site-theme-update",
+      "dir": "/path/to/repo"
+     },
+     "out": "sisyphus search --json docs/site-theme-update: chdir /path/to/repo: no such file or directory",
+     "ok": false
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 10072,
+   "eval_tokens": 104,
+   "eval_s": 0.8666420000000001,
+   "prompt_s": 0.070251,
+   "load_s": 0.027371899999999998,
+   "error": null,
+   "final": "The error suggests that the repository path is incorrect or the directory does not exist. Please provide the correct repository path so I can perform the search accurately.",
+   "wall_s": 1.05,
+   "checks": [
+    {
+     "ok": false,
+     "what": "closed"
+    },
+    {
+     "ok": false,
+     "what": "resolution completed"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.3333333333333333,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t09",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "state": "closed",
+      "resolution": "abandoned",
+      "name": "password-reset-feature"
+     },
+     "out": "Error: No issue named 'password-reset-feature' in issues/open, issues/in-progress, or issues/closed.",
+     "ok": false
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6652,
+   "eval_tokens": 67,
+   "eval_s": 0.642708,
+   "prompt_s": 0.044481999999999994,
+   "load_s": 0.017231,
+   "error": null,
+   "final": "The issue \"password-reset-feature\" could not be found in the specified directories. Please provide more details or check the name of the issue.",
+   "wall_s": 0.77,
+   "checks": [
+    {
+     "ok": false,
+     "what": "closed"
+    },
+    {
+     "ok": false,
+     "what": "resolution abandoned"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.3333333333333333,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t10",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_parent",
+     "args": {
+      "dir": ".",
+      "name": "migrate-database",
+      "parent": "auth-epic"
+     },
+     "out": "issues/open/migrate-database.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6635,
+   "eval_tokens": 83,
+   "eval_s": 0.7006600000000001,
+   "prompt_s": 0.045222,
+   "load_s": 0.0182807,
+   "error": null,
+   "final": "The issue `migrate-database` has been successfully made a sub-issue of `auth-epic`. The file `issues/open/migrate-database.md` has been created or updated to reflect this change.",
+   "wall_s": 0.82,
+   "checks": [
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t11",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_depends_on",
+     "args": {
+      "blockingIssue": "migrate-database",
+      "name": "add-password-reset"
+     },
+     "out": "issues/open/add-password-reset.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6639,
+   "eval_tokens": 72,
+   "eval_s": 0.670615,
+   "prompt_s": 0.043992,
+   "load_s": 0.0164335,
+   "error": null,
+   "final": "The dependency has been recorded. The issue `add-password-reset` now depends on `migrate-database`, and it is listed in the `issues/open` directory.",
+   "wall_s": 0.79,
+   "checks": [
+    {
+     "ok": true,
+     "what": "depends-on migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "direction correct"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t12",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "dir": ".",
+      "name": "migrate-database",
+      "priority": "medium"
+     },
+     "out": "validating \"arguments\": validating root: required: missing properties: [\"state\"]",
+     "ok": false
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6634,
+   "eval_tokens": 89,
+   "eval_s": 0.793121,
+   "prompt_s": 0.036809,
+   "load_s": 0.0160236,
+   "error": null,
+   "final": "The `sisyphus_update` function requires the `state` parameter to be specified when updating an issue. Please provide the new state for the issue \"migrate-database\" (e.g., `open`, `in-progress`, or `closed`).",
+   "wall_s": 0.91,
+   "checks": [
+    {
+     "ok": false,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 0.6666666666666666,
+   "pass": false,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t13",
+   "kind": "multi",
+   "calls": [
+    {
+     "tool": "sisyphus_new",
+     "args": {
+      "dir": ".",
+      "name": "audit-session-tokens",
+      "parent": "auth-epic",
+      "priority": "medium",
+      "title": "Audit session tokens"
+     },
+     "out": "issues/open/audit-session-tokens.md",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_depends_on",
+     "args": {
+      "dir": ".",
+      "name": "audit-session-tokens",
+      "blockingIssue": "fix-login-timeout"
+     },
+     "out": "issues/open/audit-session-tokens.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 6747,
+   "eval_tokens": 142,
+   "eval_s": 1.172268,
+   "prompt_s": 0.052930000000000005,
+   "load_s": 0.0193434,
+   "error": null,
+   "final": "The issue \"audit-session-tokens\" has been created successfully under the \"auth-epic\" and depends on \"fix-login-timeout\". You can find the issue file at `issues/open/audit-session-tokens.md`.",
+   "wall_s": 1.3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "audit-session-tokens exists"
+    },
+    {
+     "ok": true,
+     "what": "title"
+    },
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "depends-on fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t14",
+   "kind": "multi",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "state": "open",
+      "priority": "critical",
+      "text": true,
+      "dir": "."
+     },
+     "out": "name              title                   state  priority  owner  tags\n----------------  ----------------------  -----  --------  -----  ----\nmigrate-database  Migrate to Postgres 17  open   critical         db",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "state": "in-progress",
+      "dir": ".",
+      "name": "migrate-database",
+      "owner": "carol",
+      "bookmark": "ai/db"
+     },
+     "out": "issues/in-progress/migrate-database.md",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "dir": ".",
+      "name": "migrate-database",
+      "text": true
+     },
+     "out": "title:      Migrate to Postgres 17\nstate:      in-progress\npriority:   critical\neffort:     medium\ntags:       [db]\nowner:      carol\napprover:   \nbookmark:   ai/db\nparent:     \ndepends-on: []\nremote:     \nmetadata:   {}\n\n# Migrate to Postgres 17\n\n## Summary\n\nUpgrade the production database from Postgres 15 to Postgres 17.\n\n## Context\n\n<Give the background that an agent needs to start the work without other help.\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\n\n## Acceptance criteria\n\n<Each item is one condition that must be true before the issue is complete.>\n\n- [ ] <Condition>\n\n## Out of scope\n\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\n\n## Notes\n\n<Record progress, findings, and open questions here while the work continues.>\n\n## Resolution\n\n<Complete this section when you close the issue.\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>",
+     "ok": true
+    }
+   ],
+   "turns": 4,
+   "prompt_tokens": 13942,
+   "eval_tokens": 134,
+   "eval_s": 1.0890440000000001,
+   "prompt_s": 0.12797799999999998,
+   "load_s": 0.0338803,
+   "error": null,
+   "final": "The title of the critical issue is **\"Migrate to Postgres 17\"**.",
+   "wall_s": 1.37,
+   "checks": [
+    {
+     "ok": true,
+     "what": "migrate-database in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner carol"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/db"
+    },
+    {
+     "ok": true,
+     "what": "answer gives title"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  }
+ ]
+}

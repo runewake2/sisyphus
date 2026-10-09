@@ -1,0 +1,858 @@
+{
+ "model": "claude-opus-5-5-subagent",
+ "label": "claude-opus-5-5-subagent",
+ "config": {
+  "backend": "claude-code-subagent",
+  "interface": "sisyphus CLI via Bash"
+ },
+ "pass_rate": 1.0,
+ "mean_score": 1.0,
+ "by_kind": {
+  "read": 1.0,
+  "write": 1.0,
+  "multi": 1.0
+ },
+ "by_task": {
+  "t01": 1.0,
+  "t02": 1.0,
+  "t03": 1.0,
+  "t04": 1.0,
+  "t05": 1.0,
+  "t06": 1.0,
+  "t07": 1.0,
+  "t08": 1.0,
+  "t09": 1.0,
+  "t10": 1.0,
+  "t11": 1.0,
+  "t12": 1.0,
+  "t13": 1.0,
+  "t14": 1.0
+ },
+ "mean_wall_s": 6.9,
+ "runs": [
+  {
+   "task": "t01",
+   "kind": "read",
+   "repeat": 0,
+   "final": "Three open issues have high or critical priority:\n\n- **migrate-database**: Migrate to Postgres 17 (critical)\n- **auth-epic**: Rework authentication (high)\n- **fix-login-timeout**: Fix login timeout on slow networks (high)\n\nNone of the in-progress issues have high or critical priority.",
+   "wall_s": 5.8,
+   "agent_tokens": 33282,
+   "tool_uses": 2,
+   "checks": [
+    {
+     "ok": true,
+     "what": "mentions fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "mentions auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "mentions migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "does not list add-password-reset (medium)"
+    },
+    {
+     "ok": true,
+     "what": "does not list update-docs-site (in-progress, low)"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t02",
+   "kind": "read",
+   "repeat": 0,
+   "final": "The issue is **`fix-login-timeout`**, titled \"Fix login timeout on slow networks.\" It covers login requests that time out after 5 seconds on slow mobile networks. It was the only match when I searched open, in-progress and closed issues for \"timeout.\"",
+   "wall_s": 5.5,
+   "agent_tokens": 33936,
+   "tool_uses": 2,
+   "checks": [
+    {
+     "ok": true,
+     "what": "names fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t03",
+   "kind": "read",
+   "repeat": 0,
+   "final": "The docs site issue is `update-docs-site` (\"Update the docs site theme\"). Its owner is **alice**, and it is on the bookmark **`ai/docs-theme`**. The issue is in progress.",
+   "wall_s": 6.0,
+   "agent_tokens": 33384,
+   "tool_uses": 2,
+   "checks": [
+    {
+     "ok": true,
+     "what": "owner alice"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/docs-theme"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t04",
+   "kind": "read",
+   "repeat": 0,
+   "final": "auth-epic (\"Rework authentication\") has two direct sub-issues. I checked open, in-progress and closed issues, and both are open:\n\n- **fix-login-timeout**: Fix login timeout on slow networks (high priority; tags: bug, auth)\n- **add-password-reset**: Add password reset by email (medium priority; tags: feature, auth)\n\nNeither one is waiting on another issue, so work on either can start now.",
+   "wall_s": 7.8,
+   "agent_tokens": 34389,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "add-password-reset"
+    },
+    {
+     "ok": true,
+     "what": "does not list migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t05",
+   "kind": "read",
+   "repeat": 0,
+   "final": "No, there's no issue about payment processing. I searched the titles and bodies of every issue (open, in progress and closed) for \"payment\", \"pay\", \"billing\", \"stripe\", \"checkout\" and \"invoice\", and nothing matched.\n\nThe repository has six issues, and none of them is about payments:\n- migrate-database\n- auth-epic\n- fix-login-timeout\n- add-password-reset\n- update-docs-site\n- old-cache-layer",
+   "wall_s": 8.1,
+   "agent_tokens": 34155,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "answers no"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t06",
+   "kind": "write",
+   "repeat": 0,
+   "final": "I created the issue `add-login-rate-limiting`, titled \"Add rate limiting to the login API\". It is open, with high priority, small effort and the tags `auth` and `feature`. A search found no other issue about rate limiting.\n\nThe body is still the blank template, so the summary and acceptance criteria need to be filled in.",
+   "wall_s": 7.4,
+   "agent_tokens": 34699,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "exactly one new issue (got ['add-login-rate-limiting'])"
+    },
+    {
+     "ok": true,
+     "what": "title/name mentions rate limiting"
+    },
+    {
+     "ok": true,
+     "what": "priority high"
+    },
+    {
+     "ok": true,
+     "what": "effort small"
+    },
+    {
+     "ok": true,
+     "what": "tags auth+feature"
+    },
+    {
+     "ok": true,
+     "what": "state open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t07",
+   "kind": "write",
+   "repeat": 0,
+   "final": "I started work on fix-login-timeout. It is now in-progress, owned by bob, with the bookmark `ai/login-timeout`.",
+   "wall_s": 6.4,
+   "agent_tokens": 33950,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner bob"
+    },
+    {
+     "ok": true,
+     "what": "bookmark set"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t08",
+   "kind": "write",
+   "repeat": 0,
+   "final": "I closed `update-docs-site` (\"Update the docs site theme\") with the resolution \"completed\". It had been in progress and assigned to alice.\n\nIts Resolution section still holds the template placeholder text. The tool has no command for editing an issue's text, so I couldn't fill it in.",
+   "wall_s": 7.7,
+   "agent_tokens": 34642,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "closed"
+    },
+    {
+     "ok": true,
+     "what": "resolution completed"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t09",
+   "kind": "write",
+   "repeat": 0,
+   "final": "I closed `add-password-reset` (\"Add password reset by email\") with the resolution \"abandoned\".\n\nThe issue's Resolution section still has the template's placeholder text. I couldn't fill it in because sisyphus has no command that edits an issue's body. If you want the reason on record, it has to be added to the file by hand.",
+   "wall_s": 8.0,
+   "agent_tokens": 34664,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "closed"
+    },
+    {
+     "ok": true,
+     "what": "resolution abandoned"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t10",
+   "kind": "write",
+   "repeat": 0,
+   "final": "migrate-database is now a sub-issue of auth-epic: its parent is set to `[[auth-epic]]`, and I checked it with `sisyphus show`.\n\nOne thing to check: migrate-database is \"Migrate to Postgres 17\", tagged `db`, while auth-epic is \"Rework authentication\" and its summary says it holds the auth sub-issues. If the database migration wasn't meant to sit under the auth work, `sisyphus parent migrate-database --clear` removes the link.",
+   "wall_s": 8.1,
+   "agent_tokens": 34164,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t11",
+   "kind": "write",
+   "repeat": 0,
+   "final": "I recorded the dependency: add-password-reset now depends on migrate-database, which is still open. add-password-reset will be blocked until migrate-database is closed.",
+   "wall_s": 6.0,
+   "agent_tokens": 33762,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "depends-on migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "direction correct"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t12",
+   "kind": "write",
+   "repeat": 0,
+   "final": "I lowered the priority of migrate-database (\"Migrate to Postgres 17\") from critical to medium. Nothing else changed, and it's still open.",
+   "wall_s": 7.0,
+   "agent_tokens": 33910,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t13",
+   "kind": "multi",
+   "repeat": 0,
+   "final": "I created `audit-session-tokens` with the title \"Audit session tokens\" and medium priority. It's open, sits under `auth-epic`, and depends on `fix-login-timeout`. The body sections are still the template placeholders.",
+   "wall_s": 7.2,
+   "agent_tokens": 34738,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "audit-session-tokens exists"
+    },
+    {
+     "ok": true,
+     "what": "title"
+    },
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "depends-on fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t14",
+   "kind": "multi",
+   "repeat": 0,
+   "final": "The critical issue is **\"Migrate to Postgres 17\"** (`migrate-database`). It's now in progress, with carol as owner and the bookmark set to `ai/db`.",
+   "wall_s": 6.4,
+   "agent_tokens": 34280,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "migrate-database in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner carol"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/db"
+    },
+    {
+     "ok": true,
+     "what": "answer gives title"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t01",
+   "kind": "read",
+   "repeat": 1,
+   "final": "Three open issues have high or critical priority:\n\n- **migrate-database** (critical): Migrate to Postgres 17\n- **auth-epic** (high): Rework authentication\n- **fix-login-timeout** (high): Fix login timeout on slow networks\n\nNone of the in-progress issues have high or critical priority.",
+   "wall_s": 5.4,
+   "agent_tokens": 33313,
+   "tool_uses": 2,
+   "checks": [
+    {
+     "ok": true,
+     "what": "mentions fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "mentions auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "mentions migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "does not list add-password-reset (medium)"
+    },
+    {
+     "ok": true,
+     "what": "does not list update-docs-site (in-progress, low)"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t02",
+   "kind": "read",
+   "repeat": 1,
+   "final": "The issue is **`fix-login-timeout`**, titled \"Fix login timeout on slow networks\". It's open with high priority. Login requests on slow mobile networks fail with a timeout after 5 seconds.\n\nIt's the only issue that mentions a timeout. I searched open, in-progress and closed issues.",
+   "wall_s": 7.6,
+   "agent_tokens": 34057,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "names fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t03",
+   "kind": "read",
+   "repeat": 1,
+   "final": "The docs site issue is `update-docs-site` (\"Update the docs site theme\"). Its owner is **alice** and it is on the bookmark **`ai/docs-theme`**. The issue is in progress with low priority.",
+   "wall_s": 5.6,
+   "agent_tokens": 34181,
+   "tool_uses": 2,
+   "checks": [
+    {
+     "ok": true,
+     "what": "owner alice"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/docs-theme"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t04",
+   "kind": "read",
+   "repeat": 1,
+   "final": "auth-epic (\"Rework authentication\") has two direct sub-issues. Both are open and ready to start:\n\n| Issue | Title | Priority | Tags |\n|---|---|---|---|\n| `fix-login-timeout` | Fix login timeout on slow networks | high | bug, auth |\n| `add-password-reset` | Add password reset by email | medium | feature, auth |\n\nI included closed issues in the search, and there are no others. Neither sub-issue has sub-issues of its own.",
+   "wall_s": 7.8,
+   "agent_tokens": 34296,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "add-password-reset"
+    },
+    {
+     "ok": true,
+     "what": "does not list migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t05",
+   "kind": "read",
+   "repeat": 1,
+   "final": "No. I searched every issue, including closed ones, for \"payment\", \"pay\", \"billing\", \"checkout\", \"invoice\", \"stripe\" and \"charge\", and none of them matched.\n\nThe repository has six issues, and none is about payments:\n- `migrate-database`: Migrate to Postgres 17\n- `auth-epic`: Rework authentication\n- `fix-login-timeout`: Fix login timeout on slow networks\n- `add-password-reset`: Add password reset by email\n- `update-docs-site`: Update the docs site theme\n- `old-cache-layer` (closed): Remove the old cache layer\n\nIf you want to track payment processing, I can create a new issue for it.",
+   "wall_s": 6.8,
+   "agent_tokens": 34047,
+   "tool_uses": 2,
+   "checks": [
+    {
+     "ok": true,
+     "what": "answers no"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t06",
+   "kind": "write",
+   "repeat": 1,
+   "final": "I created the issue `add-login-api-rate-limiting`, titled \"Add rate limiting to the login API\". It's open, high priority, small effort, and tagged `auth` and `feature`.\n\nThe body still has the template's placeholder text. If you want, I can fill in the summary and acceptance criteria.",
+   "wall_s": 5.4,
+   "agent_tokens": 34038,
+   "tool_uses": 2,
+   "checks": [
+    {
+     "ok": true,
+     "what": "exactly one new issue (got ['add-login-api-rate-limiting'])"
+    },
+    {
+     "ok": true,
+     "what": "title/name mentions rate limiting"
+    },
+    {
+     "ok": true,
+     "what": "priority high"
+    },
+    {
+     "ok": true,
+     "what": "effort small"
+    },
+    {
+     "ok": true,
+     "what": "tags auth+feature"
+    },
+    {
+     "ok": true,
+     "what": "state open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t07",
+   "kind": "write",
+   "repeat": 1,
+   "final": "I started work on fix-login-timeout. It's now in-progress, with bob as the owner and the bookmark set to `ai/login-timeout`. Nothing was blocking it, since it doesn't depend on any other issue.",
+   "wall_s": 6.8,
+   "agent_tokens": 34010,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner bob"
+    },
+    {
+     "ok": true,
+     "what": "bookmark set"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t08",
+   "kind": "write",
+   "repeat": 1,
+   "final": "I closed `update-docs-site` (\"Update the docs site theme\") as completed. It was in progress and owned by alice. Its Resolution section is still the blank template text, so you may want to add a note there saying what was done.",
+   "wall_s": 8.6,
+   "agent_tokens": 34516,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "closed"
+    },
+    {
+     "ok": true,
+     "what": "resolution completed"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t09",
+   "kind": "write",
+   "repeat": 1,
+   "final": "I closed `add-password-reset` (\"Add password reset by email\") with the resolution set to abandoned, and it now sits in `issues/closed/`. The `show` output doesn't print the resolution field, so I couldn't read it back to check. The issue is a sub-issue of `auth-epic`, and that epic is still open.",
+   "wall_s": 6.9,
+   "agent_tokens": 33930,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "closed"
+    },
+    {
+     "ok": true,
+     "what": "resolution abandoned"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t10",
+   "kind": "write",
+   "repeat": 1,
+   "final": "migrate-database is now a sub-issue of auth-epic. Its parent field reads `[[auth-epic]]`, and nothing else about the issue changed.",
+   "wall_s": 6.4,
+   "agent_tokens": 33657,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t11",
+   "kind": "write",
+   "repeat": 1,
+   "final": "I recorded the dependency: add-password-reset now depends on migrate-database, so it can't start until migrate-database is done. Running `sisyphus show add-password-reset` afterwards lists `depends-on: [[migrate-database]]`.",
+   "wall_s": 7.1,
+   "agent_tokens": 33937,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "depends-on migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "direction correct"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t12",
+   "kind": "write",
+   "repeat": 1,
+   "final": "I lowered the priority of migrate-database (\"Migrate to Postgres 17\") from critical to medium, and checked it with `sisyphus show`. Nothing else on the issue changed, and it's still open.",
+   "wall_s": 6.9,
+   "agent_tokens": 33901,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t13",
+   "kind": "multi",
+   "repeat": 1,
+   "final": "I created the issue `audit-session-tokens`, titled \"Audit session tokens\". It has medium priority and is open. Its parent is `auth-epic`, and it depends on `fix-login-timeout`. The body sections are still the blank template text.",
+   "wall_s": 6.7,
+   "agent_tokens": 34336,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "audit-session-tokens exists"
+    },
+    {
+     "ok": true,
+     "what": "title"
+    },
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "depends-on fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  },
+  {
+   "task": "t14",
+   "kind": "multi",
+   "repeat": 1,
+   "final": "The critical issue is **\"Migrate to Postgres 17\"** (`migrate-database`). I started it: it's now in progress, with owner carol and bookmark `ai/db`.",
+   "wall_s": 7.0,
+   "agent_tokens": 34280,
+   "tool_uses": 3,
+   "checks": [
+    {
+     "ok": true,
+     "what": "migrate-database in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner carol"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/db"
+    },
+    {
+     "ok": true,
+     "what": "answer gives title"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "error": null,
+   "score": 1.0,
+   "pass": true
+  }
+ ]
+}

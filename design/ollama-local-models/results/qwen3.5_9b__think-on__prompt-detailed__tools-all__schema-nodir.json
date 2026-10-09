@@ -1,0 +1,1535 @@
+{
+ "model": "qwen3.5:9b",
+ "label": "qwen3.5_9b__think-on__prompt-detailed__tools-all__schema-nodir",
+ "config": {
+  "model": "qwen3.5:9b",
+  "backend": "ollama",
+  "effort": "medium",
+  "think": "on",
+  "prompt": "detailed",
+  "tools": "all",
+  "schema": "nodir",
+  "oracle": false,
+  "temperature": 0.2,
+  "num_ctx": 8192,
+  "num_thread": 0,
+  "max_turns": 8,
+  "repeats": 2,
+  "seed": 7
+ },
+ "info": {
+  "capabilities": [
+   "completion",
+   "vision",
+   "tools",
+   "thinking"
+  ],
+  "parameter_size": "9.0B",
+  "quantization": "Q4_K_M",
+  "family": "qwen35"
+ },
+ "loaded_bytes": {
+  "size": 5828646010,
+  "size_vram": 5828646010
+ },
+ "pass_rate": 1.0,
+ "mean_score": 1.0,
+ "by_kind": {
+  "read": 1.0,
+  "write": 1.0,
+  "multi": 1.0
+ },
+ "by_task": {
+  "t01": 1.0,
+  "t02": 1.0,
+  "t03": 1.0,
+  "t04": 1.0,
+  "t05": 1.0,
+  "t06": 1.0,
+  "t07": 1.0,
+  "t08": 1.0,
+  "t09": 1.0,
+  "t10": 1.0,
+  "t11": 1.0,
+  "t12": 1.0,
+  "t13": 1.0,
+  "t14": 1.0
+ },
+ "tool_calls": 49,
+ "tool_call_errors": 0,
+ "unknown_tool_calls": 0,
+ "no_tool_runs": 0,
+ "text_tool_call_runs": 0,
+ "errors": 0,
+ "gen_tok_per_s": 115.06,
+ "prompt_tok_per_s": 22866.8,
+ "mean_wall_s": 3.3,
+ "mean_eval_tokens": 308.5,
+ "runs": [
+  {
+   "task": "t01",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "state": "open",
+      "priority": "critical,high",
+      "text": true
+     },
+     "out": "name               title                               state  priority  owner  tags\n-----------------  ----------------------------------  -----  --------  -----  ---------\nmigrate-database   Migrate to Postgres 17              open   critical         db\nauth-epic          Rework authentication               open   high             auth\nfix-login-timeout  Fix login timeout on slow networks  open   high             bug, auth",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7559,
+   "eval_tokens": 193,
+   "eval_s": 1.664744,
+   "prompt_s": 0.299493,
+   "load_s": 0.0201046,
+   "error": null,
+   "final": "The open issues with high or critical priority are:\n\n- migrate-database\n- auth-epic\n- fix-login-timeout",
+   "wall_s": 2.05,
+   "checks": [
+    {
+     "ok": true,
+     "what": "mentions fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "mentions auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "mentions migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "does not list add-password-reset (medium)"
+    },
+    {
+     "ok": true,
+     "what": "does not list update-docs-site (in-progress, low)"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t02",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "timeout"
+     },
+     "out": "[\n  {\n    \"name\": \"fix-login-timeout\",\n    \"title\": \"Fix login timeout on slow networks\",\n    \"state\": \"open\",\n    \"priority\": \"high\",\n    \"tags\": [\n      \"bug\",\n      \"auth\"\n    ],\n    \"content\": \"# Fix login timeout on slow networks\\n\\n## Summary\\n\\nLogin requests fail with a timeout after 5 seconds on slow mobile networks.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  }\n]",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7788,
+   "eval_tokens": 131,
+   "eval_s": 1.1668500000000002,
+   "prompt_s": 0.332424,
+   "load_s": 0.0202869,
+   "error": null,
+   "final": "The issue about a timeout is named **fix-login-timeout**.",
+   "wall_s": 1.58,
+   "checks": [
+    {
+     "ok": true,
+     "what": "names fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t03",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "docs site"
+     },
+     "out": "[\n  {\n    \"name\": \"update-docs-site\",\n    \"title\": \"Update the docs site theme\",\n    \"state\": \"in-progress\",\n    \"priority\": \"low\",\n    \"owner\": \"alice\",\n    \"tags\": [\n      \"docs\"\n    ],\n    \"content\": \"# Update the docs site theme\\n\\n## Summary\\n\\nMove the docs site to the new theme.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  }\n]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "name": "update-docs-site"
+     },
+     "out": "{\n  \"name\": \"update-docs-site\",\n  \"title\": \"Update the docs site theme\",\n  \"state\": \"in-progress\",\n  \"priority\": \"low\",\n  \"effort\": \"medium\",\n  \"tags\": [\n    \"docs\"\n  ],\n  \"created\": \"2026-10-09\",\n  \"owner\": \"alice\",\n  \"bookmark\": \"ai/docs-theme\",\n  \"body\": \"\\n# Update the docs site theme\\n\\n## Summary\\n\\nMove the docs site to the new theme.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n}",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 12411,
+   "eval_tokens": 263,
+   "eval_s": 2.354673,
+   "prompt_s": 0.40764999999999996,
+   "load_s": 0.0282295,
+   "error": null,
+   "final": "The docs site issue is **update-docs-site**. It's owned by **alice** and has the bookmark **ai/docs-theme**.",
+   "wall_s": 2.89,
+   "checks": [
+    {
+     "ok": true,
+     "what": "owner alice"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/docs-theme"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t04",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "parent": "auth-epic"
+     },
+     "out": "[\n  {\n    \"name\": \"fix-login-timeout\",\n    \"title\": \"Fix login timeout on slow networks\",\n    \"state\": \"open\",\n    \"priority\": \"high\",\n    \"tags\": [\n      \"bug\",\n      \"auth\"\n    ]\n  },\n  {\n    \"name\": \"add-password-reset\",\n    \"title\": \"Add password reset by email\",\n    \"state\": \"open\",\n    \"priority\": \"medium\",\n    \"tags\": [\n      \"feature\",\n      \"auth\"\n    ]\n  }\n]",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7594,
+   "eval_tokens": 231,
+   "eval_s": 1.9825409999999999,
+   "prompt_s": 0.377128,
+   "load_s": 0.019353000000000002,
+   "error": null,
+   "final": "The sub-issues of `auth-epic` are:\n\n1. **fix-login-timeout** - Fix login timeout on slow networks (open, high priority, bug/auth tags)\n2. **add-password-reset** - Add password reset by email (open, medium priority, feature/auth tags)",
+   "wall_s": 2.43,
+   "checks": [
+    {
+     "ok": true,
+     "what": "fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "add-password-reset"
+    },
+    {
+     "ok": true,
+     "what": "does not list migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t05",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "payment processing"
+     },
+     "out": "[]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "payment"
+     },
+     "out": "[]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "payment processing",
+      "state": "open"
+     },
+     "out": "[]",
+     "ok": true
+    }
+   ],
+   "turns": 4,
+   "prompt_tokens": 15318,
+   "eval_tokens": 387,
+   "eval_s": 3.4013619999999998,
+   "prompt_s": 0.373332,
+   "load_s": 0.0382039,
+   "error": null,
+   "final": "No, there is currently no issue about payment processing in the repository. The search returned no matching issues for \"payment processing\" or related terms like \"payment\".",
+   "wall_s": 3.94,
+   "checks": [
+    {
+     "ok": true,
+     "what": "answers no"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t06",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_new",
+     "args": {
+      "name": "auth/rate-limiting-login-api",
+      "priority": "high",
+      "effort": "small",
+      "tags": "auth,feature"
+     },
+     "out": "issues/open/auth/rate-limiting-login-api.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7698,
+   "eval_tokens": 366,
+   "eval_s": 3.206767,
+   "prompt_s": 0.422195,
+   "load_s": 0.021489099999999997,
+   "error": null,
+   "final": "Created the new issue `auth/rate-limiting-login-api` with:\n- Priority: high\n- Effort: small\n- Tags: auth, feature\n- State: open (default)",
+   "wall_s": 3.71,
+   "checks": [
+    {
+     "ok": true,
+     "what": "exactly one new issue (got ['rate-limiting-login-api'])"
+    },
+    {
+     "ok": true,
+     "what": "title/name mentions rate limiting"
+    },
+    {
+     "ok": true,
+     "what": "priority high"
+    },
+    {
+     "ok": true,
+     "what": "effort small"
+    },
+    {
+     "ok": true,
+     "what": "tags auth+feature"
+    },
+    {
+     "ok": true,
+     "what": "state open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t07",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "name": "fix-login-timeout"
+     },
+     "out": "{\n  \"name\": \"fix-login-timeout\",\n  \"title\": \"Fix login timeout on slow networks\",\n  \"state\": \"open\",\n  \"priority\": \"high\",\n  \"effort\": \"medium\",\n  \"tags\": [\n    \"bug\",\n    \"auth\"\n  ],\n  \"created\": \"2026-10-09\",\n  \"parent\": \"[[auth-epic]]\",\n  \"body\": \"\\n# Fix login timeout on slow networks\\n\\n## Summary\\n\\nLogin requests fail with a timeout after 5 seconds on slow mobile networks.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n}",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "fix-login-timeout",
+      "state": "in-progress",
+      "owner": "bob",
+      "bookmark": "ai/login-timeout"
+     },
+     "out": "issues/in-progress/fix-login-timeout.md",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 12668,
+   "eval_tokens": 564,
+   "eval_s": 4.972082,
+   "prompt_s": 0.611779,
+   "load_s": 0.029389600000000002,
+   "error": null,
+   "final": "Work started on fix-login-timeout. The issue is now in progress with owner bob and bookmark ai/login-timeout.",
+   "wall_s": 5.72,
+   "checks": [
+    {
+     "ok": true,
+     "what": "in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner bob"
+    },
+    {
+     "ok": true,
+     "what": "bookmark set"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t08",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "docs site theme update"
+     },
+     "out": "[]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "theme"
+     },
+     "out": "[\n  {\n    \"name\": \"update-docs-site\",\n    \"title\": \"Update the docs site theme\",\n    \"state\": \"in-progress\",\n    \"priority\": \"low\",\n    \"owner\": \"alice\",\n    \"tags\": [\n      \"docs\"\n    ],\n    \"content\": \"# Update the docs site theme\\n\\n## Summary\\n\\nMove the docs site to the new theme.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  }\n]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "update-docs-site",
+      "state": "closed",
+      "resolution": "completed"
+     },
+     "out": "issues/closed/update-docs-site.md",
+     "ok": true
+    }
+   ],
+   "turns": 4,
+   "prompt_tokens": 16026,
+   "eval_tokens": 329,
+   "eval_s": 2.869178,
+   "prompt_s": 0.525536,
+   "load_s": 0.0398313,
+   "error": null,
+   "final": "Closed `update-docs-site` (Update the docs site theme).",
+   "wall_s": 3.56,
+   "checks": [
+    {
+     "ok": true,
+     "what": "closed"
+    },
+    {
+     "ok": true,
+     "what": "resolution completed"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t09",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "password reset"
+     },
+     "out": "[\n  {\n    \"name\": \"add-password-reset\",\n    \"title\": \"Add password reset by email\",\n    \"state\": \"open\",\n    \"priority\": \"medium\",\n    \"tags\": [\n      \"feature\",\n      \"auth\"\n    ],\n    \"content\": \"# Add password reset by email\\n\\n## Summary\\n\\nUsers cannot reset a forgotten password. Send a reset link by email.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  }\n]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "add-password-reset",
+      "state": "closed",
+      "resolution": "abandoned"
+     },
+     "out": "issues/closed/add-password-reset.md",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 12098,
+   "eval_tokens": 286,
+   "eval_s": 2.4652909999999997,
+   "prompt_s": 0.548385,
+   "load_s": 0.0312263,
+   "error": null,
+   "final": "Abandoned the password reset feature issue `add-password-reset`. It's now closed with resolution \"abandoned\".",
+   "wall_s": 3.15,
+   "checks": [
+    {
+     "ok": true,
+     "what": "closed"
+    },
+    {
+     "ok": true,
+     "what": "resolution abandoned"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t10",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_parent",
+     "args": {
+      "name": "migrate-database",
+      "parent": "auth-epic"
+     },
+     "out": "issues/open/migrate-database.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7552,
+   "eval_tokens": 227,
+   "eval_s": 1.971006,
+   "prompt_s": 0.42927099999999996,
+   "load_s": 0.0240381,
+   "error": null,
+   "final": "Done. `migrate-database` is now a sub-issue of `auth-epic`.",
+   "wall_s": 2.49,
+   "checks": [
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t11",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_depends_on",
+     "args": {
+      "name": "add-password-reset",
+      "blockingIssue": "migrate-database"
+     },
+     "out": "issues/open/add-password-reset.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7563,
+   "eval_tokens": 238,
+   "eval_s": 2.058815,
+   "prompt_s": 0.412107,
+   "load_s": 0.016748,
+   "error": null,
+   "final": "Done. The dependency has been recorded: `add-password-reset` now waits for `migrate-database` to close before it can start.",
+   "wall_s": 2.55,
+   "checks": [
+    {
+     "ok": true,
+     "what": "depends-on migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "direction correct"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t12",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "name": "migrate-database"
+     },
+     "out": "{\n  \"name\": \"migrate-database\",\n  \"title\": \"Migrate to Postgres 17\",\n  \"state\": \"open\",\n  \"priority\": \"critical\",\n  \"effort\": \"medium\",\n  \"tags\": [\n    \"db\"\n  ],\n  \"created\": \"2026-10-09\",\n  \"body\": \"\\n# Migrate to Postgres 17\\n\\n## Summary\\n\\nUpgrade the production database from Postgres 15 to Postgres 17.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n}",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "migrate-database",
+      "state": "open",
+      "priority": "medium"
+     },
+     "out": "issues/open/migrate-database.md",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 12271,
+   "eval_tokens": 347,
+   "eval_s": 3.010225,
+   "prompt_s": 0.497224,
+   "load_s": 0.0271242,
+   "error": null,
+   "final": "Done. The priority of `migrate-database` has been lowered from critical to medium.",
+   "wall_s": 3.62,
+   "checks": [
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t13",
+   "kind": "multi",
+   "calls": [
+    {
+     "tool": "sisyphus_new",
+     "args": {
+      "name": "audit-session-tokens",
+      "title": "Audit session tokens",
+      "priority": "medium",
+      "parent": "auth-epic",
+      "dependsOn": "fix-login-timeout"
+     },
+     "out": "issues/open/audit-session-tokens.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7925,
+   "eval_tokens": 560,
+   "eval_s": 4.8061749990000004,
+   "prompt_s": 0.480371,
+   "load_s": 0.0219597,
+   "error": null,
+   "final": "Created the issue `audit-session-tokens` under `auth-epic` with medium priority, depending on `fix-login-timeout`.",
+   "wall_s": 5.38,
+   "checks": [
+    {
+     "ok": true,
+     "what": "audit-session-tokens exists"
+    },
+    {
+     "ok": true,
+     "what": "title"
+    },
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "depends-on fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t14",
+   "kind": "multi",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "priority": "critical",
+      "text": true
+     },
+     "out": "name              title                   state  priority  owner  tags\n----------------  ----------------------  -----  --------  -----  ----\nmigrate-database  Migrate to Postgres 17  open   critical         db",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "migrate-database",
+      "state": "in-progress",
+      "owner": "carol",
+      "bookmark": "ai/db"
+     },
+     "out": "issues/in-progress/migrate-database.md",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 11607,
+   "eval_tokens": 342,
+   "eval_s": 2.963972,
+   "prompt_s": 0.546607,
+   "load_s": 0.029545799999999997,
+   "error": null,
+   "final": "Found and started the critical issue **migrate-database** with owner carol and bookmark ai/db. Its title is **\"Migrate to Postgres 17\"**.",
+   "wall_s": 3.64,
+   "checks": [
+    {
+     "ok": true,
+     "what": "migrate-database in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner carol"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/db"
+    },
+    {
+     "ok": true,
+     "what": "answer gives title"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 0
+  },
+  {
+   "task": "t01",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "state": "open",
+      "priority": "critical,high",
+      "text": true
+     },
+     "out": "name               title                               state  priority  owner  tags\n-----------------  ----------------------------------  -----  --------  -----  ---------\nmigrate-database   Migrate to Postgres 17              open   critical         db\nauth-epic          Rework authentication               open   high             auth\nfix-login-timeout  Fix login timeout on slow networks  open   high             bug, auth",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7559,
+   "eval_tokens": 193,
+   "eval_s": 1.687897,
+   "prompt_s": 0.51603,
+   "load_s": 0.0171011,
+   "error": null,
+   "final": "The open issues with high or critical priority are:\n\n- migrate-database\n- auth-epic\n- fix-login-timeout",
+   "wall_s": 2.28,
+   "checks": [
+    {
+     "ok": true,
+     "what": "mentions fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "mentions auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "mentions migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "does not list add-password-reset (medium)"
+    },
+    {
+     "ok": true,
+     "what": "does not list update-docs-site (in-progress, low)"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t02",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "timeout"
+     },
+     "out": "[\n  {\n    \"name\": \"fix-login-timeout\",\n    \"title\": \"Fix login timeout on slow networks\",\n    \"state\": \"open\",\n    \"priority\": \"high\",\n    \"tags\": [\n      \"bug\",\n      \"auth\"\n    ],\n    \"content\": \"# Fix login timeout on slow networks\\n\\n## Summary\\n\\nLogin requests fail with a timeout after 5 seconds on slow mobile networks.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  }\n]",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7788,
+   "eval_tokens": 133,
+   "eval_s": 1.152829,
+   "prompt_s": 0.530007,
+   "load_s": 0.0191268,
+   "error": null,
+   "final": "The issue about a timeout is **fix-login-timeout**.",
+   "wall_s": 1.77,
+   "checks": [
+    {
+     "ok": true,
+     "what": "names fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t03",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "docs site"
+     },
+     "out": "[\n  {\n    \"name\": \"update-docs-site\",\n    \"title\": \"Update the docs site theme\",\n    \"state\": \"in-progress\",\n    \"priority\": \"low\",\n    \"owner\": \"alice\",\n    \"tags\": [\n      \"docs\"\n    ],\n    \"content\": \"# Update the docs site theme\\n\\n## Summary\\n\\nMove the docs site to the new theme.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  }\n]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "name": "update-docs-site"
+     },
+     "out": "{\n  \"name\": \"update-docs-site\",\n  \"title\": \"Update the docs site theme\",\n  \"state\": \"in-progress\",\n  \"priority\": \"low\",\n  \"effort\": \"medium\",\n  \"tags\": [\n    \"docs\"\n  ],\n  \"created\": \"2026-10-09\",\n  \"owner\": \"alice\",\n  \"bookmark\": \"ai/docs-theme\",\n  \"body\": \"\\n# Update the docs site theme\\n\\n## Summary\\n\\nMove the docs site to the new theme.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n}",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 12412,
+   "eval_tokens": 269,
+   "eval_s": 2.3000160000000003,
+   "prompt_s": 0.400721,
+   "load_s": 0.026479199999999998,
+   "error": null,
+   "final": "The docs site issue is **update-docs-site**, owned by **alice**, and it's on the bookmark **ai/docs-theme**.",
+   "wall_s": 2.83,
+   "checks": [
+    {
+     "ok": true,
+     "what": "owner alice"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/docs-theme"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t04",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "parent": "auth-epic"
+     },
+     "out": "[\n  {\n    \"name\": \"fix-login-timeout\",\n    \"title\": \"Fix login timeout on slow networks\",\n    \"state\": \"open\",\n    \"priority\": \"high\",\n    \"tags\": [\n      \"bug\",\n      \"auth\"\n    ]\n  },\n  {\n    \"name\": \"add-password-reset\",\n    \"title\": \"Add password reset by email\",\n    \"state\": \"open\",\n    \"priority\": \"medium\",\n    \"tags\": [\n      \"feature\",\n      \"auth\"\n    ]\n  }\n]",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7596,
+   "eval_tokens": 238,
+   "eval_s": 2.045354,
+   "prompt_s": 0.425536,
+   "load_s": 0.0195921,
+   "error": null,
+   "final": "The sub-issues of `auth-epic` are:\n\n1. **fix-login-timeout** - Fix login timeout on slow networks (open, high priority, bug/auth tags)\n2. **add-password-reset** - Add password reset by email (open, medium priority, feature/auth tags)",
+   "wall_s": 2.56,
+   "checks": [
+    {
+     "ok": true,
+     "what": "fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "add-password-reset"
+    },
+    {
+     "ok": true,
+     "what": "does not list migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t05",
+   "kind": "read",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "payment processing"
+     },
+     "out": "[]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "payment"
+     },
+     "out": "[]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "processing"
+     },
+     "out": "[]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "state": "open",
+      "text": true
+     },
+     "out": "name                title                               state  priority  owner  tags\n------------------  ----------------------------------  -----  --------  -----  -------------\nmigrate-database    Migrate to Postgres 17              open   critical         db\nauth-epic           Rework authentication               open   high             auth\nfix-login-timeout   Fix login timeout on slow networks  open   high             bug, auth\nadd-password-reset  Add password reset by email         open   medium           feature, auth",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "state": "closed",
+      "text": true
+     },
+     "out": "name             title                       state   priority  owner  tags\n---------------  --------------------------  ------  --------  -----  -----\nold-cache-layer  Remove the old cache layer  closed  medium           cache",
+     "ok": true
+    }
+   ],
+   "turns": 6,
+   "prompt_tokens": 23534,
+   "eval_tokens": 554,
+   "eval_s": 4.811144,
+   "prompt_s": 0.473129,
+   "load_s": 0.0604759,
+   "error": null,
+   "final": "No, there is no issue about payment processing in this repository. The current open issues are:\n\n- **migrate-database**: Migrate to Postgres 17 (critical priority)\n- **auth-epic**: Rework authentication (high priority)\n- **fix-login-timeout**: Fix login timeout on slow networks (high priority, bug)\n- **add-password-reset**: Add password reset by email (medium priority, feature)\n\nAnd one closed issue about removing an old cache layer. None of these relate to payment processing.",
+   "wall_s": 5.53,
+   "checks": [
+    {
+     "ok": true,
+     "what": "answers no"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t06",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_new",
+     "args": {
+      "name": "auth/rate-limit-login-api",
+      "title": "Add rate limiting to login API",
+      "priority": "high",
+      "effort": "small",
+      "tags": "auth,feature",
+      "state": "open"
+     },
+     "out": "issues/open/auth/rate-limit-login-api.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7716,
+   "eval_tokens": 379,
+   "eval_s": 3.301081,
+   "prompt_s": 0.408374,
+   "load_s": 0.0170412,
+   "error": null,
+   "final": "Created the new issue `auth/rate-limit-login-api` with:\n- Priority: high\n- Effort: small\n- Tags: auth, feature\n- State: open",
+   "wall_s": 3.81,
+   "checks": [
+    {
+     "ok": true,
+     "what": "exactly one new issue (got ['rate-limit-login-api'])"
+    },
+    {
+     "ok": true,
+     "what": "title/name mentions rate limiting"
+    },
+    {
+     "ok": true,
+     "what": "priority high"
+    },
+    {
+     "ok": true,
+     "what": "effort small"
+    },
+    {
+     "ok": true,
+     "what": "tags auth+feature"
+    },
+    {
+     "ok": true,
+     "what": "state open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t07",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "name": "fix-login-timeout"
+     },
+     "out": "{\n  \"name\": \"fix-login-timeout\",\n  \"title\": \"Fix login timeout on slow networks\",\n  \"state\": \"open\",\n  \"priority\": \"high\",\n  \"effort\": \"medium\",\n  \"tags\": [\n    \"bug\",\n    \"auth\"\n  ],\n  \"created\": \"2026-10-09\",\n  \"parent\": \"[[auth-epic]]\",\n  \"body\": \"\\n# Fix login timeout on slow networks\\n\\n## Summary\\n\\nLogin requests fail with a timeout after 5 seconds on slow mobile networks.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n}",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "fix-login-timeout",
+      "state": "in-progress",
+      "owner": "bob",
+      "bookmark": "ai/login-timeout"
+     },
+     "out": "issues/in-progress/fix-login-timeout.md",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 12294,
+   "eval_tokens": 354,
+   "eval_s": 3.0493360000000003,
+   "prompt_s": 0.613364,
+   "load_s": 0.0251549,
+   "error": null,
+   "final": "Work started on `fix-login-timeout`. The issue is now in **in-progress** state, assigned to **bob** with bookmark **ai/login-timeout**.",
+   "wall_s": 3.78,
+   "checks": [
+    {
+     "ok": true,
+     "what": "in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner bob"
+    },
+    {
+     "ok": true,
+     "what": "bookmark set"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t08",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "docs site theme update"
+     },
+     "out": "[]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "docs theme"
+     },
+     "out": "[]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "docs"
+     },
+     "out": "[\n  {\n    \"name\": \"migrate-database\",\n    \"title\": \"Migrate to Postgres 17\",\n    \"state\": \"open\",\n    \"priority\": \"critical\",\n    \"tags\": [\n      \"db\"\n    ],\n    \"content\": \"# Migrate to Postgres 17\\n\\n## Summary\\n\\nUpgrade the production database from Postgres 15 to Postgres 17.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  },\n  {\n    \"name\": \"auth-epic\",\n    \"title\": \"Rework authentication\",\n    \"state\": \"open\",\n    \"priority\": \"high\",\n    \"tags\": [\n      \"auth\"\n    ],\n    \"content\": \"# Rework authentication\\n\\n## Summary\\n\\nRework the authentication flow. This epic holds the auth sub-issues.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  },\n  {\n    \"name\": \"fix-login-timeout\",\n    \"title\": \"Fix login timeout on slow networks\",\n    \"state\": \"open\",\n    \"priority\": \"high\",\n    \"tags\": [\n      \"bug\",\n      \"auth\"\n    ],\n    \"content\": \"# Fix login timeout on slow networks\\n\\n## Summary\\n\\nLogin requests fail with a timeout after 5 seconds on slow mobile networks.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  },\n  {\n    \"name\": \"add-password-reset\",\n    \"title\": \"Add password reset by email\",\n    \"state\": \"open\",\n    \"priority\": \"medium\",\n    \"tags\": [\n      \"feature\",\n      \"auth\"\n    ],\n    \"content\": \"# Add password reset by email\\n\\n## Summary\\n\\nUsers cannot reset a forgotten password. Send a reset link by email.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  },\n  {\n    \"name\": \"update-docs-site\",\n    \"title\": \"Update the docs site theme\",\n    \"state\": \"in-progress\",\n    \"priority\": \"low\",\n    \"owner\": \"alice\",\n    \"tags\": [\n      \"docs\"\n    ],\n    \"content\": \"# Update the docs site theme\\n\\n## Summary\\n\\nMove the docs site to the new theme.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  }\n]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "update-docs-site",
+      "state": "closed"
+     },
+     "out": "issues/closed/update-docs-site.md",
+     "ok": true
+    }
+   ],
+   "turns": 5,
+   "prompt_tokens": 22577,
+   "eval_tokens": 347,
+   "eval_s": 3.045102999,
+   "prompt_s": 0.901278,
+   "load_s": 0.050128900000000004,
+   "error": null,
+   "final": "Closed `update-docs-site` (Update the docs site theme).",
+   "wall_s": 4.16,
+   "checks": [
+    {
+     "ok": true,
+     "what": "closed"
+    },
+    {
+     "ok": true,
+     "what": "resolution completed"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t09",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_search",
+     "args": {
+      "query": "password reset",
+      "tags": "feature"
+     },
+     "out": "[\n  {\n    \"name\": \"add-password-reset\",\n    \"title\": \"Add password reset by email\",\n    \"state\": \"open\",\n    \"priority\": \"medium\",\n    \"tags\": [\n      \"feature\",\n      \"auth\"\n    ],\n    \"content\": \"# Add password reset by email\\n\\n## Summary\\n\\nUsers cannot reset a forgotten password. Send a reset link by email.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n  }\n]",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "add-password-reset",
+      "state": "closed",
+      "resolution": "abandoned"
+     },
+     "out": "issues/closed/add-password-reset.md",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 12115,
+   "eval_tokens": 287,
+   "eval_s": 2.487353,
+   "prompt_s": 0.561905,
+   "load_s": 0.0288523,
+   "error": null,
+   "final": "Abandoned the password reset feature issue `add-password-reset`. It's now closed with resolution `abandoned`.",
+   "wall_s": 3.18,
+   "checks": [
+    {
+     "ok": true,
+     "what": "closed"
+    },
+    {
+     "ok": true,
+     "what": "resolution abandoned"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t10",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_parent",
+     "args": {
+      "name": "migrate-database",
+      "parent": "auth-epic"
+     },
+     "out": "issues/open/migrate-database.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7556,
+   "eval_tokens": 232,
+   "eval_s": 2.0098919989999997,
+   "prompt_s": 0.465966,
+   "load_s": 0.0197866,
+   "error": null,
+   "final": "Done. `migrate-database` is now a sub-issue of `auth-epic`.",
+   "wall_s": 2.56,
+   "checks": [
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t11",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_depends_on",
+     "args": {
+      "name": "add-password-reset",
+      "blockingIssue": "migrate-database"
+     },
+     "out": "issues/open/add-password-reset.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7529,
+   "eval_tokens": 203,
+   "eval_s": 1.746428,
+   "prompt_s": 0.283952,
+   "load_s": 0.0205757,
+   "error": null,
+   "final": "Done. The dependency has been recorded: `add-password-reset` now depends on `migrate-database` and cannot start until that issue closes.",
+   "wall_s": 2.11,
+   "checks": [
+    {
+     "ok": true,
+     "what": "depends-on migrate-database"
+    },
+    {
+     "ok": true,
+     "what": "direction correct"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t12",
+   "kind": "write",
+   "calls": [
+    {
+     "tool": "sisyphus_show",
+     "args": {
+      "name": "migrate-database"
+     },
+     "out": "{\n  \"name\": \"migrate-database\",\n  \"title\": \"Migrate to Postgres 17\",\n  \"state\": \"open\",\n  \"priority\": \"critical\",\n  \"effort\": \"medium\",\n  \"tags\": [\n    \"db\"\n  ],\n  \"created\": \"2026-10-09\",\n  \"body\": \"\\n# Migrate to Postgres 17\\n\\n## Summary\\n\\nUpgrade the production database from Postgres 15 to Postgres 17.\\n\\n## Context\\n\\n<Give the background that an agent needs to start the work without other help.\\nLink to design docs and other issues with wikilinks, for example `[[widget-scheduler]]`,\\n`[[widget-scheduler#Status API]]`, or `[[<issue-name>]]`. Do not use paths.>\\n\\n## Acceptance criteria\\n\\n<Each item is one condition that must be true before the issue is complete.>\\n\\n- [ ] <Condition>\\n\\n## Out of scope\\n\\n<List related work that this issue does not include. Create a separate issue for each item that someone must do later.>\\n\\n## Notes\\n\\n<Record progress, findings, and open questions here while the work continues.>\\n\\n## Resolution\\n\\n<Complete this section when you close the issue.\\n- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.\\n- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>\"\n}",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "migrate-database",
+      "state": "open",
+      "priority": "medium"
+     },
+     "out": "issues/open/migrate-database.md",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 12240,
+   "eval_tokens": 325,
+   "eval_s": 2.804405,
+   "prompt_s": 0.600259,
+   "load_s": 0.0273479,
+   "error": null,
+   "final": "Done. The priority of `migrate-database` has been lowered from critical to medium.",
+   "wall_s": 3.53,
+   "checks": [
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "still open"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t13",
+   "kind": "multi",
+   "calls": [
+    {
+     "tool": "sisyphus_new",
+     "args": {
+      "name": "audit-session-tokens",
+      "title": "Audit session tokens",
+      "priority": "medium",
+      "parent": "auth-epic",
+      "dependsOn": "fix-login-timeout"
+     },
+     "out": "issues/open/audit-session-tokens.md",
+     "ok": true
+    }
+   ],
+   "turns": 2,
+   "prompt_tokens": 7675,
+   "eval_tokens": 338,
+   "eval_s": 2.954709,
+   "prompt_s": 0.413308,
+   "load_s": 0.0176598,
+   "error": null,
+   "final": "Created the issue `audit-session-tokens` under parent `auth-epic` with a dependency on `fix-login-timeout`, medium priority, and title \"Audit session tokens\". The issue file is at `issues/open/audit-session-tokens.md`.",
+   "wall_s": 3.45,
+   "checks": [
+    {
+     "ok": true,
+     "what": "audit-session-tokens exists"
+    },
+    {
+     "ok": true,
+     "what": "title"
+    },
+    {
+     "ok": true,
+     "what": "priority medium"
+    },
+    {
+     "ok": true,
+     "what": "parent auth-epic"
+    },
+    {
+     "ok": true,
+     "what": "depends-on fix-login-timeout"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  },
+  {
+   "task": "t14",
+   "kind": "multi",
+   "calls": [
+    {
+     "tool": "sisyphus_list",
+     "args": {
+      "priority": "critical",
+      "text": true
+     },
+     "out": "name              title                   state  priority  owner  tags\n----------------  ----------------------  -----  --------  -----  ----\nmigrate-database  Migrate to Postgres 17  open   critical         db",
+     "ok": true
+    },
+    {
+     "tool": "sisyphus_update",
+     "args": {
+      "name": "migrate-database",
+      "state": "in-progress",
+      "owner": "carol",
+      "bookmark": "ai/db"
+     },
+     "out": "issues/in-progress/migrate-database.md",
+     "ok": true
+    }
+   ],
+   "turns": 3,
+   "prompt_tokens": 11568,
+   "eval_tokens": 323,
+   "eval_s": 2.7918239999999996,
+   "prompt_s": 0.53486,
+   "load_s": 0.0278797,
+   "error": null,
+   "final": "Found and started the critical issue:\n\n- **Issue**: migrate-database\n- **Title**: Migrate to Postgres 17\n- **State**: in-progress\n- **Owner**: carol\n- **Bookmark**: ai/db",
+   "wall_s": 3.45,
+   "checks": [
+    {
+     "ok": true,
+     "what": "migrate-database in-progress"
+    },
+    {
+     "ok": true,
+     "what": "owner carol"
+    },
+    {
+     "ok": true,
+     "what": "bookmark ai/db"
+    },
+    {
+     "ok": true,
+     "what": "answer gives title"
+    },
+    {
+     "ok": true,
+     "what": "no stray changes"
+    }
+   ],
+   "score": 1.0,
+   "pass": true,
+   "text_tool_call": false,
+   "repeat": 1
+  }
+ ]
+}

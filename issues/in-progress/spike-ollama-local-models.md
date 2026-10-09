@@ -51,14 +51,14 @@ the `qwen3` family, `llama3.1` / `llama3.2`, `mistral` / `mistral-nemo`, `granit
 
 ## Acceptance criteria
 
-- [ ] A repeatable harness connects an Ollama model to `sisyphus-mcp` and runs a fixed task suite.
-- [ ] The task suite covers create, update state, list, search, show, parent, depends-on, and a
+- [x] A repeatable harness connects an Ollama model to `sisyphus-mcp` and runs a fixed task suite.
+- [x] The task suite covers create, update state, list, search, show, parent, depends-on, and a
       multi-step request, and checks each result against the files on disk.
-- [ ] Each candidate model has a result: pass rate per task, tool-call validity, speed
+- [x] Each candidate model has a result: pass rate per task, tool-call validity, speed
       (tokens per second and wall time), and memory use.
-- [ ] A report compares the models and recommends a default model and settings (for example the
+- [x] A report compares the models and recommends a default model and settings (for example the
       system prompt, context size, temperature, and the set of tools to expose).
-- [ ] Follow-up work (for example changes to tool descriptions that help small models) is recorded
+- [x] Follow-up work (for example changes to tool descriptions that help small models) is recorded
       as new issues.
 
 ## Out of scope
@@ -83,6 +83,19 @@ the `qwen3` family, `llama3.1` / `llama3.2`, `mistral` / `mistral-nemo`, `granit
 - First result: small models give the optional `dir` tool argument junk values (for example
   "sisyphus-mcp"), which makes the call fail. Hiding `dir` from the tool schema is one of the
   tested settings.
+- 2026-10-09: gpt-oss:20b is skipped. It needs 14–16 GB of VRAM, and the workstation GPU has 16 GB
+  that a person also uses.
+- 2026-10-09, from the human: compare the local models with the Claude agent of this session and its
+  configured model. Claude Opus 5.5 ran the same 28 task runs as Claude Code subagents that used the
+  sisyphus CLI. It passed 28 of 28.
+- 2026-10-09: Ollama on the host stopped during qwen3:14b config C. The 8 lost runs ran again with
+  the same seed and settings.
+- 2026-10-09: Results are in [[ollama-local-models]]. qwen3.5:9b with thinking on passed 28 of 28 at
+  3.3 s for each task. The follow-up work is [[small-model-friendly-mcp]] and its sub-issues,
+  [[ollama-task-manager-guide]], and [[compare-cloud-claude-models]]. Two more gaps (body editing,
+  and resolution in the text output of `show`) are already fixed on bookmark
+  `samw/ai/edit-issue-sections`.
+  The spike is ready to close when a human accepts the report.
 
 ## Resolution
 

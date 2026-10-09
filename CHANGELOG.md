@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.29]] - 2026-10-09
+- Add [[ollama-local-models]], the report of the spike that tested local Ollama models as sisyphus
+  task managers, with its harness and results, and the follow-up issues for `sisyphus-mcp`.
+
 ## [[0.0.28]] - 2026-10-08
 - Draw the work path of `<name>` in `sisyphus graph` with heavy lines, from the issues to start
   now, and name those issues in the legend.
