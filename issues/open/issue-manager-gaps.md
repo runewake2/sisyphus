@@ -63,7 +63,7 @@ hand. The sub-issues below each cover one missing piece:
 - [x] `sisyphus graph` shows a large task's family tree in the terminal ([[graph-view-command]]).
 - [ ] `sisyphus migrate` upgrades every issue to the current schema ([[migrate-command]]).
 - [x] `sisyphus show` prints the resolution ([[show-prints-resolution]]).
-- [ ] A command edits a section of an issue's body ([[edit-issue-body-command]]).
+- [x] A command edits a section of an issue's body ([[edit-issue-body-command]]).
 
 ## Out of scope
 

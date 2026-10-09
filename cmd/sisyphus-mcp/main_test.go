@@ -181,6 +181,38 @@ func equalField(t *testing.T, m map[string]any, key, want string) {
 	}
 }
 
+func TestToolEditFillsTheResolution(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+
+	closed := callTool(t, session, "sisyphus_update", map[string]any{
+		"dir": dir, "name": "fix-login-bug", "state": "closed", "resolution": "abandoned",
+	})
+	if !strings.Contains(closed, "issues/closed/fix-login-bug.md") || !strings.Contains(closed, "Warning: The Resolution section") {
+		t.Errorf("update did not return the path and the warning: %s", closed)
+	}
+
+	callTool(t, session, "sisyphus_edit", map[string]any{
+		"dir": dir, "name": "fix-login-bug", "section": "resolution", "text": "Abandoned. Login moved to SSO.",
+	})
+	callTool(t, session, "sisyphus_edit", map[string]any{
+		"dir": dir, "name": "fix-login-bug", "section": "notes", "text": "2026-10-09: abandoned.", "append": true,
+	})
+
+	show := callTool(t, session, "sisyphus_show", map[string]any{"dir": dir, "name": "fix-login-bug"})
+	var shown map[string]any
+	if err := json.Unmarshal([]byte(show), &shown); err != nil {
+		t.Fatalf("show did not return JSON: %v\n%s", err, show)
+	}
+	body, _ := shown["body"].(string)
+	if shown["resolution"] != "abandoned" || !strings.Contains(body, "## Resolution\n\nAbandoned. Login moved to SSO.") ||
+		!strings.Contains(body, "## Notes\n\n2026-10-09: abandoned.\n") {
+		t.Errorf("the edits are not in the issue: %s", show)
+	}
+}
+
 func TestToolsSlugResolveLinks(t *testing.T) {
 	session := connectedSession(t)
 	dir := t.TempDir()

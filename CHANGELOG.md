@@ -1,5 +1,9 @@
 # Changelog
 
+## [[0.0.31]] - 2026-10-09
+- Add `sisyphus edit` and the `sisyphus_edit` MCP tool to replace or append to one section of an
+  issue's body, and warn when an issue closes with no `Resolution` text.
+
 ## [[0.0.30]] - 2026-10-09
 - Print `resolution`, `created`, and `closed` in the text output of `sisyphus show`.
 

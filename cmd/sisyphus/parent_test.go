@@ -166,6 +166,7 @@ func TestParentClosingAnIssueDoesNotWarnWhenAllSubIssuesAreClosed(t *testing.T) 
 	r := newTestRepo(t)
 	r.mustRun("new", "parent-issue-test")
 	r.mustRun("new", "closed-child-test", "--parent", "parent-issue-test", "--state", "closed", "--resolution", "completed")
+	r.mustRun("edit", "parent-issue-test", "resolution", "Completed.")
 
 	res := r.run("update", "parent-issue-test", "closed", "--resolution", "completed")
 

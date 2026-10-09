@@ -272,6 +272,9 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 		if len(blocked) > 0 {
 			warn(warnings, fmt.Sprintf("Issue '%s' is closing, but these issues still depend on it: %s.", name, strings.Join(blocked, ", ")))
 		}
+		if section, ok := sectionIn(doc.body, "Resolution"); ok && isPlaceholder(section) {
+			warn(warnings, fmt.Sprintf("The Resolution section of '%s' holds no text. Complete it with: sisyphus edit %s resolution \"<text>\"", name, name))
+		}
 	}
 
 	destination := issuePath(root, state, name)
@@ -317,6 +320,62 @@ func setRemote(root, reference string, remote *string, warnings io.Writer) (stri
 		return "", err
 	}
 	return relative(root, issue.path), nil
+}
+
+// editSection replaces the text of the section named heading in an issue's body, or with appendText adds
+// text at the end of the section. An append to a section that holds only the template placeholder
+// replaces the placeholder.
+func editSection(root, reference, heading, text string, appendText bool) (string, error) {
+	x := loadIndex(root)
+	name, issue, doc, err := x.load(reference)
+	if err != nil {
+		return "", err
+	}
+	lines := splitLines(strings.TrimSpace(text))
+	if len(lines) == 0 {
+		return "", errors.New("The text is empty. Give the text for the section.")
+	}
+	start, _, ok := sectionBounds(doc.body, heading)
+	if !ok || headingLevel(doc.body[start]) < 2 {
+		return "", fmt.Errorf("Issue '%s' has no section '%s'. Its sections are: %s.", name, heading, strings.Join(sectionNames(doc.body), ", "))
+	}
+	if appendText {
+		if current, _ := sectionIn(doc.body, heading); !isPlaceholder(current) {
+			lines = slices.Concat(trimBlankLines(current), []string{""}, lines)
+		}
+	}
+	doc.body, _ = replaceSection(doc.body, heading, lines)
+	if err := doc.save(issue.path); err != nil {
+		return "", err
+	}
+	return relative(root, issue.path), nil
+}
+
+// sectionNames returns the headings of the sections that editSection can change: every heading below the title.
+func sectionNames(lines []string) []string {
+	var names []string
+	for _, index := range outsideCodeFences(lines) {
+		if match := headingPattern.FindStringSubmatch(lines[index]); match != nil && headingLevel(lines[index]) >= 2 {
+			names = append(names, match[1])
+		}
+	}
+	return names
+}
+
+// isPlaceholder reports whether a section holds only the template's "<...>" text, or nothing.
+func isPlaceholder(lines []string) bool {
+	text := strings.TrimSpace(strings.Join(lines, "\n"))
+	return text == "" || strings.HasPrefix(text, "<") && strings.HasSuffix(text, ">") && strings.Count(text, ">\n") == 0
+}
+
+func trimBlankLines(lines []string) []string {
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return lines
 }
 
 // remoteValue loosely validates and quotes a remote reference: it must be a URL with a scheme and a host.

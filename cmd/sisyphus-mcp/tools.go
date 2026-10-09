@@ -68,6 +68,12 @@ func registerTools(server *mcp.Server) {
 		Description: "Add or remove an issue that a sisyphus issue depends on (must close before it can start).",
 	}, dependsOnHandler)
 	mcp.AddTool(server, &mcp.Tool{
+		Name: "sisyphus_edit",
+		Description: "Replace the text of one section of a sisyphus issue's body, for example Summary or Resolution, " +
+			"or append to it, for example a dated line in Notes. Use it to complete the Resolution section when " +
+			"an issue closes. An append to a section that holds only the template placeholder replaces the placeholder.",
+	}, editHandler)
+	mcp.AddTool(server, &mcp.Tool{
 		Name: "sisyphus_slug",
 		Description: "Turn text, for example a title, into a valid ASCII sisyphus issue name that no file in the repo has. " +
 			"Letters are spelled in ASCII (é becomes e), other characters separate words, filler words such as " +
@@ -316,6 +322,24 @@ func dependsOnHandler(_ context.Context, _ *mcp.CallToolRequest, in dependsOnArg
 		args = append(args, in.BlockingIssue)
 	}
 	args = appendBoolFlag(args, "--clear", in.Clear)
+	out, err := runSisyphus(in.Dir, args...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return textResult(out)
+}
+
+type editArgs struct {
+	Dir     string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Name    string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Section string `json:"section" jsonschema:"The heading of the section, matched case-insensitively, for example resolution, summary, or notes."`
+	Text    string `json:"text" jsonschema:"The new text of the section, as Markdown. It can have more than one line."`
+	Append  bool   `json:"append,omitempty" jsonschema:"Add the text at the end of the section, after a blank line, instead of replacing the section."`
+}
+
+func editHandler(_ context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp.CallToolResult, any, error) {
+	args := []string{"edit", in.Name, in.Section, in.Text}
+	args = appendBoolFlag(args, "--append", in.Append)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err

@@ -11,6 +11,7 @@ sisyphus is a command-line issue manager. Every issue is one Markdown file with 
 | [[sisyphus-init]] | Set up `issues/` in a repo. |
 | [[sisyphus-new]] | Create an issue. |
 | [[sisyphus-update]] | Change an issue's state, or edit its fields. |
+| [[sisyphus-edit]] | Replace or append to one section of an issue's body. |
 | [[sisyphus-show]] | Print one issue. |
 | [[sisyphus-list]] | List and filter issues. |
 | [[sisyphus-search]] | Search issues by content and filters. |

@@ -143,6 +143,7 @@ func TestUpdateWarnsWhenClosingAnIssueThatOthersDependOn(t *testing.T) {
 func TestUpdateDoesNotWarnWhenNoOpenIssueDependsOnIt(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "blocking-issue-test")
+	r.mustRun("edit", "blocking-issue-test", "resolution", "Completed.")
 
 	res := r.run("update", "blocking-issue-test", "closed", "--resolution", "completed")
 

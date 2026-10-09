@@ -26,8 +26,8 @@ func main() {
 }
 
 // runSisyphus runs the sisyphus binary with args, in dir if given (otherwise sisyphus-mcp's own
-// working directory), and returns its trimmed stdout. On failure, the error is sisyphus's own
-// stderr message, the same message a human running the command would see.
+// working directory), and returns its trimmed stdout, followed by any warnings it wrote to stderr. On
+// failure, the error is sisyphus's own stderr message, the same message a human running the command would see.
 func runSisyphus(dir string, args ...string) (string, error) {
 	path, err := exec.LookPath("sisyphus")
 	if err != nil {
@@ -45,7 +45,11 @@ func runSisyphus(dir string, args ...string) (string, error) {
 		}
 		return "", fmt.Errorf("sisyphus %s: %w", strings.Join(args, " "), err)
 	}
-	return strings.TrimSpace(stdout.String()), nil
+	output := strings.TrimSpace(stdout.String())
+	if warnings := strings.TrimSpace(stderr.String()); warnings != "" {
+		output = strings.TrimSpace(output + "\n" + warnings)
+	}
+	return output, nil
 }
 
 // textResult wraps text as a successful CallToolResult.

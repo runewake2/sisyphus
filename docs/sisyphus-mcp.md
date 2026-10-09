@@ -21,6 +21,7 @@ commands. If `sisyphus` is missing, every tool returns an error that says how to
 | `sisyphus_init` | [[sisyphus-init]] | text |
 | `sisyphus_new` | [[sisyphus-new]] | text |
 | `sisyphus_update` | [[sisyphus-update]] | text |
+| `sisyphus_edit` | [[sisyphus-edit]] | text |
 | `sisyphus_show` | [[sisyphus-show]] | JSON (`text: true` for text) |
 | `sisyphus_list` | [[sisyphus-list]] | JSON (`text: true` for the table) |
 | `sisyphus_search` | [[sisyphus-search]] | JSON (`text: true` for text) |
@@ -35,6 +36,8 @@ commands. If `sisyphus` is missing, every tool returns an error that says how to
 Each tool's arguments mirror the command's flags, in camelCase (for example `dependsOn`,
 `deferredFrom`, `blockingIssue`), and `metadata` is a JSON object. Every tool also takes an optional
 `dir`: the repo to act on, which defaults to the directory `sisyphus-mcp` was started in.
+
+A command's warnings follow its output in the tool result, so the agent sees them too.
 
 A command's error becomes a tool result marked as an error, carrying the same message the command
 prints, so the agent can read it and correct itself.

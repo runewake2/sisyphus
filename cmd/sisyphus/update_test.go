@@ -273,6 +273,7 @@ func TestUpdateAcceptsEveryFormOfTheName(t *testing.T) {
 func TestUpdateDefaultsToCompletedWhenClosingWithoutAResolution(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r)
+	r.mustRun("edit", updateTarget, "resolution", "Completed.")
 
 	res := r.run("update", updateTarget, "closed")
 

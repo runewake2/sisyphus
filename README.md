@@ -21,6 +21,7 @@ Create and move issues through `issues/open/`, `issues/in-progress/`, and `issue
 sisyphus new <issue-name> --title "<title>" --priority high --tags "<component>"
 sisyphus update <issue-name> in-progress --bookmark <bookmark> --owner <you>
 sisyphus update <issue-name> closed --resolution completed   # or: abandoned
+sisyphus edit <issue-name> resolution "<what was done, or why it stopped>"
 sisyphus show <issue-name>
 ```
 
@@ -93,8 +94,8 @@ Add it to an MCP-compatible client, for example Claude Code:
 claude mcp add sisyphus -- sisyphus-mcp
 ```
 
-Each tool (`sisyphus_new`, `sisyphus_update`, `sisyphus_show`, `sisyphus_list`, `sisyphus_search`,
-`sisyphus_graph`, `sisyphus_parent`, `sisyphus_remote`, `sisyphus_depends_on`, `sisyphus_slug`,
-`sisyphus_resolve`, `sisyphus_links`, `sisyphus_init`) takes an optional `dir` argument (the repo to
+Each tool (`sisyphus_new`, `sisyphus_update`, `sisyphus_edit`, `sisyphus_show`, `sisyphus_list`,
+`sisyphus_search`, `sisyphus_graph`, `sisyphus_parent`, `sisyphus_remote`, `sisyphus_depends_on`,
+`sisyphus_slug`, `sisyphus_resolve`, `sisyphus_links`, `sisyphus_init`) takes an optional `dir` argument (the repo to
 act on; defaults to `sisyphus-mcp`'s own working directory), plus the same arguments as the CLI
 command it wraps. See [[sisyphus-mcp]] for the full list of tools.

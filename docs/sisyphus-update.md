@@ -67,6 +67,8 @@ Warnings:
 - The issue was in one state directory but its `state` field said another; both are corrected.
 - Closing an issue that has sub-issues that are not closed.
 - Closing an issue that open or in-progress issues still depend on.
+- Closing an issue whose `Resolution` section still holds the template placeholder. Complete it
+  with [[sisyphus-edit]].
 
 ## Examples
 

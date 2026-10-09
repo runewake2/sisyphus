@@ -45,6 +45,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 		parentCommand(findRoot),
 		remoteCommand(findRoot),
 		dependsOnCommand(findRoot),
+		editCommand(findRoot),
 		slugCommand(findRoot),
 		showCommand(findRoot),
 		graphCommand(findRoot),
@@ -233,6 +234,37 @@ func dependsOnCommand(findRoot func() (string, error)) *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&clear, "clear", false, "Remove one dependency (with a <blocking-issue>) or every dependency (without one).")
+	return cmd
+}
+
+func editCommand(findRoot func() (string, error)) *cobra.Command {
+	var appendText bool
+	cmd := &cobra.Command{
+		Use:   "edit <name> <section> <text>",
+		Short: "Replace the text of one section of an issue's body, or append to it.",
+		Long: "Replace the text of one section of an issue's body, for example Summary or Resolution, " +
+			"or append to it with --append.\n\n" +
+			"<name> is an issue name, [[issue-name]], #issue-name, or a path to the issue. <section> is " +
+			"the heading of the section, matched case-insensitively, for example \"resolution\". " +
+			"<text> is the new text; \"-\" reads it from standard input. The heading line and every other " +
+			"section stay as they are. An append to a section that holds only the template placeholder " +
+			"replaces the placeholder.",
+		Args: cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			text := args[2]
+			if text == "-" {
+				input, err := io.ReadAll(cmd.InOrStdin())
+				if err != nil {
+					return err
+				}
+				text = string(input)
+			}
+			return printPath(cmd, findRoot, func(root string, warnings io.Writer) (string, error) {
+				return editSection(root, args[0], args[1], text, appendText)
+			})
+		},
+	}
+	cmd.Flags().BoolVarP(&appendText, "append", "a", false, "Add the text at the end of the section, after a blank line, instead of replacing the section.")
 	return cmd
 }
 

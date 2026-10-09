@@ -179,6 +179,8 @@ sisyphus update <issue-name> in-progress --bookmark <bookmark> --owner <owner> -
 sisyphus update <issue-name> in-progress --metadata "session-id=<id>"   # optional, if you have one
 sisyphus update <issue-name> closed                           # resolution defaults to completed
 sisyphus update <issue-name> closed --resolution abandoned
+sisyphus edit <issue-name> resolution "<text>"                # complete a section of the body
+sisyphus edit <issue-name> notes "<date>: <progress>" --append
 sisyphus update <issue-name> open                            # stop work without closing
 sisyphus update <issue-name> in-progress --priority high --effort small --tags "<component>"  # reprioritize
 sisyphus new <sub-issue-name> --parent <issue-name>
