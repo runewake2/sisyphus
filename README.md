@@ -62,7 +62,9 @@ workflow: the design log, decisions, versioning, the changelog, wikilinks, issue
 
 sisyphus issues are plain Markdown with YAML frontmatter, so a repo that uses sisyphus also works
 as an [Obsidian](https://obsidian.md/) vault: open the repo's root as a vault to browse, link, and
-edit issues there.
+edit issues there. This means that issues and docs can dynamically link between one another
+seamlessly, the intent there is better documentation through stronger issue/code/doc ties but
+it's still an experiment on if that works out.
 
 - sisyphus resolves wikilinks the way Obsidian does: `[[name]]`, `[[name#Heading]]`, and
   `[[name|text]]` match a file by name in any directory, ignoring case. A link to an issue keeps
