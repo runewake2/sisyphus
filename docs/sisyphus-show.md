@@ -12,14 +12,18 @@ sisyphus show <name> [--json]
 
 ## Output
 
-By default, the key fields, aligned, then the body:
+By default, the key fields, aligned, then the body. `resolution` and `closed` have a value only
+when the issue is closed, so they show whether a close or an abandon worked:
 
 ```
 title:      Fix login bug
 state:      in-progress
+resolution:
 priority:   high
 effort:     medium
 tags:       [bug]
+created:    2026-10-08
+closed:
 owner:      alice
 approver:   bob
 bookmark:   ai/fix-login-bug

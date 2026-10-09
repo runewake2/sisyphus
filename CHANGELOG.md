@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.30]] - 2026-10-09
+- Print `resolution`, `created`, and `closed` in the text output of `sisyphus show`.
+
 ## [[0.0.29]] - 2026-10-09
 - Add [[ollama-local-models]], the report of the spike that tested local Ollama models as sisyphus
   task managers, with its harness and results, and the follow-up issues for `sisyphus-mcp`.

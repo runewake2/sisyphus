@@ -23,6 +23,19 @@ func TestShowPrintsFieldsAndBody(t *testing.T) {
 	contains(t, res.output, "## Summary")
 }
 
+func TestShowPrintsTheResolutionOfAClosedIssue(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "retry-backoff")
+	r.mustRun("update", "retry-backoff", "closed", "--resolution", "abandoned")
+
+	res := r.run("show", "retry-backoff")
+
+	equal(t, 0, res.exit)
+	contains(t, res.output, "state:      closed\nresolution: abandoned\n")
+	contains(t, res.output, "closed:     "+today()+"\n")
+	contains(t, res.output, "created:    "+today()+"\n")
+}
+
 func TestShowAcceptsEveryFormOfTheName(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "retry-backoff")

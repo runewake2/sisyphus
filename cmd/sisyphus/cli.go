@@ -624,9 +624,12 @@ func writeIssueText(out io.Writer, doc *document) {
 	fields := [][2]string{
 		{"title", doc.get("title")},
 		{"state", doc.get("state")},
+		{"resolution", doc.get("resolution")},
 		{"priority", doc.get("priority")},
 		{"effort", doc.get("effort")},
 		{"tags", doc.get("tags")},
+		{"created", doc.get("created")},
+		{"closed", doc.get("closed")},
 		{"owner", doc.get("owner")},
 		{"approver", doc.get("approver")},
 		{"bookmark", doc.get("bookmark")},
