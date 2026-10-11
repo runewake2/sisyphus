@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.40]] - 2026-10-11
+- Let `sisyphus update` change fields without a state, and keep the resolution and closed date of a closed issue when its state does not change.
+
 ## [[0.0.39]] - 2026-10-11
 - Warn in `list`, `search`, and `show` about issue files that are not valid.
 

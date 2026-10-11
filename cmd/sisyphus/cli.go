@@ -127,18 +127,28 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 	var resolution, bookmark, owner, approver, workspace, priority, effort, tags string
 	var metadata map[string]string
 	cmd := &cobra.Command{
-		Use:   "update <name> <state>",
-		Short: "Change the state of an issue and move it to the directory of the new state.",
-		Long: "Change the state of an issue and move it to the directory of the new state.\n\n" +
+		Use:   "update <name> [<state>]",
+		Short: "Change the state of an issue and move it to the directory of the new state, or change its fields.",
+		Long: "Change the state of an issue and move it to the directory of the new state, or change its fields.\n\n" +
 			"<name> is an issue's full name, its file name, [[issue-name]], #issue-name, or a path to the issue. " +
-			"A file name that more than one issue has is refused. <state> is " + strings.Join(states, ", ") + ".",
-		Args: cobra.ExactArgs(2),
+			"A file name that more than one issue has is refused. <state> is " + strings.Join(states, ", ") + ". " +
+			"Without <state>, the state does not change, and at least one flag must be given.",
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := firstError(oneOf("state", args[1], states), resolutionFlag(cmd, resolution)); err != nil {
+			state := ""
+			if len(args) == 2 {
+				state = args[1]
+				if err := oneOf("state", state, states); err != nil {
+					return err
+				}
+			} else if cmd.Flags().NFlag() == 0 {
+				return errors.New("Give a new state, or at least one flag to change, for example --priority high.")
+			}
+			if err := resolutionFlag(cmd, resolution); err != nil {
 				return err
 			}
 			return printPath(cmd, findRoot, func(root string, warnings io.Writer) (string, error) {
-				return updateIssue(root, args[0], args[1], updateOptions{
+				return updateIssue(root, args[0], state, updateOptions{
 					resolution: resolution,
 					bookmark:   optional(cmd, "bookmark", bookmark),
 					owner:      optional(cmd, "owner", owner),

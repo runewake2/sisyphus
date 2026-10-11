@@ -273,3 +273,17 @@ func TestToolsPassTextThatStartsWithADash(t *testing.T) {
 		t.Errorf("want slug dash-first-words, got %q", slug)
 	}
 }
+
+func TestUpdateToolChangesFieldsWithoutAState(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+
+	callTool(t, session, "sisyphus_update", map[string]any{"dir": dir, "name": "fix-login-bug", "priority": "critical"})
+
+	show := callTool(t, session, "sisyphus_show", map[string]any{"dir": dir, "name": "fix-login-bug"})
+	if !strings.Contains(show, `"priority": "critical"`) || !strings.Contains(show, `"state": "open"`) {
+		t.Errorf("want priority critical and state open: %s", show)
+	}
+}

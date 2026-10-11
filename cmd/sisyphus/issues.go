@@ -238,11 +238,15 @@ type updateOptions struct {
 	metadata                             map[string]string
 }
 
+// updateIssue changes the issue that reference gives. An empty state keeps the current state.
 func updateIssue(root, reference, state string, o updateOptions, warnings io.Writer) (string, error) {
 	x := loadIndex(root)
 	name, current, doc, err := x.load(reference)
 	if err != nil {
 		return "", err
+	}
+	if state == "" {
+		state = current.state
 	}
 	if current.state == "closed" && state != "closed" {
 		return "", fmt.Errorf("Issue '%s' is closed. Do not reopen a closed issue. Create a new issue and link to [[%s]].", name, name)
@@ -258,7 +262,11 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 		warn(warnings, fmt.Sprintf("The issue was in issues/%s/ but its state field was '%s'. The update corrects both.", current.state, recorded))
 	}
 
-	applyState(doc, state, resolution)
+	// When the state does not change and no --resolution is given, the resolution and the closed
+	// date stay: applyState would reset an abandoned issue to completed, and its closed date to today.
+	if keep := state == current.state && o.resolution == "" && doc.get("state") == state; !keep {
+		applyState(doc, state, resolution)
+	}
 	if state == "open" {
 		doc.set("bookmark", "")
 		doc.set("owner", "")
@@ -307,7 +315,7 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	if state == "in-progress" {
 		warnOpenDependencies(x, name, doc, warnings)
 	}
-	if state == "closed" {
+	if state == "closed" && current.state != "closed" {
 		var open []string
 		for _, sub := range subIssues(x, name) {
 			if sub.state != "closed" {

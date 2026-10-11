@@ -158,7 +158,7 @@ func newHandler(_ context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.Cal
 type updateArgs struct {
 	Dir        string            `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
 	Name       string            `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
-	State      string            `json:"state" jsonschema:"The new state: open, in-progress, or closed."`
+	State      string            `json:"state,omitempty" jsonschema:"The new state: open, in-progress, or closed. Leave it out to keep the current state and change only the other fields."`
 	Resolution string            `json:"resolution,omitempty" jsonschema:"completed or abandoned. Only valid when state is closed; defaults to completed."`
 	Bookmark   string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark of the work. Set it when work starts."`
 	Owner      string            `json:"owner,omitempty" jsonschema:"The person or agent working on the issue."`

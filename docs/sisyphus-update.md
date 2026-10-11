@@ -6,10 +6,13 @@ Change an issue's state and move its file to the directory of the new state, or 
 
 ```bash
 sisyphus update <name> <state> [flags]
+sisyphus update <name> [flags]          # change fields, keep the state
 ```
 
 `<name>` is any form of an existing issue (see [[commands#Naming an issue]]). `<state>` is `open`,
-`in-progress`, or `closed`. To edit fields without changing state, give the issue's current state.
+`in-progress`, or `closed`. Without `<state>`, the state does not change, and at least one flag must
+be given. When the state does not change and `--resolution` is not given, a closed issue keeps its
+resolution and its closed date. The warnings about closing an issue come only when the issue closes.
 
 ## Flags
 
@@ -81,6 +84,7 @@ sisyphus update fix-login-bug in-progress --bookmark ai/fix-login-bug --owner al
 
 # Re-prioritize without changing state
 sisyphus update fix-login-bug in-progress --priority critical --tags bug,auth
+sisyphus update fix-login-bug --effort small            # the state does not change
 
 # Finish, or give up
 sisyphus update fix-login-bug closed

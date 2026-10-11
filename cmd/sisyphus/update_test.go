@@ -411,3 +411,41 @@ func TestUpdateToInProgressGivesNoDependencyWarningWhenEveryDependencyIsClosed(t
 
 	equal(t, "", res.error)
 }
+
+func TestUpdateWithoutAStateChangesOnlyTheFields(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--state", "in-progress", "--bookmark", "ai/login", "--owner", "alice")
+
+	r.mustRun("update", "fix-login-bug", "--priority", "high")
+
+	doc := r.frontmatter("issues/in-progress/fix-login-bug.md")
+	equal(t, "in-progress", doc.get("state"))
+	equal(t, "high", doc.get("priority"))
+	equal(t, "alice", doc.get("owner"))
+}
+
+func TestUpdateWithoutAStateOrAFlagFails(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+
+	res := r.run("update", "fix-login-bug")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "Give a new state, or at least one flag to change")
+}
+
+func TestUpdateKeepsTheResolutionAndClosedDateOfAClosedIssue(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+	r.mustRun("update", "fix-login-bug", "closed", "--resolution", "abandoned")
+	r.write("issues/closed/fix-login-bug.md", strings.Replace(r.read("issues/closed/fix-login-bug.md"), "closed: "+today(), "closed: 2020-01-02", 1))
+
+	for _, args := range [][]string{{"update", "fix-login-bug", "--priority", "low"}, {"update", "fix-login-bug", "closed", "--priority", "low"}} {
+		res := r.mustRun(args...)
+
+		doc := r.frontmatter("issues/closed/fix-login-bug.md")
+		equal(t, "abandoned", doc.get("resolution"))
+		equal(t, "2020-01-02", doc.get("closed"))
+		equal(t, "", res.error)
+	}
+}
