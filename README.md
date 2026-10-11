@@ -108,8 +108,6 @@ Add it to an MCP-compatible client, for example Claude Code:
 claude mcp add sisyphus -- sisyphus-mcp
 ```
 
-Each tool (`sisyphus_new`, `sisyphus_update`, `sisyphus_edit`, `sisyphus_show`, `sisyphus_list`,
-`sisyphus_search`, `sisyphus_graph`, `sisyphus_parent`, `sisyphus_remote`, `sisyphus_depends_on`,
-`sisyphus_slug`, `sisyphus_resolve`, `sisyphus_links`, `sisyphus_lint`, `sisyphus_init`) takes an optional `dir` argument (the repo to
-act on; defaults to `sisyphus-mcp`'s own working directory), plus the same arguments as the CLI
-command it wraps. See [[sisyphus-mcp]] for the full list of tools.
+Each tool takes the same arguments as the command it wraps, and an optional `dir`: the repo to act
+on. See [[sisyphus-mcp]] for other clients, the tools, how warnings and errors come back, an example
+session, and troubleshooting.

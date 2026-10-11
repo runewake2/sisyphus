@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.82]] - 2026-10-11
+- Document MCP client setup, results, an example session, and troubleshooting for sisyphus-mcp.
+
 ## [[0.0.81]] - 2026-10-11
 - Add a page that describes the issue file and the template, and fail new --context without a Context section.
 
