@@ -49,6 +49,8 @@ Compare at least two drafts (for example the field against a tag), as `CONTRIBUT
 
 2026-10-11, from the human: delegate describes the role assigned to own the task, and is a key of the sisyphus metadata field (metadata: {delegate: merge-queue}), not a frontmatter field of its own. This answers Q1 of [[agent-delegation]].
 
+2026-10-11, from the human: each hephaestus role is a Markdown file of its own, hephaestus/roles/<role>.md. This answers Q2 of [[agent-delegation]]. With Q1, the design of this issue has no open question left.
+
 ## Resolution
 
 <Complete this section when you close the issue.
