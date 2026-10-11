@@ -160,6 +160,14 @@ changes.
 If no directory fits, add one: a kebab-case name for an area, with a row in this table. A directory
 is not the parent of an issue: set `parent` for that.
 
+### hephaestus
+
+`hephaestus/` is a separate project beside sisyphus: a worker manager that provisions and manages
+agents and gives them sisyphus issues. It has its own issues tracker in `hephaestus/issues/`; run
+`sisyphus` in `hephaestus/` to work on its issues. sisyphus never manages agents: put all
+agent-specific work in hephaestus, and in sisyphus only generic issue data that any client can use
+([[0029-sisyphus-does-not-manage-agents]]). Both trackers must lint clean.
+
 ### Issue names
 
 - The file name without `.md` is the **issue name**, for example `issues/open/performance/faster-startup.md` has the name `faster-startup`. Its full name, with the directory, is `performance/faster-startup`.
