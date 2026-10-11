@@ -14,6 +14,7 @@ sisyphus init [--dir <directory>] [--force] [--nested]
 |---|---|---|
 | `--dir` | `.` | The root directory of the repo. |
 | `--force` | off | Replace files that already exist. |
+| `-C` | the current directory | The directory to work in; `--dir` is taken from it. See [[commands#How sisyphus finds the repo]]. |
 | `--nested` | off | Make a tracker below a directory that already has one. |
 
 ## What it does

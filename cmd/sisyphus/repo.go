@@ -24,6 +24,12 @@ func findRoot() (string, error) {
 	if exe, err := os.Executable(); err == nil {
 		starts = append(starts, filepath.Dir(exe))
 	}
+	return findRootFrom(starts...)
+}
+
+// findRootFrom searches up from each start directory in turn for the directory that contains
+// issues/TEMPLATE.md.
+func findRootFrom(starts ...string) (string, error) {
 	for _, start := range starts {
 		dir := start
 		for {

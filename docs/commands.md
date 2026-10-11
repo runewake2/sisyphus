@@ -33,6 +33,10 @@ sisyphus looks for it in the current directory and each parent directory in turn
 nothing, it tries the same from the directory of the `sisyphus` binary. So you can run sisyphus
 from anywhere inside a repo, and each jj workspace uses its own files.
 
+`-C <directory>` (`--directory`), before or after the command, makes the search start in that
+directory instead of the current one, as `git -C` does: `sisyphus -C ../other-repo list`. A relative
+path is taken from the current directory. `init` writes into `-C` too.
+
 When there is no repo root, a command fails with:
 
 ```

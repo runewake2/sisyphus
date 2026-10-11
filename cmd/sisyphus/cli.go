@@ -30,7 +30,22 @@ func run(args []string, findRoot func() (string, error), stdout, stderr io.Write
 	return 0
 }
 
-func newRootCommand(findRoot func() (string, error)) *cobra.Command {
+func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
+	// -C makes every command start its search for the repo root in another directory, as in git.
+	var directory string
+	findRoot := func() (string, error) {
+		if directory == "" {
+			return defaultFindRoot()
+		}
+		start, err := filepath.Abs(directory)
+		if err != nil {
+			return "", err
+		}
+		if info, err := os.Stat(start); err != nil || !info.IsDir() {
+			return "", fmt.Errorf("-C %s is not a directory.", directory)
+		}
+		return findRootFrom(start)
+	}
 	root := &cobra.Command{
 		Use:           "sisyphus",
 		Short:         "Manage the issues in issues/ and resolve wikilinks in the repo.",
@@ -38,6 +53,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
+	root.PersistentFlags().StringVarP(&directory, "directory", "C", "", "Run as if sisyphus was started in this directory, as git -C does.")
 	root.SetVersionTemplate("{{.Version}}\n")
 	root.CompletionOptions.DisableDefaultCmd = true
 	root.AddCommand(
@@ -55,7 +71,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 		resolveCommand(findRoot),
 		linksCommand(findRoot),
 		lintCommand(findRoot),
-		initCommand(),
+		initCommand(&directory),
 	)
 	return root
 }
@@ -718,7 +734,7 @@ func plural(n int, one, many string) string {
 	return many
 }
 
-func initCommand() *cobra.Command {
+func initCommand(directory *string) *cobra.Command {
 	var dir string
 	var force, nested bool
 	cmd := &cobra.Command{
@@ -732,6 +748,10 @@ func initCommand() *cobra.Command {
 			"project-scaffolding template if you want them.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// --dir is taken from -C, as every other path of a command is.
+			if *directory != "" && !filepath.IsAbs(dir) {
+				dir = filepath.Join(*directory, dir)
+			}
 			root, err := filepath.Abs(dir)
 			if err != nil {
 				return err

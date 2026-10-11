@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.68]] - 2026-10-11
+- Add the global flag `-C <directory>` to run sisyphus on another repo.
+
 ## [[0.0.67]] - 2026-10-11
 - Read each issue file once in `sisyphus lint`.
 
