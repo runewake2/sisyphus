@@ -11,7 +11,8 @@ sisyphus new --title "<title>" [flags]     # the name is made from the title
 
 `<name>` is the new issue's full name: 2-6 lowercase words in kebab-case, for example
 `fix-login-bug`, optionally below kebab-case directories, for example `web/auth/fix-login-bug`
-(see [[commands#Naming an issue]]). Without `<name>`, sisyphus makes the name from `--title` the
+(see [[commands#Naming an issue]]). The directories only group files: they do not make the issue
+a sub-issue. Use `--parent` for that. Without `<name>`, sisyphus makes the name from `--title` the
 way [[sisyphus-slug]] does: `--title "Fix the login bug"` gives `fix-login-bug`, or `fix-login-bug-2`
 when that name is taken. A `<name>` that is title text, for example `"Fix the login bug"`, is an
 error that gives the command to use instead.

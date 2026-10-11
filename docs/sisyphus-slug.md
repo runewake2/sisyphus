@@ -1,6 +1,7 @@
 # sisyphus slug
 
-Turn any text, for example a title, into a valid ASCII issue name that no file in the repo has yet.
+Turn any text, for example a title, into a valid ASCII name for a new issue that no file in the
+repo has yet. It does not find an existing issue: use [[sisyphus-search]] for that.
 
 ## Usage
 

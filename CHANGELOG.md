@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.100]] - 2026-10-11
+- Remove the nested name example from the MCP tools, and say that slug only names new issues.
+
 ## [[0.0.99]] - 2026-10-11
 - Hide the dir argument of the MCP tools by default, and add --dir and --allow-dir to sisyphus-mcp.
 

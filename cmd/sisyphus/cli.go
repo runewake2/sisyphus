@@ -101,9 +101,9 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 		Short: "Create an issue from issues/TEMPLATE.md.",
 		Long: "Create an issue from issues/TEMPLATE.md in the directory of its state.\n\n" +
 			"<name> is 2-6 lowercase words in kebab-case, for example fix-login-bug, optionally below " +
-			"kebab-case directories, for example web/auth/fix-login-bug. The directories stay with the " +
-			"issue when its state changes. Without <name>, the name is made from --title, the way " +
-			"sisyphus slug makes it.",
+			"kebab-case directories, for example web/auth/fix-login-bug. The directories only group files and " +
+			"stay with the issue when its state changes; they do not make it a sub-issue: use --parent for that. " +
+			"Without <name>, the name is made from --title, the way sisyphus slug makes it.",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := ""
@@ -356,8 +356,9 @@ func slugCommand(findRoot func() (string, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "slug <text>",
 		Short: "Print a valid issue name, made from text, that is not in use.",
-		Long: "Print a valid issue name, made from text such as a GitHub issue title, that no Markdown file " +
-			"in the repo has. It does not create anything.\n\n" +
+		Long: "Print a valid name for a new issue, made from text such as a GitHub issue title, that no Markdown file " +
+			"in the repo has. It does not create anything, and it does not find an existing issue: use sisyphus search " +
+			"for that.\n\n" +
 			"1. Lowercase the text and spell its letters in ASCII: \"é\" becomes \"e\", \"ß\" becomes \"ss\", " +
 			"and \"æ\" becomes \"ae\". The name is always ASCII.\n" +
 			"2. Each run of ASCII letters and digits is a word. Every other character, for example a " +

@@ -692,3 +692,25 @@ func TestTheToolsActOnTheDirectoryOfTheServer(t *testing.T) {
 		t.Errorf("the issue is not in the directory of the server: %v", err)
 	}
 }
+
+// TestNameDescriptionsDoNotInviteGuesses checks the descriptions that made models invent names: a
+// nested example for an existing issue, and slug as a way to find an issue.
+func TestNameDescriptionsDoNotInviteGuesses(t *testing.T) {
+	session := connectedSession(t)
+	tools, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tool := range tools.Tools {
+		schema, _ := json.Marshal(tool.InputSchema)
+		if strings.Contains(string(schema), "web/auth/") {
+			t.Errorf("%s has a nested name example", tool.Name)
+		}
+		if tool.Name == "sisyphus_slug" && !strings.Contains(tool.Description, "does not find an existing issue") {
+			t.Errorf("sisyphus_slug does not say that it does not find issues: %s", tool.Description)
+		}
+		if tool.Name == "sisyphus_new" && !strings.Contains(string(schema), "it is not the parent") {
+			t.Errorf("sisyphus_new does not say that a directory is not the parent")
+		}
+	}
+}

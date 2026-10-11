@@ -132,7 +132,9 @@ func registerTools(server *mcp.Server, o serverOptions) {
 	}, editHandler)
 	addTool(server, o, &mcp.Tool{
 		Name: "sisyphus_slug",
-		Description: "Turn text, for example a title, into a valid ASCII sisyphus issue name that no file in the repo has. " +
+		Description: "Make a valid name for a NEW issue from text, for example a title: an ASCII name that no file in the repo has. " +
+			"It does not find an existing issue: use sisyphus_search or sisyphus_list for that. sisyphus_new makes the name " +
+			"from the title by itself, so you rarely need this tool. " +
 			"Letters are spelled in ASCII (é becomes e), other characters separate words, filler words such as " +
 			"'the' and 'of' are dropped, the first 6 words stay, and -2, -3, and so on is added if the name is " +
 			"taken. Fewer than 2 words is an error.",
@@ -161,7 +163,7 @@ func registerTools(server *mcp.Server, o serverOptions) {
 
 type newArgs struct {
 	Dir          string            `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name         string            `json:"name,omitempty" jsonschema:"The issue name: 2-6 lowercase kebab-case words, optionally below kebab-case directories, for example fix-login-bug or web/auth/fix-login-bug. No other issue can have the same full name. Leave it out to make the name from the title."`
+	Name         string            `json:"name,omitempty" jsonschema:"Usually leave it out: the name is then made from the title. Otherwise 2-6 lowercase kebab-case words, for example fix-login-bug, that no other issue has. A directory before the name only groups files; it is not the parent. Use parent to make a sub-issue."`
 	Title        string            `json:"title,omitempty" jsonschema:"The issue title. Defaults to a title made from the name."`
 	State        string            `json:"state,omitempty" jsonschema:"open, in-progress, or closed. Defaults to open."`
 	Priority     string            `json:"priority,omitempty" jsonschema:"critical, high, medium, or low. Defaults to medium."`
@@ -170,7 +172,7 @@ type newArgs struct {
 	Tags         string            `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug,scheduler. Built-in: bug, feature; any other tag works too."`
 	Bookmark     string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark or git branch of the work on the issue."`
 	DeferredFrom string            `json:"deferredFrom,omitempty" jsonschema:"An issue name, wikilink, or bookmark that deferred this work."`
-	Parent       string            `json:"parent,omitempty" jsonschema:"The parent issue, if this is a sub-issue. Must already exist."`
+	Parent       string            `json:"parent,omitempty" jsonschema:"The exact name of an existing issue that this new issue is a part of (a sub-issue of), as sisyphus_list returns it."`
 	Owner        string            `json:"owner,omitempty" jsonschema:"The person or agent working on the issue. With state in-progress, defaults to SISYPHUS_OWNER in the environment of the server."`
 	Approver     string            `json:"approver,omitempty" jsonschema:"The person or agent who accepts the issue when it closes."`
 	Workspace    string            `json:"workspace,omitempty" jsonschema:"The jj workspace or git worktree where local work on the issue happens."`
@@ -210,7 +212,7 @@ func newHandler(ctx context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.C
 
 type updateArgs struct {
 	Dir        string            `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name       string            `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Name       string            `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
 	State      string            `json:"state,omitempty" jsonschema:"The new state: open, in-progress, or closed. Leave it out to keep the current state and change only the other fields."`
 	Resolution string            `json:"resolution,omitempty" jsonschema:"completed or abandoned. Only valid when state is closed; defaults to completed."`
 	Bookmark   string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark or git branch of the work. Set it when work starts."`
@@ -258,7 +260,7 @@ func updateHandler(ctx context.Context, _ *mcp.CallToolRequest, in updateArgs) (
 
 type startArgs struct {
 	Dir       string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name      string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Name      string `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
 	Owner     string `json:"owner,omitempty" jsonschema:"Your name as the owner of the issue. Defaults to SISYPHUS_OWNER in the environment of the server."`
 	Bookmark  string `json:"bookmark,omitempty" jsonschema:"The jj bookmark or git branch of the work."`
 	Workspace string `json:"workspace,omitempty" jsonschema:"The jj workspace or git worktree where the work happens. Appended to the issue's workspace history."`
@@ -283,7 +285,7 @@ func startHandler(ctx context.Context, _ *mcp.CallToolRequest, in startArgs) (*m
 
 type closeArgs struct {
 	Dir     string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name    string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Name    string `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
 	Message string `json:"message" jsonschema:"The text of the Resolution section, as Markdown. For a close: what was done. For an abandon: why the work stopped, and what replaces it."`
 	JSON    bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
@@ -312,7 +314,7 @@ func closeHandler(command string) func(context.Context, *mcp.CallToolRequest, cl
 
 type showArgs struct {
 	Dir  string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Name string `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
 	Text bool   `json:"text,omitempty" jsonschema:"Return the human-readable text form instead of JSON."`
 	All  bool   `json:"all,omitempty" jsonschema:"Keep the sections that hold only template text in the body, as the file has them."`
 }
@@ -407,7 +409,7 @@ func searchHandler(ctx context.Context, _ *mcp.CallToolRequest, in searchArgs) (
 
 type graphArgs struct {
 	Dir       string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name      string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Name      string `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
 	JSON      bool   `json:"json,omitempty" jsonschema:"Return the nodes and edges as JSON instead of a drawing."`
 	Mermaid   bool   `json:"mermaid,omitempty" jsonschema:"Return Mermaid flowchart source instead of a drawing."`
 	Full      bool   `json:"full,omitempty" jsonschema:"Draw every linked issue, not only what is below this issue and the path above it."`
@@ -447,7 +449,7 @@ func claimsHandler(ctx context.Context, _ *mcp.CallToolRequest, in claimsArgs) (
 
 type parentArgs struct {
 	Dir    string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name   string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Name   string `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
 	Parent string `json:"parent,omitempty" jsonschema:"The parent issue to set. Omit and set clear to remove the current parent instead."`
 	Clear  bool   `json:"clear,omitempty" jsonschema:"Remove the issue's current parent instead of setting a new one."`
 	JSON   bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
@@ -467,7 +469,7 @@ func parentHandler(ctx context.Context, _ *mcp.CallToolRequest, in parentArgs) (
 
 type remoteArgs struct {
 	Dir   string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name  string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Name  string `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
 	URL   string `json:"url,omitempty" jsonschema:"The GitHub issue or Jira ticket URL to set. Omit and set clear to remove the current one instead."`
 	Clear bool   `json:"clear,omitempty" jsonschema:"Remove the issue's current remote reference instead of setting a new one."`
 	JSON  bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
@@ -487,7 +489,7 @@ func remoteHandler(ctx context.Context, _ *mcp.CallToolRequest, in remoteArgs) (
 
 type dependsOnArgs struct {
 	Dir           string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name          string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Name          string `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
 	BlockingIssue string `json:"blockingIssue,omitempty" jsonschema:"The issue that must close first, to add or (with clear) remove. Omit with clear to remove every dependency."`
 	Clear         bool   `json:"clear,omitempty" jsonschema:"Remove blockingIssue (if given) or every dependency (if not) instead of adding one."`
 	JSON          bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
@@ -507,7 +509,7 @@ func dependsOnHandler(ctx context.Context, _ *mcp.CallToolRequest, in dependsOnA
 
 type editArgs struct {
 	Dir     string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Name    string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Name    string `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
 	Section string `json:"section" jsonschema:"The heading of the section, matched case-insensitively, for example resolution, summary, or notes."`
 	Text    string `json:"text" jsonschema:"The new text of the section, as Markdown. It can have more than one line."`
 	Append  bool   `json:"append,omitempty" jsonschema:"Add the text at the end of the section, after a blank line, instead of replacing the section."`
