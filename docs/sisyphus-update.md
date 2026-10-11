@@ -25,6 +25,7 @@ resolution and its closed date. The warnings about closing an issue come only wh
 | `--workspace` | A jj workspace where work on the issue happens. Added to `workspaces`. |
 | `--priority` | A new priority: `critical`, `high`, `medium`, or `low`. |
 | `--effort` | A new effort: `small`, `medium`, `large`, or `x-large`. |
+| `-t`, `--title` | A new title. It changes the `title` field and the first `#` heading of the body. The same rules as for `sisyphus new --title` apply. |
 | `--tags` | New tags, comma-separated. They replace the old tags. A tag cannot contain a space. |
 | `--metadata` | `key=value` notes to add or change. Repeat the flag, or separate pairs with commas. |
 

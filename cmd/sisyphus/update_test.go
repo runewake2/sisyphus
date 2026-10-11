@@ -449,3 +449,25 @@ func TestUpdateKeepsTheResolutionAndClosedDateOfAClosedIssue(t *testing.T) {
 		equal(t, "", res.error)
 	}
 }
+
+func TestUpdateChangesTheTitleInTheFieldAndTheHeading(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--title", "Fix login")
+
+	r.mustRun("update", "fix-login-bug", "--title", `Fix the "login" loop`)
+
+	content := r.read("issues/open/fix-login-bug.md")
+	equal(t, `Fix the "login" loop`, r.frontmatter("issues/open/fix-login-bug.md").get("title"))
+	contains(t, content, "\n# Fix the \"login\" loop\n")
+	isTrue(t, !strings.Contains(content, "# Fix login\n"), "the old heading is gone")
+}
+
+func TestUpdateRejectsATitleWithALineBreak(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--title", "Fix login")
+
+	res := r.run("update", "fix-login-bug", "--title", "a\nb")
+
+	equal(t, 1, res.exit)
+	equal(t, "Fix login", r.frontmatter("issues/open/fix-login-bug.md").get("title"))
+}

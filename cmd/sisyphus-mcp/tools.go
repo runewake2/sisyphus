@@ -51,7 +51,7 @@ func registerTools(server *mcp.Server) {
 	}, newHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_update",
-		Description: "Change a sisyphus issue's state (and move it between issues/open, issues/in-progress, and issues/closed), or edit its priority, effort, tags, owner, approver, bookmark, workspace, or metadata.",
+		Description: "Change a sisyphus issue's state (and move it between issues/open, issues/in-progress, and issues/closed), or edit its title, priority, effort, tags, owner, approver, bookmark, workspace, or metadata. Leave out state to keep it.",
 	}, updateHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_show",
@@ -167,6 +167,7 @@ type updateArgs struct {
 	Priority   string            `json:"priority,omitempty" jsonschema:"Change the priority: critical, high, medium, or low."`
 	Effort     string            `json:"effort,omitempty" jsonschema:"Change the effort: small, medium, large, or x-large."`
 	Tags       string            `json:"tags,omitempty" jsonschema:"Replace the tags, comma-separated, for example bug,scheduler. Built-in: bug, feature; any other tag works too."`
+	Title      string            `json:"title,omitempty" jsonschema:"Change the title. sisyphus changes the title field and the first # heading of the body."`
 	Metadata   map[string]string `json:"metadata,omitempty" jsonschema:"Arbitrary key-value notes to add or update, for example a session id. Merged into the existing notes; never cleared automatically."`
 }
 
@@ -180,6 +181,7 @@ func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*m
 	args = appendFlag(args, "--priority", in.Priority)
 	args = appendFlag(args, "--effort", in.Effort)
 	args = appendFlag(args, "--tags", in.Tags)
+	args = appendFlag(args, "--title", in.Title)
 	args = appendMetadataFlags(args, in.Metadata)
 	args = appendPositionals(args, in.Name, in.State)
 	out, err := runSisyphus(in.Dir, args...)

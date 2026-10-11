@@ -84,6 +84,17 @@ func checkOpenWorkFields(state string, owner, bookmark *string) error {
 	return nil
 }
 
+// setTitleHeading sets the first "# " heading of the body, outside code blocks, to title. A body
+// with no such heading does not change.
+func setTitleHeading(doc *document, title string) {
+	for _, index := range outsideCodeFences(doc.body) {
+		if headingPattern.MatchString(doc.body[index]) && headingLevel(doc.body[index]) == 1 {
+			doc.body[index] = "# " + title
+			return
+		}
+	}
+}
+
 // validateTitle rejects a title that the frontmatter, the "# Title" heading, and the list table
 // cannot show on one line: an empty title, or one with a line break, a tab, or another control
 // character.
@@ -234,7 +245,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 type updateOptions struct {
 	resolution                           string
 	bookmark, owner, approver, workspace *string
-	priority, effort, tags               *string
+	priority, effort, tags, title        *string
 	metadata                             map[string]string
 }
 
@@ -308,6 +319,13 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 			return "", err
 		}
 		doc.set("tags", formatTags(*o.tags))
+	}
+	if o.title != nil {
+		if err := validateTitle(*o.title); err != nil {
+			return "", err
+		}
+		doc.set("title", quote(*o.title))
+		setTitleHeading(doc, *o.title)
 	}
 	if state == "in-progress" && doc.get("bookmark") == "" {
 		warn(warnings, noBookmarkWarning)

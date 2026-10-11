@@ -28,7 +28,8 @@ heading of the section, matched case-insensitively, for example `resolution` or
 - The text can have more than one line. sisyphus removes blank lines at its start and its end.
 - Empty text is an error.
 - A section that the issue does not have is an error that lists the sections it has. The title
-  (`# ...`) is not a section: change the title in the frontmatter.
+  (`# ...`) is not a section: change it with `sisyphus update <name> --title` (see
+  [[sisyphus-update]]).
 - `edit` works on an issue in any state, including a closed issue.
 - Text that starts with `-`, for example a Markdown list, needs `--` before the positional
   arguments, or `-` to read it from standard input. Without it, the text is read as a flag.

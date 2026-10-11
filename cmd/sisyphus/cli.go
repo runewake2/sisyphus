@@ -124,7 +124,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 }
 
 func updateCommand(findRoot func() (string, error)) *cobra.Command {
-	var resolution, bookmark, owner, approver, workspace, priority, effort, tags string
+	var resolution, bookmark, owner, approver, workspace, priority, effort, tags, title string
 	var metadata map[string]string
 	cmd := &cobra.Command{
 		Use:   "update <name> [<state>]",
@@ -157,6 +157,7 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 					priority:   optional(cmd, "priority", priority),
 					effort:     optional(cmd, "effort", effort),
 					tags:       optional(cmd, "tags", tags),
+					title:      optional(cmd, "title", title),
 					metadata:   metadata,
 				}, warnings)
 			})
@@ -170,6 +171,7 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&workspace, "workspace", "", "The jj workspace where local work on the issue is happening. Appended to the issue's workspace history.")
 	flags.StringVar(&priority, "priority", "", "Change the priority: "+strings.Join(priorities, ", ")+".")
 	flags.StringVar(&effort, "effort", "", "Change the effort: "+strings.Join(efforts, ", ")+".")
+	flags.StringVarP(&title, "title", "t", "", "Change the title, in the title field and in the first # heading of the body.")
 	flags.StringVar(&tags, "tags", "", `Replace the tags, comma-separated, for example "bug,scheduler". Built-in: `+strings.Join(builtinTags, ", ")+`; any other tag works too.`)
 	flags.StringToStringVar(&metadata, "metadata", nil, `Arbitrary key=value notes to add or update, for example "session-id=abc123". Repeatable, or comma-separated. Never cleared automatically.`)
 	return cmd
