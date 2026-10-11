@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os/exec"
 	"slices"
 	"strings"
@@ -496,4 +497,21 @@ func TestUpdateRejectsAnAddedTagWithASpace(t *testing.T) {
 	r.mustRun("new", "fix-login-bug")
 
 	equal(t, 1, r.run("update", "fix-login-bug", "--add-tags", "needs review").exit)
+}
+
+func TestMetadataKeepsValuesWithCommasColonsAndQuotes(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--metadata", `url=http://x:8080/a`)
+	r.mustRun("update", "fix-login-bug", "--metadata", `note=x, y`)
+	r.mustRun("update", "fix-login-bug", "--metadata", `quote=say "hi", then go`)
+	r.mustRun("update", "fix-login-bug", "--metadata", "session=abc")
+
+	var view issueView
+	if err := json.Unmarshal([]byte(r.mustRun("show", "fix-login-bug", "--json").output), &view); err != nil {
+		t.Fatal(err)
+	}
+	equal(t, "x, y", view.Metadata["note"])
+	equal(t, `say "hi", then go`, view.Metadata["quote"])
+	equal(t, "http://x:8080/a", view.Metadata["url"])
+	equal(t, "abc", view.Metadata["session"])
 }

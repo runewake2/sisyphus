@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.46]] - 2026-10-11
+- Read metadata values with commas correctly, so that a later metadata change does not corrupt them.
+
 ## [[0.0.45]] - 2026-10-11
 - Add `sisyphus lint` to check every issue and every wikilink in the repo, and run it in CI.
 

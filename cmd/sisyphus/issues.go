@@ -594,12 +594,13 @@ func formatDependsOn(names []string) string {
 	return formatList(items)
 }
 
-// parseMetadata reads a frontmatter value like `{session-id: "abc123", note: "a short note"}` into
-// a map. Like tags and the other list-shaped fields, a value cannot contain a comma.
+// parseMetadata reads a frontmatter value like `{session-id: "abc123", note: "a, b"}` into a map. It
+// splits the map only on commas outside quotes, so that a quoted value can hold commas, colons, and
+// escaped quotes: what formatMetadata writes, parseMetadata reads back the same.
 func parseMetadata(value string) map[string]string {
 	value = strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(value), "{"), "}")
 	m := map[string]string{}
-	for _, item := range strings.Split(value, ",") {
+	for _, item := range splitOutsideQuotes(value, ',') {
 		key, val, ok := strings.Cut(item, ":")
 		if !ok {
 			continue
@@ -609,6 +610,33 @@ func parseMetadata(value string) map[string]string {
 		}
 	}
 	return m
+}
+
+// splitOutsideQuotes splits text on each separator that is not inside a double-quoted string (with
+// backslash escapes) or a single-quoted string.
+func splitOutsideQuotes(text string, separator rune) []string {
+	var parts []string
+	var quote rune
+	escaped := false
+	start := 0
+	for i, r := range text {
+		switch {
+		case escaped:
+			escaped = false
+		case quote == '"' && r == '\\':
+			escaped = true
+		case quote != 0:
+			if r == quote {
+				quote = 0
+			}
+		case r == '"' || r == '\'':
+			quote = r
+		case r == separator:
+			parts = append(parts, text[start:i])
+			start = i + utf8.RuneLen(r)
+		}
+	}
+	return append(parts, text[start:])
 }
 
 // formatMetadata writes a map back as a frontmatter value, with keys sorted for a deterministic diff.

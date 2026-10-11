@@ -59,7 +59,7 @@ Value details:
 - `--deferred-from` takes an issue (any form of its name), written as a quoted wikilink to its full
   name, or a bookmark (any other value with `/`), written as it is.
 - `--metadata` values are written quoted, with keys in sorted order:
-  `{note: "first pass", session-id: "abc123"}`. A value cannot contain a comma.
+  `{note: "first pass", session-id: "abc123"}`. A value can hold commas, colons, and quotes.
 
 ## Output
 
