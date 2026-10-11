@@ -150,3 +150,14 @@ func TestSearchAcceptsASectionThatOnlyAnIssueHas(t *testing.T) {
 	equal(t, 0, res.exit)
 	contains(t, res.output, "other-issue-test")
 }
+
+func TestSearchReadyFiltersLikeList(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "first-issue-test")
+	r.mustRun("new", "second-issue-test", "--depends-on", "first-issue-test")
+
+	res := r.mustRun("search", "--ready", "issue")
+
+	contains(t, res.output, "first-issue-test")
+	isTrue(t, !strings.Contains(res.output, "second-issue-test"), "a blocked issue is not ready")
+}

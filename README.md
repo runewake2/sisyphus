@@ -29,6 +29,7 @@ Find issues:
 
 ```bash
 sisyphus list --state open,in-progress --priority critical,high
+sisyphus list --ready --state open      # what can start now
 sisyphus search "timeout" --section summary
 ```
 

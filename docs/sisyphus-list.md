@@ -18,6 +18,7 @@ sisyphus list [flags]
 | `--owner` | Only issues with exactly this owner. |
 | `--parent` | Only direct sub-issues of this issue (any form of its name). |
 | `--blocked` | Only issues that depend on an issue that is not closed yet. |
+| `--ready` | Only issues that can start now: not closed, with no dependency and no sub-issue that is not closed. Not with `--blocked`. |
 | `--json` | Print JSON instead of a table. |
 
 Within one flag, the values are alternatives (OR). Different flags must all match (AND).
@@ -25,6 +26,11 @@ Closed issues are listed only when `--state` includes `closed`.
 
 `--blocked` counts a dependency as blocking while it is open or in-progress. A dependency that no
 longer exists does not block.
+
+`--ready` gives the issues that [[sisyphus-graph]] calls available, with the same rule: an epic
+waits on its open sub-issues, so it is not ready until they close. With the default state filter,
+ready in-progress issues are listed too; use `--state open --ready` for only the issues that nobody
+has started. See [[0014-ready-means-available]].
 
 ## Output
 
@@ -54,5 +60,6 @@ sisyphus list --state open,in-progress,closed --tags bug
 sisyphus list --priority critical,high --owner alice
 sisyphus list --parent auth-overhaul
 sisyphus list --blocked
+sisyphus list --ready --state open          # what can start now
 sisyphus list --state in-progress --json | jq -r '.[].name'   # what is claimed right now
 ```

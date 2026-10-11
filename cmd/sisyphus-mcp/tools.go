@@ -59,7 +59,7 @@ func registerTools(server *mcp.Server) {
 	}, showHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_list",
-		Description: "List and filter sisyphus issues by state, priority, tags, owner, parent, or whether they are blocked by an open dependency.",
+		Description: "List and filter sisyphus issues by state, priority, tags, owner, parent, or whether they are blocked by an open dependency. Use ready to find the issues that can start now.",
 	}, listHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_search",
@@ -220,6 +220,7 @@ type listArgs struct {
 	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
 	Parent   string `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
 	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
+	Ready    bool   `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
 	Text     bool   `json:"text,omitempty" jsonschema:"Return the human-readable table instead of JSON."`
 }
 
@@ -231,6 +232,7 @@ func listHandler(_ context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp.C
 	args = appendFlag(args, "--owner", in.Owner)
 	args = appendFlag(args, "--parent", in.Parent)
 	args = appendBoolFlag(args, "--blocked", in.Blocked)
+	args = appendBoolFlag(args, "--ready", in.Ready)
 	args = appendBoolFlag(args, "--json", !in.Text)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
@@ -248,6 +250,7 @@ type searchArgs struct {
 	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
 	Parent   string `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
 	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
+	Ready    bool   `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
 	Section  string `json:"section,omitempty" jsonschema:"Restrict the query and the returned content to one section, for example summary."`
 	Text     bool   `json:"text,omitempty" jsonschema:"Return human-readable text instead of JSON."`
 }
@@ -260,6 +263,7 @@ func searchHandler(_ context.Context, _ *mcp.CallToolRequest, in searchArgs) (*m
 	args = appendFlag(args, "--owner", in.Owner)
 	args = appendFlag(args, "--parent", in.Parent)
 	args = appendBoolFlag(args, "--blocked", in.Blocked)
+	args = appendBoolFlag(args, "--ready", in.Ready)
 	args = appendFlag(args, "--section", in.Section)
 	args = appendBoolFlag(args, "--json", !in.Text)
 	args = appendPositionals(args, in.Query)

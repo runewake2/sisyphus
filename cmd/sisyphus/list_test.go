@@ -155,3 +155,61 @@ func TestListAlignsColumnsForWideCharacters(t *testing.T) {
 		equal(t, column, runewidth.StringWidth(line[:at]))
 	}
 }
+
+func setUpReadyIssues(t *testing.T) *testRepo {
+	t.Helper()
+	r := newTestRepo(t)
+	r.mustRun("new", "auth-epic-test")
+	r.mustRun("new", "login-sub-test", "--parent", "auth-epic-test")
+	r.mustRun("new", "done-issue-test", "--state", "closed")
+	r.mustRun("new", "unblocked-issue-test", "--depends-on", "done-issue-test", "--parent", "auth-epic-test")
+	r.mustRun("new", "blocked-issue-test", "--depends-on", "login-sub-test", "--parent", "auth-epic-test")
+	r.mustRun("new", "started-issue-test", "--state", "in-progress", "--bookmark", "ai/work", "--parent", "auth-epic-test")
+	return r
+}
+
+func TestListReadyShowsTheIssuesThatCanStartNow(t *testing.T) {
+	r := setUpReadyIssues(t)
+
+	var rows []listRow
+	if err := json.Unmarshal([]byte(r.mustRun("list", "--ready", "--json").output), &rows); err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, row := range rows {
+		names = append(names, row.Name)
+	}
+
+	// The epic waits on its open sub-issues, blocked-issue-test waits on login-sub-test, and a closed
+	// issue is never ready.
+	equalSlices(t, []string{"login-sub-test", "unblocked-issue-test", "started-issue-test"}, names)
+}
+
+func TestListReadyMatchesTheAvailableIssuesOfGraph(t *testing.T) {
+	r := setUpReadyIssues(t)
+
+	var graph issueGraph
+	if err := json.Unmarshal([]byte(r.mustRun("graph", "auth-epic-test", "--json", "--full").output), &graph); err != nil {
+		t.Fatal(err)
+	}
+	available := map[string]bool{}
+	for _, node := range graph.Nodes {
+		if node.Available {
+			available[node.Name] = true
+		}
+	}
+	var rows []listRow
+	if err := json.Unmarshal([]byte(r.mustRun("list", "--ready", "--json").output), &rows); err != nil {
+		t.Fatal(err)
+	}
+	equal(t, len(available), len(rows))
+	for _, row := range rows {
+		isTrue(t, available[row.Name], row.Name+" is available in the graph")
+	}
+}
+
+func TestListRefusesReadyTogetherWithBlocked(t *testing.T) {
+	r := setUpReadyIssues(t)
+
+	equal(t, 1, r.run("list", "--ready", "--blocked").exit)
+}

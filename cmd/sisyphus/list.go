@@ -19,13 +19,15 @@ type listRow struct {
 // listOptions holds the filters of "sisyphus list". An empty slice or string means the filter is not given.
 // states and priorities narrow to one of the given values; tags narrows to any of the given tags. owner and
 // parent narrow to an exact match. blockedOnly narrows to issues with a dependency that is not yet closed.
+// readyOnly narrows to the issues that sisyphus graph calls available: not closed, and with no
+// dependency and no sub-issue that is not closed, so work on them can start now.
 // Every given filter applies together (AND).
 // warnings, when not nil, gets one warning for each issue in the state filter that has an invalid
 // file (see issueProblems), so that bad data is not shown as if it were good.
 type listOptions struct {
 	states, priorities, tags []string
 	owner, parent            string
-	blockedOnly              bool
+	blockedOnly, readyOnly   bool
 	warnings                 io.Writer
 }
 
@@ -46,6 +48,23 @@ func openDependencies(x *issueIndex, doc *document) []string {
 	return open
 }
 
+// parentsWithOpenSubIssues returns the full names of the issues that have a sub-issue that is not
+// closed. Such an issue waits on its sub-issues, so it is not ready.
+func parentsWithOpenSubIssues(x *issueIndex) map[string]bool {
+	parents := map[string]bool{}
+	for _, issue := range x.issues {
+		if issue.state == "closed" {
+			continue
+		}
+		if doc, err := x.document(issue); err == nil {
+			if parent := x.canonical(doc.get("parent")); parent != "" {
+				parents[parent] = true
+			}
+		}
+	}
+	return parents
+}
+
 // matchedIssue is one issue that matched a set of frontmatter filters, before formatting as a row.
 type matchedIssue struct {
 	name string
@@ -62,6 +81,10 @@ func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 	parentFilter := ""
 	if o.parent != "" {
 		parentFilter = x.canonical(o.parent)
+	}
+	var waitsOnSubIssues map[string]bool
+	if o.readyOnly {
+		waitsOnSubIssues = parentsWithOpenSubIssues(x)
 	}
 
 	var matches []matchedIssue
@@ -87,6 +110,9 @@ func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 			continue
 		}
 		if o.blockedOnly && !isBlocked(x, doc) {
+			continue
+		}
+		if o.readyOnly && (issue.state == "closed" || isBlocked(x, doc) || waitsOnSubIssues[issue.name]) {
 			continue
 		}
 		matches = append(matches, matchedIssue{name: issue.name, doc: doc})

@@ -437,9 +437,12 @@ func useColor(mode string, out io.Writer) (bool, error) {
 	return false, fmt.Errorf("--color must be auto, always, or never, not %q", mode)
 }
 
+// readyHelp is the help text of --ready in list and search.
+const readyHelp = "Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. These are the available issues of sisyphus graph."
+
 func listCommand(findRoot func() (string, error)) *cobra.Command {
 	var state, priority, tags, owner, parent string
-	var asJSON, blocked bool
+	var asJSON, blocked, ready bool
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List and filter the issues in issues/.",
@@ -468,6 +471,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 				owner:       owner,
 				parent:      parent,
 				blockedOnly: blocked,
+				readyOnly:   ready,
 				warnings:    cmd.ErrOrStderr(),
 			})
 			if asJSON {
@@ -491,13 +495,15 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&owner, "owner", "", "Only issues with exactly this owner.")
 	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
 	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
+	flags.BoolVar(&ready, "ready", false, readyHelp)
 	flags.BoolVar(&asJSON, "json", false, "Print JSON instead of a table.")
+	cmd.MarkFlagsMutuallyExclusive("blocked", "ready")
 	return cmd
 }
 
 func searchCommand(findRoot func() (string, error)) *cobra.Command {
 	var state, priority, tags, owner, parent, section string
-	var asJSON, blocked bool
+	var asJSON, blocked, ready bool
 	cmd := &cobra.Command{
 		Use:   "search [<query>]",
 		Short: "Search issues by frontmatter filters and content.",
@@ -532,6 +538,7 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 					owner:       owner,
 					parent:      parent,
 					blockedOnly: blocked,
+					readyOnly:   ready,
 					warnings:    cmd.ErrOrStderr(),
 				},
 				query:   query,
@@ -564,7 +571,9 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
 	flags.StringVar(&section, "section", "", `Restrict the query and the returned content to one section, for example "summary".`)
 	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
+	flags.BoolVar(&ready, "ready", false, readyHelp)
 	flags.BoolVar(&asJSON, "json", false, "Print JSON instead of readable text.")
+	cmd.MarkFlagsMutuallyExclusive("blocked", "ready")
 	return cmd
 }
 
