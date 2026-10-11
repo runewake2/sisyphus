@@ -34,6 +34,7 @@ Sub-issues:
 - [[merge-queue-agent]]: the first role, with [[renumber-versions-on-merge]] and [[merge-order-planner]].
 - [[project-manager-agent]], [[engineer-agent]], [[ux-researcher-agent]], [[technical-docs-agent]]: the other roles.
 - [[delegation-runner]]: the system that holds the agents and starts them.
+- [[referendum-voting]]: several role agents vote on an implementation, and a modification reruns the vote.
 
 ## Acceptance criteria
 

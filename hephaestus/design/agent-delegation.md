@@ -125,6 +125,13 @@ mechanical conflicts, check, and go on:
 report in the issue of the run: the order, what was renumbered, and what was stopped and why. A
 human checks the report and moves `main`.
 
+## Votes of several roles
+
+One role judges a change only in its own scope. A **referendum** lets several role agents vote on
+one implementation: each votes `yes`, `no`, or submits a modification, and every modification
+reruns the vote on the modified version. [[referendum]] describes it, and [[referendum-voting]]
+tracks it.
+
 ## The other roles
 
 Each of these is a separate issue, with its own design before the work.
