@@ -157,7 +157,11 @@ suggestion by itself.
 - A command that writes an issue prints the path of the file it wrote, from the repo root.
 - Warnings go to stderr, start with `Warning:`, and do not fail the command.
 - Errors go to stderr, start with `Error:`, and make the command exit with status 1.
-- `show`, `list`, `search`, `graph`, and `links` accept `--json` for output a program can read.
+- `show`, `list`, `search`, `graph`, `links`, `lint`, `claims`, and every command that changes an
+  issue accept `--json` for output a program can read.
+- `lint` also exits with status 1 when it finds problems.
+
+[[output]] has the rules for stdout, stderr, and exit codes, and the shape of each JSON output.
 - `sisyphus --version` prints the version the binary was built from, in any directory.
 - `sisyphus <command> --help` prints every flag of a command.
 

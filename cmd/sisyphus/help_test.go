@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -167,4 +168,37 @@ func TestTheAgentGuideUsesCommandsAndFlagsThatExist(t *testing.T) {
 	if checked < 10 {
 		t.Errorf("checked only %d commands; the test does not find them", checked)
 	}
+}
+
+// TestTheOutputPageNamesEveryJSONField checks that docs/output.md names each field of each JSON
+// output, so that the page stays complete when a field is added.
+func TestTheOutputPageNamesEveryJSONField(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "..", "docs", "output.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range []any{issueView{}, writeResult{}, listRow{}, searchRow{}, lineMatch{}, issueGraph{}, graphNode{}, graphEdge{}, linkRow{}, lintResult{}, lintProblem{}, claimView{}} {
+		for _, field := range jsonFields(reflect.TypeOf(value)) {
+			if !strings.Contains(string(page), "`"+field+"`") {
+				t.Errorf("docs/output.md does not name the field %s of %T", field, value)
+			}
+		}
+	}
+}
+
+// jsonFields returns the JSON names of the fields of a struct type, with the fields of embedded
+// structs.
+func jsonFields(typ reflect.Type) []string {
+	var names []string
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		if field.Anonymous {
+			names = append(names, jsonFields(field.Type)...)
+			continue
+		}
+		if name, _, _ := strings.Cut(field.Tag.Get("json"), ","); name != "" && name != "-" {
+			names = append(names, name)
+		}
+	}
+	return names
 }

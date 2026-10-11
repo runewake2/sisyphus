@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.103]] - 2026-10-11
+- Document stdout, stderr, exit codes, and every JSON shape.
+
 ## [[0.0.102]] - 2026-10-11
 - Give the MCP tools titles and annotations, and return JSON results as structured content.
 
