@@ -2,7 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
+
+	"github.com/mattn/go-runewidth"
 )
 
 func setUpListIssues(t *testing.T) *testRepo {
@@ -136,4 +139,19 @@ func namesOf(t *testing.T, output string) []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+func TestListAlignsColumnsForWideCharacters(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "wide-title-test", "--title", "Fix 日本語 text")
+	r.mustRun("new", "narrow-title-test", "--title", "Fix ascii text")
+
+	lines := r.mustRun("list").lines()
+
+	// Every row puts its state column at the same display column as the header.
+	column := strings.Index(lines[0], "state")
+	for _, line := range lines[2:] {
+		at := strings.Index(line, "open")
+		equal(t, column, runewidth.StringWidth(line[:at]))
+	}
 }

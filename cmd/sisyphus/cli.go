@@ -12,6 +12,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/runewake2/sisyphus"
 	"github.com/spf13/cobra"
 )
@@ -685,21 +686,22 @@ func writeIssueText(out io.Writer, doc *document) {
 	fmt.Fprintln(out, strings.TrimLeft(strings.Join(doc.body, "\n"), "\n"))
 }
 
-// writeTable prints cells as a table with header, padding every column to its widest cell.
+// writeTable prints cells as a table with header, padding every column to its widest cell. Widths
+// are terminal display widths, so a wide character such as a CJK letter counts as two columns.
 func writeTable(out io.Writer, header []string, cells [][]string) {
 	widths := make([]int, len(header))
 	for i, h := range header {
-		widths[i] = utf8.RuneCountInString(h)
+		widths[i] = runewidth.StringWidth(h)
 	}
 	for _, row := range cells {
 		for i, cell := range row {
-			widths[i] = max(widths[i], utf8.RuneCountInString(cell))
+			widths[i] = max(widths[i], runewidth.StringWidth(cell))
 		}
 	}
 	format := func(values []string) string {
 		padded := make([]string, len(values))
 		for i, v := range values {
-			padded[i] = v + strings.Repeat(" ", widths[i]-utf8.RuneCountInString(v))
+			padded[i] = v + strings.Repeat(" ", widths[i]-runewidth.StringWidth(v))
 		}
 		return strings.TrimRight(strings.Join(padded, "  "), " ")
 	}

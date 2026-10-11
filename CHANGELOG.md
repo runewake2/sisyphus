@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.36]] - 2026-10-11
+- Align the columns of the `list` and `links` tables for wide characters, for example CJK text.
+
 ## [[0.0.35]] - 2026-10-11
 - Reject a tag that contains a space in `sisyphus new` and `sisyphus update --tags`.
 
