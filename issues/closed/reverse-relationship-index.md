@@ -1,12 +1,12 @@
 ---
 title: "Build sub-issue and dependent lookups once per command"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: abandoned  # completed | abandoned. Set this only when state is closed.
 priority: low          # critical | high | medium | low
 effort: small          # small | medium | large | x-large
 tags: [performance, cli] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-11
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-11     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -49,6 +49,5 @@ Nothing.
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Abandoned on 2026-10-11, after a measured attempt. After [[0.0.61]] (no regular expression), [[0.0.62]] (frontmatter only), and [[0.0.63]] (parallel reads), the repeated scans only walk cached headers, so a reverse index no longer saves time. At 20,000 generated issues, a lazily built parent map and dependents map gave: closing an epic 222 → 220 ms (noise), and `list --ready` 297 → 313 ms (slower, because the map must cover closed issues too, which the old scan skipped). The change was not kept. `lint` and `graph` already build their links in one pass each.
+
