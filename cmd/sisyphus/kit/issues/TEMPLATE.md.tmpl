@@ -14,8 +14,8 @@ created: YYYY-MM-DD
 closed:                # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # The jj bookmark of the work on the issue. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [fix-login-bug].
+bookmark:              # The jj bookmark or git branch of the work on the issue. Set this when work starts.
+workspaces: []         # The jj workspaces or git worktrees where local work on the issue has happened, for example [fix-login-bug].
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.

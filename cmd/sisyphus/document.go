@@ -252,5 +252,9 @@ func (d *document) set(key, value string) {
 		d.front[i] = replacement + strings.Repeat(" ", padding) + comment
 		return
 	}
-	d.front = append(d.front, replacement)
+	// A field that the frontmatter does not have is added only to set a value, so that a template
+	// without an optional field (for example bookmark) keeps working, and clearing it adds nothing.
+	if value != "" {
+		d.front = append(d.front, replacement)
+	}
 }

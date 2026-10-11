@@ -244,7 +244,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	if err := saveIssue(root, doc, destination, destination); err != nil {
 		return "", err
 	}
-	if o.state == "in-progress" && o.bookmark == nil {
+	if o.state == "in-progress" && o.bookmark == nil && usesJJ(root) {
 		warn(warnings, noBookmarkWarning)
 	}
 	if o.state == "in-progress" {
@@ -370,7 +370,7 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 		doc.set("title", quote(*o.title))
 		setTitleHeading(doc, *o.title)
 	}
-	if state == "in-progress" && doc.get("bookmark") == "" {
+	if state == "in-progress" && doc.get("bookmark") == "" && usesJJ(root) {
 		warn(warnings, noBookmarkWarning)
 	}
 	if state == "in-progress" {
@@ -956,6 +956,13 @@ func removeEmptyDirectories(root, dir string) {
 		}
 		dir = filepath.Dir(dir)
 	}
+}
+
+// usesJJ reports whether root is the root of a jj repo or workspace. sisyphus warns about a missing
+// bookmark only there: in a repo without jj, the warning would be about a tool that is not used.
+func usesJJ(root string) bool {
+	info, err := os.Stat(filepath.Join(root, ".jj"))
+	return err == nil && info.IsDir()
 }
 
 // usesGit reports whether root is the root of a git repo (colocated git+jj, or git alone).

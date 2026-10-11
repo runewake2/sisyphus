@@ -79,7 +79,7 @@ The path of the issue's file after the update.
 
 Warnings:
 
-- The issue is in-progress but has no bookmark.
+- The issue is in-progress but has no bookmark (only in a jj repo: a `.jj` directory at the root).
 - The issue is in-progress, but some of its `depends-on` issues are not closed. The warning names
   them. The issue still starts.
 - The issue was in one state directory but its `state` field said another; both are corrected.

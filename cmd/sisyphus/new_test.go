@@ -202,6 +202,7 @@ func TestNewRejectsAResolutionForAnIssueThatIsNotClosed(t *testing.T) {
 
 func TestNewWarnsWhenAnInProgressIssueHasNoBookmark(t *testing.T) {
 	r := newTestRepo(t)
+	r.write(".jj/repo/store", "") // the warning is only for a jj repo
 
 	res := r.run("new", "started-issue-test", "--state", "in-progress")
 
@@ -396,7 +397,6 @@ func TestWriteCommandsPrintTheChangedIssueAsJSON(t *testing.T) {
 	equal(t, "[[auth-epic-test]]", last.Parent)
 	equalSlices(t, []string{"first-issue-test"}, last.DependsOn)
 	equalSlices(t, []string{
-		"The issue is in-progress but has no bookmark. Set it with --bookmark.",
 		"Issue 'fix-login-bug' is in progress, but it depends on issues that are not closed: first-issue-test.",
 	}, last.Warnings)
 }

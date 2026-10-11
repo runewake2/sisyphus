@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.77]] - 2026-10-11
+- Stop assuming jj: warn about a missing bookmark only in a jj repo, and describe the template fields for git too.
+
 ## [[0.0.76]] - 2026-10-11
 - Add `sisyphus open` to open an issue in your editor and check it after.
 

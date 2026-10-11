@@ -248,6 +248,7 @@ func TestUpdateRejectsAnInvalidPriorityOrEffort(t *testing.T) {
 
 func TestUpdateWarnsWhenAnInProgressIssueHasNoBookmark(t *testing.T) {
 	r := newTestRepo(t)
+	r.write(".jj/repo/store", "") // the warning is only for a jj repo
 	createUpdateTarget(r)
 
 	res := r.run("update", updateTarget, "in-progress")
@@ -550,4 +551,32 @@ func TestUpdateReopenFailsForAnIssueThatIsNotClosed(t *testing.T) {
 
 	equal(t, 1, res.exit)
 	contains(t, res.error, "Issue 'fix-login-bug' is open")
+}
+
+func TestNoBookmarkWarningInARepoWithoutJJ(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+
+	equal(t, "", r.mustRun("update", "fix-login-bug", "in-progress").error)
+	equal(t, "", r.mustRun("new", "other-issue-test", "--state", "in-progress").error)
+}
+
+func TestCommandsWorkWithATemplateWithoutTheJJFields(t *testing.T) {
+	r := newTestRepo(t)
+	var kept []string
+	for _, line := range strings.Split(r.read("issues/TEMPLATE.md"), "\n") {
+		if !strings.HasPrefix(line, "bookmark:") && !strings.HasPrefix(line, "workspaces:") {
+			kept = append(kept, line)
+		}
+	}
+	r.write("issues/TEMPLATE.md", strings.Join(kept, "\n"))
+
+	r.mustRun("new", "fix-login-bug")
+	r.mustRun("start", "fix-login-bug", "--owner", "alice")
+	r.mustRun("update", "fix-login-bug", "open")
+	content := r.read("issues/open/fix-login-bug.md")
+
+	isTrue(t, !strings.Contains(content, "bookmark:"), "no bookmark field is added")
+	isTrue(t, !strings.Contains(content, "workspaces:"), "no workspaces field is added")
+	equal(t, 0, r.run("lint").exit)
 }

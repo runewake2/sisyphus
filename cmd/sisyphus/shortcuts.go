@@ -26,8 +26,8 @@ func startCommand(findRoot func() (string, error)) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&owner, "owner", "", "The person or agent working on the issue.")
-	cmd.Flags().StringVarP(&bookmark, "bookmark", "b", "", "The jj bookmark of the work.")
-	cmd.Flags().StringVar(&workspace, "workspace", "", "The jj workspace where the work happens. Appended to the issue's workspace history.")
+	cmd.Flags().StringVarP(&bookmark, "bookmark", "b", "", "The jj bookmark or git branch of the work.")
+	cmd.Flags().StringVar(&workspace, "workspace", "", "The jj workspace or git worktree where the work happens. Appended to the issue's workspace history.")
 	return cmd
 }
 
