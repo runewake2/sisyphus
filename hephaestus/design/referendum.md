@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11
 - Issue: [[referendum-voting]]
-- Status: Draft. R1, R2, R4, R6, R7, and R8 are answered; R3 and R5 are not.
+- Status: Draft. All open questions (R1-R8) are answered.
 
 ## Summary
 
@@ -104,7 +104,8 @@ The other rules:
   and goes with the result.
 - **A modification is a new version.** It gets the next version number, the change ids of the new
   implementation, and the name of its author.
-- **Rounds are limited.** After a maximum number of rounds (R5), hephaestus stops the referendum
+- **Rounds are limited.** After 3 rounds (R5, answered by the human on 2026-10-11: try 3 for now),
+  hephaestus stops the referendum
   with the result `no result`, and asks a human, with every version, every gate, and every ballot.
 
 ## Result
@@ -132,7 +133,10 @@ Every referendum is recorded in the repo, as [AGENTS.md](../../AGENTS.md) asks f
 - The `Notes` of the issue get one dated line for each round and each gate, with
   `sisyphus edit <name> notes "<line>" --append`: the version, the ballots, and what changed.
 - The full record (the reviewers and their kind, the contents of each version, each gate, and each
-  ballot with its reasons) is a document that the Notes link to (R3).
+  ballot with its reasons) is a historical record that the Notes link to (R3, answered by the human
+  on 2026-10-11, for now): one file for each referendum in `referendums/` of the repo, for example
+  `referendums/2026-10-11-fix-login-bug.md`. hephaestus adds to it while the referendum runs, and
+  nobody changes it after the result. A later referendum on the same issue gets a new file.
 
 sisyphus needs no new field or command for this: `metadata`, `edit --append`, and wikilinks are
 enough. A filter on `metadata` (sisyphus issue `filter-by-metadata`) lets hephaestus find the open
@@ -169,9 +173,9 @@ A human answers a question with a reply such as "R2 yes", or another answer.
 |---|---|---|
 | R1 | What passes a referendum? | Answered by the human on 2026-10-11: every required reviewer votes `yes`; a non-required reviewer cannot fail it. |
 | R2 | When several reviewers modify in one round, gate and apply one at a time, or combine all that do not conflict? | Answered by the human on 2026-10-11: one by one, each reviewed alone, never combined. The order is the order of the reviewers, required reviewers first. Each version then has one change that every reviewer saw. |
-| R3 | Where is the full record of a referendum: a section of the issue, a document beside the issue, or a file of hephaestus? | A document beside the issue, for example `referendums/<issue-name>.md` in the repo of the issue, linked from its Notes. The issue stays readable. |
+| R3 | Where is the full record of a referendum: a section of the issue, a document beside the issue, or a file of hephaestus? | Answered by the human on 2026-10-11, for now: a historical record, one file for each referendum in `referendums/`, for example `referendums/2026-10-11-fix-login-bug.md`, linked from the Notes of the issue and never changed after the result. |
 | R4 | Who can call a referendum, and choose its required and non-required reviewers: only a human, or also a role agent, for example the merge queue before each merge? | Answered by the human on 2026-10-11: humans, and the agents that a human allows. The allowance is in the role description of the agent, which can also propose default reviewers. |
-| R5 | What is the maximum number of rounds? | 3, then a human decides. |
+| R5 | What is the maximum number of rounds? | Answered by the human on 2026-10-11: try 3 rounds, then a human decides. |
 | R6 | Can a reviewer abstain? | Answered with R1: a non-required reviewer can, when nothing is in its scope. A required reviewer cannot: anything but `yes` stops the pass. |
 | R7 | When the larger vote on a modified version fails, does the referendum fail, or does it go back to the version before the edit and vote on it again? | Answered by the human on 2026-10-11: the whole referendum fails, with the reasons. It does not go back to the version before the edit. The owner of the issue can call a new referendum. |
 | R8 | After the gate rejects a modification of a required reviewer, must that reviewer vote again on the same version, or does its `modify` count as `no`? | Answered by the human on 2026-10-11: required reviewers always vote again. The reviewer votes on the same version, `yes` or `no`, in a new round. The rounds stay limited by R5. |

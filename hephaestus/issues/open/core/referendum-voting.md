@@ -53,6 +53,8 @@ Requested by a human on 2026-10-11. One agent of one role judges a change only i
 
 2026-10-11, from the human: humans or allowed agents may call referendums (R4 in [[referendum]]). The referendum is the solution for coordinating many concurrent agents: [[agent-delegation]] and [[referendum]] now say so, and the engineer role puts its proposals to the agents of the workstreams as a referendum.
 
+2026-10-11, from the human: for now, referendums are recorded as historical records (R3), and a referendum has at most 3 rounds, to try (R5). All open questions of [[referendum]] are now answered; the decision records come with the implementation.
+
 ## Resolution
 
 <Complete this section when you close the issue.
