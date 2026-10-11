@@ -27,7 +27,7 @@ sisyphus new <name> [flags]
 | `--approver` | none | The person or agent who accepts the issue when it closes. |
 | `--workspace` | none | A jj workspace where work on the issue happens. |
 | `--parent` | none | The parent issue, if this is a sub-issue. See [[sisyphus-parent]]. |
-| `--depends-on` | none | An issue that must close first. See [[sisyphus-depends-on]]. |
+| `--depends-on` | none | Issues that must close first, comma-separated or with the flag more than once. See [[sisyphus-depends-on]]. |
 | `-d`, `--deferred-from` | none | The issue or bookmark that deferred this work. |
 | `--remote` | none | The URL of an external ticket. See [[sisyphus-remote]]. |
 | `--context` | none | Text that replaces the Context section's placeholder. |

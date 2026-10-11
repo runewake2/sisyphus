@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.43]] - 2026-10-11
+- Let `sisyphus new --depends-on` take more than one issue.
+
 ## [[0.0.42]] - 2026-10-11
 - Add `sisyphus update --add-tags` and `--remove-tags` to change single tags.
 

@@ -61,7 +61,8 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 
 func newCommand(findRoot func() (string, error)) *cobra.Command {
 	var title, state, resolution, priority, effort, tags, bookmark, deferredFrom, parent string
-	var owner, approver, workspace, remote, dependsOn, context string
+	var owner, approver, workspace, remote, context string
+	var dependsOn []string
 	var metadata map[string]string
 	cmd := &cobra.Command{
 		Use:   "new <name>",
@@ -96,7 +97,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 					approver:     optional(cmd, "approver", approver),
 					workspace:    optional(cmd, "workspace", workspace),
 					remote:       optional(cmd, "remote", remote),
-					dependsOn:    optional(cmd, "depends-on", dependsOn),
+					dependsOn:    dependsOn,
 					context:      optional(cmd, "context", context),
 					metadata:     metadata,
 				}, warnings)
@@ -117,7 +118,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&approver, "approver", "", "The person or agent who accepts the issue when it closes.")
 	flags.StringVar(&workspace, "workspace", "", "The jj workspace where local work on the issue is happening. Appended to the issue's workspace history.")
 	flags.StringVar(&remote, "remote", "", "A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.")
-	flags.StringVar(&dependsOn, "depends-on", "", "An issue that must close before this one can start. The issue must exist.")
+	flags.StringSliceVar(&dependsOn, "depends-on", nil, "Issues that must close before this one can start, comma-separated or repeated. Each issue must exist.")
 	flags.StringVar(&context, "context", "", "Replaces the Context section's placeholder with this text.")
 	flags.StringToStringVar(&metadata, "metadata", nil, `Arbitrary key=value notes, for example "session-id=abc123". Repeatable, or comma-separated.`)
 	return cmd

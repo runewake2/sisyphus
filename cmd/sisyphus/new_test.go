@@ -299,3 +299,27 @@ func TestNewInProgressWarnsAboutAnOpenDependency(t *testing.T) {
 
 	contains(t, res.error, "depends on issues that are not closed: first-issue-test.")
 }
+
+func TestNewTakesMoreThanOneDependency(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "first-issue-test")
+	r.mustRun("new", "second-issue-test")
+	r.mustRun("new", "third-issue-test")
+
+	r.mustRun("new", "comma-issue-test", "--depends-on", "first-issue-test,second-issue-test")
+	r.mustRun("new", "repeated-issue-test", "--depends-on", "first-issue-test", "--depends-on", "third-issue-test,first-issue-test")
+
+	equalSlices(t, []string{"first-issue-test", "second-issue-test"}, parseDependsOn(r.frontmatter("issues/open/comma-issue-test.md").get("depends-on")))
+	equalSlices(t, []string{"first-issue-test", "third-issue-test"}, parseDependsOn(r.frontmatter("issues/open/repeated-issue-test.md").get("depends-on")))
+}
+
+func TestNewNamesTheDependencyThatDoesNotExist(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "first-issue-test")
+
+	res := r.run("new", "second-issue-test", "--depends-on", "first-issue-test,missing-issue-test")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "'missing-issue-test' does not exist")
+	isTrue(t, !r.exists("issues/open/second-issue-test.md"), "no issue is created")
+}

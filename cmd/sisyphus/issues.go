@@ -41,7 +41,8 @@ type newOptions struct {
 	name, state, resolution, priority, effort, tags string
 	title, bookmark, deferredFrom, parent           *string
 	owner, approver, workspace                      *string
-	remote, dependsOn, context                      *string
+	remote, context                                 *string
+	dependsOn                                       []string
 	metadata                                        map[string]string
 }
 
@@ -150,12 +151,17 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 		parentValue = value
 	}
 	var dependsOnValue []string
-	if o.dependsOn != nil {
-		value, err := dependsOnValueFor(x, *o.dependsOn, o.name, warnings)
+	for _, reference := range o.dependsOn {
+		if strings.TrimSpace(reference) == "" {
+			continue
+		}
+		value, err := dependsOnValueFor(x, strings.TrimSpace(reference), o.name, warnings)
 		if err != nil {
 			return "", err
 		}
-		dependsOnValue = []string{value}
+		if !slices.Contains(dependsOnValue, value) {
+			dependsOnValue = append(dependsOnValue, value)
+		}
 	}
 
 	doc, err := loadDocument(filepath.Join(root, "issues", "TEMPLATE.md"))
@@ -208,7 +214,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	doc.set("deferred-from", deferred)
 	doc.set("parent", parentValue)
 	doc.set("remote", remoteField)
-	if o.dependsOn != nil {
+	if len(dependsOnValue) > 0 {
 		doc.set("depends-on", formatDependsOn(dependsOnValue))
 	}
 	for i, line := range doc.body {

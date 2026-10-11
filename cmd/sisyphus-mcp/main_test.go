@@ -287,3 +287,18 @@ func TestUpdateToolChangesFieldsWithoutAState(t *testing.T) {
 		t.Errorf("want priority critical and state open: %s", show)
 	}
 }
+
+func TestNewToolTakesMoreThanOneDependency(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "first-issue-test"})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "second-issue-test"})
+
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "third-issue-test", "dependsOn": "first-issue-test,second-issue-test"})
+
+	show := callTool(t, session, "sisyphus_show", map[string]any{"dir": dir, "name": "third-issue-test"})
+	if !strings.Contains(show, `"first-issue-test"`) || !strings.Contains(show, `"second-issue-test"`) {
+		t.Errorf("want both dependencies: %s", show)
+	}
+}

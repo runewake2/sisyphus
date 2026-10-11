@@ -124,7 +124,7 @@ type newArgs struct {
 	Approver     string            `json:"approver,omitempty" jsonschema:"The person or agent who accepts the issue when it closes."`
 	Workspace    string            `json:"workspace,omitempty" jsonschema:"The jj workspace where local work on the issue is happening."`
 	Remote       string            `json:"remote,omitempty" jsonschema:"A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo."`
-	DependsOn    string            `json:"dependsOn,omitempty" jsonschema:"An issue that must close before this one can start. Must already exist."`
+	DependsOn    string            `json:"dependsOn,omitempty" jsonschema:"Issues that must close before this one can start, comma-separated, for example fix-login-bug,migrate-database. Each must already exist."`
 	Context      string            `json:"context,omitempty" jsonschema:"Replaces the Context section's placeholder text with this text."`
 	Metadata     map[string]string `json:"metadata,omitempty" jsonschema:"Arbitrary key-value notes, for example a session id so work can be resumed with context later."`
 }
