@@ -2,65 +2,81 @@
 
 > **DO NOT USE.** This is a personal project and it's very vibes based atm. That may change later but for now this is primarily a project built just for me.
 
-A small CLI for managing the issues in `issues/` and managing work in a more useful way.
+sisyphus is an issue tracker that keeps the issues of a project in the repo, next to the code. Each
+issue is one Markdown file in `issues/open/`, `issues/in-progress/`, or `issues/closed/`, so issues
+change in the same commits as the code, and you can read and edit them with any editor. The
+`sisyphus` command creates issues, moves them through their states, finds and draws them, and checks
+the links between issues and documents. An MCP server gives the same commands to AI agents.
 
-## Usage
-
-Install it, then initialize a repo. Init sets up issue tracking only: `issues/TEMPLATE.md` and the
-`open`/`in-progress`/`closed` directories. A contributing guide, agent rules, versioning, CI, and
-GitHub Actions workflows are a separate concern of a project-scaffolding template, not of sisyphus.
+## Install
 
 ```bash
 go install github.com/runewake2/sisyphus/cmd/sisyphus@latest
+```
+
+Then, in your repo:
+
+```bash
 sisyphus init
 ```
 
-Create and move issues through `issues/open/`, `issues/in-progress/`, and `issues/closed/`:
+`init` writes `issues/TEMPLATE.md` and the three state directories, and nothing else.
 
-```bash
-sisyphus new <issue-name> --title "<title>" --priority high --tags "<component>"
-sisyphus update <issue-name> in-progress --bookmark <bookmark> --owner <you>
-sisyphus update <issue-name> closed --resolution completed   # or: abandoned
-sisyphus edit <issue-name> resolution "<what was done, or why it stopped>"
-sisyphus show <issue-name>
+## A first session
+
+```console
+$ sisyphus new --title "Fix the login bug" --tags bug --priority high
+issues/open/fix-login-bug.md
+$ sisyphus new --title "Add a dark mode" --tags feature
+issues/open/add-dark-mode.md
+$ sisyphus start fix-login-bug --owner alice
+issues/in-progress/fix-login-bug.md
+$ sisyphus list
+name           title              state        priority  owner  tags
+-------------  -----------------  -----------  --------  -----  -------
+add-dark-mode  Add a dark mode    open         medium           feature
+fix-login-bug  Fix the login bug  in-progress  high      alice  bug
+$ sisyphus close fix-login-bug -m "The session cache now expires after a password reset."
+issues/closed/fix-login-bug.md
+$ sisyphus show fix-login-bug
+title:      Fix the login bug
+state:      closed
+resolution: completed
+priority:   high
+effort:     medium
+tags:       [bug]
+created:    2026-10-11
+closed:     2026-10-11
+owner:      alice
+
+# Fix the login bug
+
+## Resolution
+
+The session cache now expires after a password reset.
 ```
 
-Find issues:
+The name of each issue comes from its title. Each command that changes an issue prints the path of
+the file, and moves the file when the state changes.
 
-```bash
-sisyphus list --state open,in-progress --priority critical,high
-sisyphus list --ready --state open      # what can start now
-sisyphus search "timeout" --section summary
-```
+## The main commands
 
-Relate an issue to another issue, or to an external tracker:
+| To | Run |
+|---|---|
+| Create an issue | `sisyphus new --title "<title>"` |
+| Start, close, or abandon it | `sisyphus start <name>`, `sisyphus close <name>`, `sisyphus abandon <name>` |
+| Change its fields | `sisyphus update <name> --priority high --add-tags auth` |
+| Write in a section | `sisyphus edit <name> notes "<text>" --append`, or `sisyphus open <name>` for your editor |
+| See one issue | `sisyphus show <name>` |
+| Find issues | `sisyphus list --ready`, `sisyphus search timeout` |
+| Relate issues | `sisyphus parent <name> <epic>`, `sisyphus depends-on <name> <other>` |
+| Draw an issue and its relatives | `sisyphus graph <name>` |
+| Check the repo | `sisyphus lint` |
 
-```bash
-sisyphus parent <issue-name> <parent-issue-name>
-sisyphus depends-on <issue-name> <blocking-issue-name>
-sisyphus remote <issue-name> <url>
-```
-
-Draw an issue, everything below it, and the path above it in the terminal. On an epic, that is the
-whole epic:
-
-```bash
-sisyphus graph <issue-name>
-sisyphus graph <issue-name> --full
-```
-
-Check wikilinks:
-
-```bash
-sisyphus resolve "[[<issue-name>]]"
-sisyphus links <file>
-sisyphus lint                      # every issue and every wikilink in the repo
-```
-
-Run `sisyphus <command> --help` for all options on any command, and see [[commands]] (`docs/`)
-for every command in detail. See [[issue-format]] for the fields, states, and sections of an issue,
-and how to change the template. See [[CONTRIBUTING]] for the full
-workflow: the design log, decisions, versioning, the changelog, wikilinks, issues, and jj.
+Every command has `--help` with examples. The commands that change an issue take `--json`, and the
+commands that read issues print JSON with `--json`, for scripts. [docs/commands.md](docs/commands.md)
+describes every command, and [docs/issue-format.md](docs/issue-format.md) describes the issue file:
+its fields, states, and sections, and what you can change in the template.
 
 ## Shell completion
 
@@ -71,7 +87,7 @@ PowerShell, and Nushell. For bash, add this line to `~/.bashrc`:
 source <(sisyphus completion bash)
 ```
 
-See [[sisyphus-completion]] for the other shells.
+See [docs/sisyphus-completion.md](docs/sisyphus-completion.md) for the other shells.
 
 ## Obsidian
 
@@ -84,30 +100,28 @@ it's still an experiment on if that works out.
 - sisyphus resolves wikilinks the way Obsidian does: `[[name]]`, `[[name#Heading]]`, and
   `[[name|text]]` match a file by name in any directory, ignoring case. A link to an issue keeps
   working when the issue moves between `open/`, `in-progress/`, and `closed/`.
-  `sisyphus links <file>` reports any link that does not resolve.
+  `sisyphus links <file>` reports any link that does not resolve, and `sisyphus lint` checks every
+  file in the repo.
 - Like Obsidian, sisyphus ignores wikilinks inside code blocks and inline code.
 - In frontmatter, a wikilink is quoted (`parent: "[[some-epic]]"`) so the YAML stays valid.
   sisyphus writes them that way.
-- Obsidian keeps its own settings in `.obsidian/`. Those are per-user, so keep them out of version
-  control; this repo ignores them.
+- Obsidian keeps its own settings in `.obsidian/`. Those are per-user, so add `.obsidian/` to your
+  `.gitignore`.
 
 ## MCP server
 
-`sisyphus-mcp` gives an agent every `sisyphus` command above as an MCP tool, over stdio. It is a
-thin wrapper: each tool shells out to the `sisyphus` binary, so it needs `sisyphus` installed and on
-`PATH` too.
+`sisyphus-mcp` gives an AI agent every `sisyphus` command as an MCP tool, over stdio. It runs the
+`sisyphus` binary, so install both:
 
 ```bash
 go install github.com/runewake2/sisyphus/cmd/sisyphus@latest
 go install github.com/runewake2/sisyphus/cmd/sisyphus-mcp@latest
+claude mcp add sisyphus -- sisyphus-mcp      # Claude Code
 ```
 
-Add it to an MCP-compatible client, for example Claude Code:
+[docs/sisyphus-mcp.md](docs/sisyphus-mcp.md) tells how to set up other clients, lists the tools,
+and shows how warnings and errors come back, with an example session and troubleshooting.
 
-```bash
-claude mcp add sisyphus -- sisyphus-mcp
-```
+## Contributing
 
-Each tool takes the same arguments as the command it wraps, and an optional `dir`: the repo to act
-on. See [[sisyphus-mcp]] for other clients, the tools, how warnings and errors come back, an example
-session, and troubleshooting.
+To work on sisyphus itself, read [CONTRIBUTING.md](CONTRIBUTING.md).

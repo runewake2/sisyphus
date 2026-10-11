@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -87,5 +88,30 @@ func TestEveryCommandPageHasTheSameSectionsAndItsFlags(t *testing.T) {
 				t.Errorf("docs/sisyphus-%s.md: --%s is not in the Flags table", cmd.Name(), flag.Name)
 			}
 		})
+	}
+}
+
+// TestReadmeLinksWorkOnGitHub checks the README, which GitHub shows: GitHub does not render a
+// wikilink, so the README has none outside code, and each relative Markdown link names a file.
+func TestReadmeLinksWorkOnGitHub(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := splitLines(string(content))
+	for _, link := range wikilinks(lines) {
+		t.Errorf("README.md:%d: the wikilink %s does not render on GitHub; use a Markdown link", link.line, link.link)
+	}
+	markdownLink := regexp.MustCompile(`\]\(([^)#]+)(#[^)]*)?\)`)
+	for _, index := range outsideCodeFences(lines) {
+		for _, match := range markdownLink.FindAllStringSubmatch(lines[index], -1) {
+			target := match[1]
+			if strings.Contains(target, "://") {
+				continue
+			}
+			if _, err := os.Stat(filepath.Join("..", "..", target)); err != nil {
+				t.Errorf("README.md:%d: the link target %s does not exist", index+1, target)
+			}
+		}
 	}
 }

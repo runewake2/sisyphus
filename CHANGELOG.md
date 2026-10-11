@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.83]] - 2026-10-11
+- Rewrite the README for users, with a first session and links that work on GitHub.
+
 ## [[0.0.82]] - 2026-10-11
 - Document MCP client setup, results, an example session, and troubleshooting for sisyphus-mcp.
 
