@@ -471,3 +471,29 @@ func TestUpdateRejectsATitleWithALineBreak(t *testing.T) {
 	equal(t, 1, res.exit)
 	equal(t, "Fix login", r.frontmatter("issues/open/fix-login-bug.md").get("title"))
 }
+
+func TestUpdateAddsAndRemovesSingleTags(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--tags", "auth,ui")
+
+	r.mustRun("update", "fix-login-bug", "--add-tags", "bug,auth", "--remove-tags", "ui,not-there")
+
+	equal(t, "[auth, bug]", r.frontmatter("issues/open/fix-login-bug.md").get("tags"))
+}
+
+func TestUpdateRefusesTagsTogetherWithAddTags(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--tags", "auth")
+
+	res := r.run("update", "fix-login-bug", "--tags", "bug", "--add-tags", "ui")
+
+	equal(t, 1, res.exit)
+	equal(t, "[auth]", r.frontmatter("issues/open/fix-login-bug.md").get("tags"))
+}
+
+func TestUpdateRejectsAnAddedTagWithASpace(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+
+	equal(t, 1, r.run("update", "fix-login-bug", "--add-tags", "needs review").exit)
+}

@@ -246,6 +246,7 @@ type updateOptions struct {
 	resolution                           string
 	bookmark, owner, approver, workspace *string
 	priority, effort, tags, title        *string
+	addTags, removeTags                  string
 	metadata                             map[string]string
 }
 
@@ -319,6 +320,34 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 			return "", err
 		}
 		doc.set("tags", formatTags(*o.tags))
+	}
+	if o.addTags != "" || o.removeTags != "" {
+		if err := validateTags(o.addTags); err != nil {
+			return "", err
+		}
+		tags := parseList(doc.get("tags"))
+		for _, tag := range parseList(o.addTags) {
+			if !slices.Contains(tags, tag) {
+				tags = append(tags, tag)
+			}
+		}
+		removed := parseList(o.removeTags)
+		tags = slices.DeleteFunc(tags, func(tag string) bool { return slices.Contains(removed, tag) })
+		doc.set("tags", formatList(tags))
+	}
+	if o.addTags != "" || o.removeTags != "" {
+		if err := validateTags(o.addTags); err != nil {
+			return "", err
+		}
+		tags := parseList(doc.get("tags"))
+		for _, tag := range parseList(o.addTags) {
+			if !slices.Contains(tags, tag) {
+				tags = append(tags, tag)
+			}
+		}
+		removed := parseList(o.removeTags)
+		tags = slices.DeleteFunc(tags, func(tag string) bool { return slices.Contains(removed, tag) })
+		doc.set("tags", formatList(tags))
 	}
 	if o.title != nil {
 		if err := validateTitle(*o.title); err != nil {

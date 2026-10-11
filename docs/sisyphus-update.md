@@ -27,6 +27,8 @@ resolution and its closed date. The warnings about closing an issue come only wh
 | `--effort` | A new effort: `small`, `medium`, `large`, or `x-large`. |
 | `-t`, `--title` | A new title. It changes the `title` field and the first `#` heading of the body. The same rules as for `sisyphus new --title` apply. |
 | `--tags` | New tags, comma-separated. They replace the old tags. A tag cannot contain a space. |
+| `--add-tags` | Tags to add, comma-separated. The other tags stay, in their order. Not with `--tags`. |
+| `--remove-tags` | Tags to remove, comma-separated. A tag that is not there is not an error. Not with `--tags`. |
 | `--metadata` | `key=value` notes to add or change. Repeat the flag, or separate pairs with commas. |
 
 A flag you do not give leaves its field as it is, except where the rules below say otherwise.
@@ -86,6 +88,7 @@ sisyphus update fix-login-bug in-progress --bookmark ai/fix-login-bug --owner al
 # Re-prioritize without changing state
 sisyphus update fix-login-bug in-progress --priority critical --tags bug,auth
 sisyphus update fix-login-bug --effort small            # the state does not change
+sisyphus update fix-login-bug --add-tags bug --remove-tags triage
 
 # Finish, or give up
 sisyphus update fix-login-bug closed

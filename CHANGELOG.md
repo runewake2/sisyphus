@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.42]] - 2026-10-11
+- Add `sisyphus update --add-tags` and `--remove-tags` to change single tags.
+
 ## [[0.0.41]] - 2026-10-11
 - Add `sisyphus update --title` to change the title in the field and in the first heading of the body.
 
