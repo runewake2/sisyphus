@@ -22,7 +22,7 @@ remote:                # Optional. A URL: the GitHub issue or Jira ticket that t
 
 ## Summary
 
-Compute the merge order of a set of bookmarks: dependencies between their issues first, stacked bookmarks in their order, then the bookmark that conflicts with the fewest others, then the oldest. Output the order with the reason for each place, so that a human can check it.
+Compute the merge order of a set of tasks, each with its bookmark: dependencies between their issues first, stacked bookmarks in their order, then the bookmark that conflicts with the fewest others, then the oldest. Output the order with the reason for each place, so that a human can check it.
 
 ## Context
 
@@ -37,7 +37,7 @@ A cycle of dependencies between bookmarks is an error that names the issues. Thi
 
 ## Acceptance criteria
 
-- [ ] Given bookmarks, it prints the order and the reason for each place, as text and as JSON.
+- [ ] Given a set of tasks, it prints the order of their bookmarks and the reason for each place, as text and as JSON.
 - [ ] Dependencies and stacks always come first; the overlap only orders the rest.
 - [ ] A cycle is an error that names the issues.
 - [ ] Tests cover each rule with fake bookmarks.

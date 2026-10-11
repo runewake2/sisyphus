@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11
 - Issue: [[delegate-issues-to-agents]]
-- Status: Draft. Q1 and Q2 are answered; the other open questions at the end are not.
+- Status: Draft. Q1, Q2, and Q3 are answered; the other open questions at the end are not.
 
 ## Summary
 
@@ -17,7 +17,7 @@ document is part of hephaestus, except generic issue data that hephaestus asks s
 
 | Role | Id | What it does | Issue |
 |---|---|---|---|
-| Merge queue | `merge-queue` | Takes the finished work of many parallel workspaces and merges it, one change line at a time, in the best order. | [[merge-queue-agent]] |
+| Merge queue | `merge-queue` | Takes a set of tasks, done in parallel, and makes one linear history of their work, in the best order. It never moves `main`. | [[merge-queue-agent]] |
 | Project manager | `project-manager` | Consolidates and focuses the issues: merges duplicates, splits large work, sets priorities, and keeps epics current. | [[project-manager-agent]] |
 | Engineer | `engineer` | Takes two or more concurrent workstreams and organizes their work so that all of them go in the same direction. | [[engineer-agent]] |
 | UX researcher | `ux-researcher` | Finds out how people and agents use what is being built, and files issues for problems and improvements. | [[ux-researcher-agent]] |
@@ -50,7 +50,8 @@ runs.
    ([docs/sisyphus-claims.md](../../docs/sisyphus-claims.md)).
 4. **Humans keep the code host and `main`.** No agent pushes, opens pull requests, or moves `main`
    unless a human tells it to. An agent prepares the result, and a human accepts it. A human can
-   give one role more authority later, as a recorded decision.
+   give one role more authority later, as a recorded decision, except the merge queue, which never
+   moves `main` (Q3).
 5. **Every result is in the repo.** An agent records what it did in the issue (`Notes`,
    `Resolution`), in decision records, and in the changelog, as
    [CONTRIBUTING.md](../../CONTRIBUTING.md) asks. A report that exists only in a chat is lost.
@@ -76,7 +77,7 @@ This is a draft; [[delegation-model]] decides it. The proposed model:
   tools it may use, the points where it must ask a human, and its prompt. hephaestus turns this
   file into an agent, for example a Claude Code subagent.
 - Some roles also create their own work. For example, the technical docs agent looks at each issue
-  that closes, and the merge queue looks at each bookmark whose issues are all closed.
+  that closes. The merge queue does not: it works only on the set of tasks that it is given.
 - hephaestus starts the agents on a trigger (a schedule, a close, or a human): [[delegation-runner]].
 
 ## What hephaestus needs from sisyphus
@@ -98,10 +99,15 @@ A new need goes to sisyphus only if it is generic issue data. Everything else is
 
 The first role. [[merge-queue-agent]] tracks it.
 
-**Input:** the bookmarks of finished work: bookmarks ahead of `main` whose issues are all closed,
-whose tests pass, and whose lint is clean. A human can also give it a list of bookmarks.
+**Job:** the merge queue's only job is to make one linear history from a set of tasks. It never
+moves `main` (Q3, answered by the human on 2026-10-11), and it does nothing else: it does not
+choose the tasks, push, or change the work beyond the merge.
 
-**Order:** the merge queue merges one bookmark at a time, in an order that keeps the work correct
+**Input:** a set of tasks: sisyphus issues, each with the bookmark of its work (the `bookmark`
+field), whose tests pass and whose lint is clean. A human or an allowed agent gives the set, or
+delegates the tasks to `merge-queue`.
+
+**Order:** the merge queue merges the bookmark of one task at a time, in an order that keeps the work correct
 and the conflicts small ([[merge-order-planner]]):
 
 1. Dependencies first: when an issue of one bookmark depends on an issue of another
@@ -125,9 +131,10 @@ mechanical conflicts, check, and go on:
 - After each rebase: the checks of the repo must pass, for example `gofmt`, `go vet`, the tests,
   and `sisyphus lint`.
 
-**Output:** a bookmark `merge-queue/<date>` with all merged changes in one line on `main`, and a
-report in the issue of the run: the order, what was renumbered, and what was stopped and why. A
-human checks the report and moves `main`.
+**Output:** a linear history: a bookmark `merge-queue/<date>` with all merged changes in one line
+on `main`, and a report in the issues of the tasks: the order, what was renumbered, and what was
+stopped and why. What happens to the bookmark next is not the merge queue's job: a human checks it
+and moves `main`.
 
 ## Votes of several roles
 
@@ -168,8 +175,8 @@ A human answers a question with a reply such as "Q1 yes", or another answer.
 |---|---|---|---|
 | Q1 | How is an issue delegated to a role: the `metadata` key `delegate`, a tag, or the `owner`? | [[delegation-model]] | Answered by the human on 2026-10-11: the `metadata` key `delegate`, the role assigned to own the task (`metadata: {delegate: merge-queue}`), with the sisyphus filter `filter-by-metadata`. Not a frontmatter field of its own. The `owner` stays the agent instance that works on it. |
 | Q2 | Where are the roles described: `hephaestus/roles/<role>.md`, `.claude/agents/`, or in code? | [[delegation-model]] | Answered by the human on 2026-10-11: each role is a Markdown file of its own, `hephaestus/roles/<role>.md`, readable by people and by any runtime. hephaestus can generate `.claude/agents/` files from it. |
-| Q3 | May the merge queue move `main`, or only prepare a bookmark? | [[merge-queue-agent]] | Only prepare `merge-queue/<date>` and a report. A human moves `main`, as [AGENTS.md](../../AGENTS.md) asks now. |
+| Q3 | May the merge queue move `main`, or only prepare a bookmark? | [[merge-queue-agent]] | Answered by the human on 2026-10-11: the merge queue never moves `main`. Its only job is to make a linear history from a set of tasks. |
 | Q4 | What runs the agents: Claude Code subagents, the Claude Agent SDK, Claude Managed Agents, or local models? | [[delegation-runner]] | Start with Claude Code subagents, started by a human, then hephaestus on the Agent SDK. Local models only for roles that a task suite shows they can do. |
 | Q5 | Which roles start by themselves, and on what trigger? | [[delegation-runner]] | Merge queue: on a human request, later on a schedule. Technical docs: on each close. The others: on a human request. |
-| Q6 | Does the merge queue merge the work of humans too, or only of agents? | [[merge-queue-agent]] | Any bookmark that a human puts in its input list, and all `samw/ai/*` bookmarks of finished work. |
+| Q6 | Does the merge queue merge the work of humans too, or only of agents? | [[merge-queue-agent]] | With Q3, its input is a set of tasks, so: every task in the set, whoever did its work. |
 | Q7 | Is hephaestus a Go program in the sisyphus module (`cmd/hephaestus`) or a module of its own in `hephaestus/`? | [[delegate-issues-to-agents]] | A module of its own in `hephaestus/`, so that it can only use sisyphus through its CLI and MCP server, as any other client. |

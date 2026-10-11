@@ -22,11 +22,11 @@ remote:                # Optional. A URL: the GitHub issue or Jira ticket that t
 
 ## Summary
 
-Add a merge queue role: an agent that takes the finished work of many parallel workspaces and merges it, one bookmark at a time, in the order that keeps the work correct and the conflicts small, onto one line based on `main`. It is the first role of [[delegate-issues-to-agents]].
+Add a merge queue role: an agent whose only job is to make one linear history from a set of tasks: it merges the bookmark of each task, one at a time, in the order that keeps the work correct and the conflicts small, onto one line based on `main`. It never moves `main`. It is the first role of [[delegate-issues-to-agents]].
 
 ## Context
 
-In this repo, the bookmarks of several workspaces were merged by hand, and each merge had to renumber the SHAME versions that the workspaces picked at the same time (`CONTRIBUTING.md` (Changelog)). [[agent-delegation#Merge queue]] describes the role: its input (bookmarks whose issues are all closed and whose checks pass), its order, how it handles each merge, and its output (a bookmark `merge-queue/<date>` and a report). A human moves `main` (Q3).
+In this repo, the bookmarks of several workspaces were merged by hand, and each merge had to renumber the SHAME versions that the workspaces picked at the same time (`CONTRIBUTING.md` (Changelog)). [[agent-delegation#Merge queue]] describes the role: its input (a set of tasks, each with its bookmark), its order, how it handles each merge, and its output (a bookmark `merge-queue/<date>` and a report). It never moves `main` (Q3, answered by the human).
 
 Parts:
 
@@ -34,16 +34,16 @@ Parts:
 - [[renumber-versions-on-merge]]: resolve the conflicts of versions, changelogs, and decision record numbers.
 - This issue: the role itself, in `hephaestus/roles/merge-queue.md`, and its runs in a scratch workspace.
 
-The merge queue does not depend on [[delegation-model]] to start: a human can start it by hand on a list of bookmarks. When [[delegation-model]] is done, it also takes its work from issues delegated to `merge-queue`.
+The merge queue does not depend on [[delegation-model]] to start: a human can start it by hand on a set of tasks. When [[delegation-model]] is done, it also takes its work from issues delegated to `merge-queue`.
 
 ## Acceptance criteria
 
-- [ ] Given a list of bookmarks, the merge queue makes `merge-queue/<date>`: one line on `main` with every bookmark that it could merge, in the order of [[merge-order-planner]].
+- [ ] Given a set of tasks, the merge queue makes `merge-queue/<date>`: one linear history on `main` with the work of every task that it could merge, in the order of [[merge-order-planner]].
 - [ ] After each rebase, `gofmt`, `go vet`, the tests, and `sisyphus lint` pass; a bookmark that fails is left out, with the reason in the notes of its issues.
 - [ ] It renumbers versions and decision records with [[renumber-versions-on-merge]].
 - [ ] Each run records a report: the order, the renumbering, and what was left out and why.
-- [ ] It never moves `main` or pushes, unless a human decides otherwise (Q3).
-- [ ] A test run merges at least three real bookmarks of this repo, and a human checks the result.
+- [ ] It never moves `main` and never pushes (Q3).
+- [ ] A test run merges the work of at least three real tasks of this repo, and a human checks the result.
 
 ## Out of scope
 
@@ -52,7 +52,7 @@ The merge queue does not depend on [[delegation-model]] to start: a human can st
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-11, from the human: the merge queue never moves main. Its only job is to create a linear history from a set of tasks. This answers Q3 of [[agent-delegation]]; its input is now a set of tasks, not a list of bookmarks.
 
 ## Resolution
 
