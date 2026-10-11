@@ -876,10 +876,30 @@ func saveIssue(root string, doc *document, from, to string) error {
 	if from == to {
 		return nil
 	}
+	var err error
 	if usesGit(root) && gitTracks(root, from) {
-		return gitMove(root, from, to)
+		err = gitMove(root, from, to)
+	} else {
+		err = os.Rename(from, to)
 	}
-	return os.Rename(from, to)
+	if err != nil {
+		return err
+	}
+	removeEmptyDirectories(root, filepath.Dir(from))
+	return nil
+}
+
+// removeEmptyDirectories removes dir and each directory above it that is now empty, up to but not
+// including the state directory, for example issues/open. os.Remove fails for a directory that is
+// not empty, which ends the walk.
+func removeEmptyDirectories(root, dir string) {
+	issues := filepath.Join(root, "issues")
+	for filepath.Dir(dir) != issues && dir != issues && strings.HasPrefix(dir, issues) {
+		if os.Remove(dir) != nil {
+			return
+		}
+		dir = filepath.Dir(dir)
+	}
 }
 
 // usesGit reports whether root is the root of a git repo (colocated git+jj, or git alone).

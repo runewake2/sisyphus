@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.56]] - 2026-10-11
+- Remove the empty subdirectories that a move of an issue leaves behind.
+
 ## [[0.0.55]] - 2026-10-11
 - Store tags in lowercase, and compare tags without regard to case.
 

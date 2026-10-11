@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"os"
 	"slices"
 	"testing"
 )
@@ -192,4 +193,28 @@ func TestResolveRefusesABareLinkThatMatchesTwoIssues(t *testing.T) {
 
 	equal(t, 1, res.exit)
 	contains(t, res.error, "is ambiguous")
+}
+
+func TestAMoveRemovesTheSubdirectoriesThatItLeavesEmpty(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "web/auth/fix-login-bug")
+	r.mustRun("new", "web/other-issue-test")
+
+	r.mustRun("update", "fix-login-bug", "closed")
+
+	isTrue(t, !r.exists("issues/open/web/auth"), "the empty directory web/auth is gone")
+	isTrue(t, fileExists(r.pathOf("issues/open/web/other-issue-test.md")), "web stays: it still has an issue")
+	isTrue(t, r.exists("issues/closed/web/auth/fix-login-bug.md"), "the issue moved")
+}
+
+func TestAMoveKeepsTheStateDirectory(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "web/fix-login-bug")
+
+	r.mustRun("update", "fix-login-bug", "closed")
+
+	_, err := os.Stat(r.pathOf("issues/open"))
+	isTrue(t, err == nil, "issues/open stays")
+	_, err = os.Stat(r.pathOf("issues/open/web"))
+	isTrue(t, os.IsNotExist(err), "issues/open/web is gone")
 }
