@@ -365,3 +365,25 @@ func TestUpdateRejectsATagWithASpace(t *testing.T) {
 	contains(t, res.error, "'needs-review'")
 	equal(t, "[bug]", r.frontmatter("issues/open/fix-login-bug.md").get("tags"))
 }
+
+func TestUpdateToOpenFailsForAnOwnerOrABookmark(t *testing.T) {
+	for _, flag := range []string{"--owner", "--bookmark"} {
+		r := newTestRepo(t)
+		r.mustRun("new", "fix-login-bug", "--state", "in-progress", "--owner", "alice", "--bookmark", "ai/login")
+
+		res := r.run("update", "fix-login-bug", "open", flag, "carol")
+
+		equal(t, 1, res.exit)
+		contains(t, res.error, "An open issue has no owner and no bookmark")
+		isTrue(t, r.exists("issues/in-progress/fix-login-bug.md"), "the issue does not move")
+	}
+}
+
+func TestUpdateToOpenStillAcceptsAnEmptyOwner(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--state", "in-progress", "--owner", "alice", "--bookmark", "ai/login")
+
+	r.mustRun("update", "fix-login-bug", "open", "--owner", "")
+
+	equal(t, "", r.frontmatter("issues/open/fix-login-bug.md").get("owner"))
+}

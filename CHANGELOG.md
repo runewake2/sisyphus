@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.37]] - 2026-10-11
+- Fail `sisyphus new` and `sisyphus update` when an open issue would get an owner or a bookmark.
+
 ## [[0.0.36]] - 2026-10-11
 - Align the columns of the `list` and `links` tables for wide characters, for example CJK text.
 

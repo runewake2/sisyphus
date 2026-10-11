@@ -31,8 +31,9 @@ var (
 )
 
 const (
-	stateDirectoryList = "issues/open, issues/in-progress, or issues/closed"
-	noBookmarkWarning  = "The issue is in-progress but has no bookmark. Set it with --bookmark."
+	openWorkFieldsError = "An open issue has no owner and no bookmark: nobody works on it yet. Leave out --owner and --bookmark, or give the state in-progress."
+	stateDirectoryList  = "issues/open, issues/in-progress, or issues/closed"
+	noBookmarkWarning   = "The issue is in-progress but has no bookmark. Set it with --bookmark."
 )
 
 // newOptions holds the values of "sisyphus new". An empty resolution and a nil pointer mean that the option was not given.
@@ -64,6 +65,16 @@ func validName(name string) bool {
 	return namePattern.MatchString(parts[len(parts)-1])
 }
 
+// checkOpenWorkFields fails when an open issue would get an owner or a bookmark. Those fields
+// describe active work, so sisyphus clears them for an open issue; a value that the user gave must
+// not be dropped without a message.
+func checkOpenWorkFields(state string, owner, bookmark *string) error {
+	if state == "open" && (valueOrEmpty(owner) != "" || valueOrEmpty(bookmark) != "") {
+		return errors.New(openWorkFieldsError)
+	}
+	return nil
+}
+
 // validateTitle rejects a title that the frontmatter, the "# Title" heading, and the list table
 // cannot show on one line: an empty title, or one with a line break, a tab, or another control
 // character.
@@ -92,6 +103,9 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 		return "", err
 	}
 	if err := validateTags(o.tags); err != nil {
+		return "", err
+	}
+	if err := checkOpenWorkFields(o.state, o.owner, o.bookmark); err != nil {
 		return "", err
 	}
 
@@ -223,6 +237,9 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	}
 	resolution := resolveResolution(state, o.resolution)
 	if err := checkResolution(state, resolution, "Set --resolution only when the new state is closed."); err != nil {
+		return "", err
+	}
+	if err := checkOpenWorkFields(state, o.owner, o.bookmark); err != nil {
 		return "", err
 	}
 	if recorded := doc.get("state"); recorded != current.state {

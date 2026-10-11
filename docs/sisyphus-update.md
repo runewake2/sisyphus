@@ -42,7 +42,7 @@ A flag you do not give leaves its field as it is, except where the rules below s
 
 | Field | On `open` | On `in-progress` or `closed` |
 |---|---|---|
-| `bookmark`, `owner` | Cleared: nobody is working on the issue. | Set if the flag is given; otherwise kept. |
+| `bookmark`, `owner` | Cleared: nobody is working on the issue. A value in `--owner` or `--bookmark` is an error. | Set if the flag is given; otherwise kept. |
 | `workspaces` | Kept. | Kept. |
 | `approver` | Set if the flag is given; otherwise kept. | Same. |
 | `metadata` | Merged: given keys are added or replaced. | Same. |

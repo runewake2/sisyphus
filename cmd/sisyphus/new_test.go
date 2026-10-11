@@ -280,3 +280,13 @@ func TestNewRejectsATagWithASpace(t *testing.T) {
 	contains(t, res.error, "'needs-review'")
 	isTrue(t, !r.exists("issues/open/fix-login-bug.md"), "no issue is created")
 }
+
+func TestNewOpenIssueFailsForAnOwnerOrABookmark(t *testing.T) {
+	r := newTestRepo(t)
+
+	res := r.run("new", "fix-login-bug", "--owner", "alice")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "An open issue has no owner and no bookmark")
+	isTrue(t, !r.exists("issues/open/fix-login-bug.md"), "no issue is created")
+}
