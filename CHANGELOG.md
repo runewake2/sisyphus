@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.88]] - 2026-10-11
+- Write issue files atomically, and lock the repo while a command changes issues.
+
 ## [[0.0.87]] - 2026-10-11
 - Refuse to start an issue that another owner has in progress, unless --take is given.
 

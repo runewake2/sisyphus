@@ -841,7 +841,8 @@ func initCommand(directory *string) *cobra.Command {
 	return cmd
 }
 
-// printPath finds the repo root, runs the operation, and prints the path of the file that the operation
+// printPath finds the repo root, runs the operation while it holds the lock of the repo (see
+// lockIssues), and prints the path of the file that the operation
 // wrote. With --json (see addJSONFlag), it prints the changed issue as show --json does, with its path
 // and the warnings, instead of the path and warnings on stderr.
 func printPath(cmd *cobra.Command, findRoot func() (string, error), operation func(root string, warnings io.Writer) (string, error)) error {
@@ -855,7 +856,12 @@ func printPath(cmd *cobra.Command, findRoot func() (string, error), operation fu
 	if asJSON {
 		warnings = &collected
 	}
+	unlock, err := lockIssues(root)
+	if err != nil {
+		return err
+	}
 	path, err := operation(root, warnings)
+	unlock()
 	if err != nil {
 		return err
 	}

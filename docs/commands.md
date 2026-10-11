@@ -80,6 +80,23 @@ Error: Cannot find the repo root. Run sisyphus in a directory below the one that
 | `SISYPHUS_OWNER` | The owner of an issue that starts, when `--owner` is not given: [[sisyphus-start]], `update <name> in-progress`, and `new --state in-progress`. `list --mine` and `search --mine` filter on it. An agent harness can set it once for each agent, so that every claim has an owner. |
 | `VISUAL`, `EDITOR` | The editor of `sisyphus edit <name>`. |
 
+## Several commands at the same time
+
+Several people and agents can run sisyphus in one repo at the same time:
+
+- A command writes an issue file to a temporary file and renames it, so a command that reads at the
+  same time sees the old file or the new file, never a part of one.
+- A command that changes issues holds a lock from the time it reads them to the time it writes
+  them, so two changes cannot overwrite each other. Of two starts of one issue at the same time,
+  one succeeds and the other is refused ([[sisyphus-start]]). The lock is a file outside the working
+  copy: `sisyphus/lock` in the jj repo directory (`.jj/repo`) or in the git directory, which every
+  workspace and worktree shares. In a directory without jj or git, it is `issues/.lock`.
+- A command waits up to 10 seconds for the lock, then fails with the path of the lock. A lock older
+  than 30 seconds is left from a command that stopped, and is removed.
+- `sisyphus edit <name>` in your editor does not hold the lock while the editor is open.
+
+See [[0023-lock-and-write-issues-atomically]].
+
 ## Invalid values
 
 A `state`, `priority`, `effort`, or `resolution` that is not valid is an error that lists the valid

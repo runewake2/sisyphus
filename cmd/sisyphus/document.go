@@ -161,7 +161,7 @@ func (d *document) save(path string) error {
 	if d.headerOnly {
 		return fmt.Errorf("internal error: %s was read without its body and cannot be written", path)
 	}
-	return os.WriteFile(path, []byte(d.render()), 0o644)
+	return writeFileAtomically(path, []byte(d.render()))
 }
 
 // loadHeader reads a file only up to the line that closes its frontmatter, for a command that does not
