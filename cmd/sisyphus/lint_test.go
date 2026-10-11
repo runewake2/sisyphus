@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -145,4 +146,34 @@ func snapshotFiles(t *testing.T, root string) string {
 		t.Fatal(err)
 	}
 	return b.String()
+}
+
+func TestLintReadsEachIssueFileOnce(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "first-issue-test")
+	r.mustRun("new", "second-issue-test", "--depends-on", "first-issue-test")
+
+	reads := readsOf(r, "lint")
+
+	equal(t, 1, reads["issues/open/first-issue-test.md"])
+	equal(t, 1, reads["issues/open/second-issue-test.md"])
+	equal(t, 1, reads["README.md"])
+}
+
+func TestLintGivesTheRightLineForALinkInAnIssue(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "first-issue-test")
+	r.mustRun("edit", "first-issue-test", "Notes", "See [[nowhere-at-all]].")
+	r.write("issues/open/crlf-issue-test.md", utf8BOM+strings.ReplaceAll(r.read("issues/open/first-issue-test.md"), "\n", "\r\n"))
+	line := 0
+	for i, l := range strings.Split(r.read("issues/open/first-issue-test.md"), "\n") {
+		if strings.Contains(l, "[[nowhere-at-all]]") {
+			line = i + 1
+		}
+	}
+
+	res := r.run("lint")
+
+	contains(t, res.output, fmt.Sprintf("issues/open/first-issue-test.md:%d: the link [[nowhere-at-all]] is missing", line))
+	contains(t, res.output, fmt.Sprintf("issues/open/crlf-issue-test.md:%d: the link [[nowhere-at-all]] is missing", line))
 }

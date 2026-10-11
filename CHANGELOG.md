@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.67]] - 2026-10-11
+- Read each issue file once in `sisyphus lint`.
+
 ## [[0.0.66]] - 2026-10-11
 - Skip the files that `.gitignore` ignores in the repo walk of `resolve`, `links`, `lint`, `new`, and `slug`.
 

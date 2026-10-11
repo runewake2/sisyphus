@@ -44,10 +44,12 @@ func lintRepo(root string) lintResult {
 	files := map[string]string{}
 	parents := map[string]string{}
 	dependencies := map[string][]string{}
-	x.preload(x.all(), false)
+	// Read each issue in full once: the issue checks use the frontmatter, and the link check below uses
+	// the same lines instead of reading the file again.
+	x.preload(x.all(), true)
 	for _, issue := range x.all() {
 		file := relative(root, issue.path)
-		doc, err := x.header(issue)
+		doc, err := x.document(issue)
 		if err != nil {
 			add(file, 0, "the file cannot be read: %s", err)
 			continue
@@ -88,10 +90,15 @@ func lintRepo(root string) lintResult {
 			continue
 		}
 		documents++
-		rows, err := checker.rows(c.file, false)
-		if err != nil {
-			add(c.relative, 0, "the file cannot be read: %s", err)
-			continue
+		var rows []linkRow
+		if loaded, ok := x.docs[c.file]; ok && loaded.err == nil && !loaded.doc.headerOnly {
+			rows = checker.rowsOf(c.file, loaded.doc.lines(), false)
+		} else {
+			var err error
+			if rows, err = checker.rows(c.file, false); err != nil {
+				add(c.relative, 0, "the file cannot be read: %s", err)
+				continue
+			}
 		}
 		for _, row := range rows {
 			if row.Status == "ok" {

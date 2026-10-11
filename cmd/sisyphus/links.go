@@ -239,12 +239,17 @@ func (c *linkChecker) hasHeading(file, heading string) bool {
 // rows returns one row for each wikilink in file, with its status: ok, missing, ambiguous, or
 // missing-heading.
 func (c *linkChecker) rows(file string, absolute bool) ([]linkRow, error) {
-	fileRelative := relative(c.root, file)
+	trace(file)
 	content, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
-	lines := splitLines(string(content))
+	return c.rowsOf(file, splitLines(string(content)), absolute), nil
+}
+
+// rowsOf is rows for a file whose lines the caller already has, for example from the issue index.
+func (c *linkChecker) rowsOf(file string, lines []string, absolute bool) []linkRow {
+	fileRelative := relative(c.root, file)
 	c.headingsOf[file] = headingsIn(lines)
 
 	rows := []linkRow{}
@@ -279,7 +284,7 @@ func (c *linkChecker) rows(file string, absolute bool) ([]linkRow, error) {
 			Resolved: strings.Join(paths(matches, absolute), ", "),
 		})
 	}
-	return rows, nil
+	return rows
 }
 
 func findDocument(candidates *candidateSet, document string) (string, error) {

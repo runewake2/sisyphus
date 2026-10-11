@@ -136,6 +136,12 @@ func quote(value string) string {
 	return strings.TrimSuffix(buffer.String(), "\n")
 }
 
+// lines returns every line of the file of a full document, as splitLines gives them: the frontmatter
+// between its "---" lines, then the body.
+func (d *document) lines() []string {
+	return slices.Concat([]string{"---"}, d.front, []string{"---"}, d.body)
+}
+
 func (d *document) render() string {
 	all := append([]string{"---"}, d.front...)
 	all = append(all, "---")
