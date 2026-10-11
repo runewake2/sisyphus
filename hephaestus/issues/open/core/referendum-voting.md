@@ -49,6 +49,8 @@ Requested by a human on 2026-10-11. One agent of one role judges a change only i
 
 2026-10-11, from the human: the entire referendum fails when the proposal does not pass on the edited version (R7), and required reviewers always vote again (R8). Both proposals of [[referendum]] are accepted.
 
+2026-10-11, from the human: modifications occur one by one, and each is reviewed individually (R2 in [[referendum]]).
+
 ## Resolution
 
 <Complete this section when you close the issue.

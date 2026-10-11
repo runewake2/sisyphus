@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11
 - Issue: [[referendum-voting]]
-- Status: Draft. R1, R6, R7, and R8 are answered; the other open questions at the end are not.
+- Status: Draft. R1, R2, R6, R7, and R8 are answered; R3, R4, and R5 are not.
 
 ## Summary
 
@@ -86,10 +86,11 @@ The other rules:
 - **In scope.** A reviewer may only modify what is in its scope: `technical-docs` changes the docs,
   `ux-researcher` the help text or the messages, and so on. A modification outside its scope is a
   `no` (or a concern, from a non-required reviewer) with the change as its reason.
-- **One for each round.** When a round has more than one modification, they go to the gate one at
-  a time, in the order of the reviewers, required reviewers first. The first that the gate accepts
-  makes the next version; the others go back to their authors, who can submit them again against
-  the new version.
+- **One by one, each reviewed alone** (R2, answered by the human on 2026-10-11). Modifications are
+  never combined. When a round has more than one, they go to the gate one at a time, in the order of
+  the reviewers, required reviewers first, and the gate reviews each one alone. The first that the
+  gate accepts makes the next version; the others go back to their authors, who can submit them
+  again against the new version, where each again gets its own gate.
 - **A rejected modification.** When the gate rejects every modification of a round, the round is
   counted as it is, and a `modify` ballot of a required reviewer counts as not `yes`. So a required
   reviewer whose modification was rejected must vote again on the same version, `yes` or `no`, in
@@ -161,7 +162,7 @@ A human answers a question with a reply such as "R2 yes", or another answer.
 | Id | Question | Proposed answer |
 |---|---|---|
 | R1 | What passes a referendum? | Answered by the human on 2026-10-11: every required reviewer votes `yes`; a non-required reviewer cannot fail it. |
-| R2 | When several reviewers modify in one round, gate and apply one at a time, or combine all that do not conflict? | One at a time, in the order of the reviewers, required reviewers first. Each version then has one change that every reviewer saw. |
+| R2 | When several reviewers modify in one round, gate and apply one at a time, or combine all that do not conflict? | Answered by the human on 2026-10-11: one by one, each reviewed alone, never combined. The order is the order of the reviewers, required reviewers first. Each version then has one change that every reviewer saw. |
 | R3 | Where is the full record of a referendum: a section of the issue, a document beside the issue, or a file of hephaestus? | A document beside the issue, for example `referendums/<issue-name>.md` in the repo of the issue, linked from its Notes. The issue stays readable. |
 | R4 | Who can call a referendum, and choose its required and non-required reviewers: only a human, or also a role agent, for example the merge queue before each merge? | A human, and the roles that a human allows in their role description. A role description can propose default reviewers. |
 | R5 | What is the maximum number of rounds? | 3, then a human decides. |
