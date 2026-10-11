@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.34]] - 2026-10-11
+- Reject an empty title, or a title with a line break or another control character, in `sisyphus new`.
+
 ## [[0.0.33]] - 2026-10-11
 - Fail `sisyphus search --section` for a section that no issue and no template has.
 

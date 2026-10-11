@@ -64,6 +64,19 @@ func validName(name string) bool {
 	return namePattern.MatchString(parts[len(parts)-1])
 }
 
+// validateTitle rejects a title that the frontmatter, the "# Title" heading, and the list table
+// cannot show on one line: an empty title, or one with a line break, a tab, or another control
+// character.
+func validateTitle(title string) error {
+	if strings.TrimSpace(title) == "" {
+		return errors.New("The title is empty. Give a title, or leave out --title to make one from the name.")
+	}
+	if i := strings.IndexFunc(title, unicode.IsControl); i >= 0 {
+		return fmt.Errorf("The title has a line break, a tab, or another control character (%q). Give the title on one line.", title[i:i+1])
+	}
+	return nil
+}
+
 // baseName is the last part of a full issue name, which is also its file name without ".md".
 func baseName(name string) string {
 	return name[strings.LastIndex(name, "/")+1:]
@@ -118,6 +131,9 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 
 	title := capitalize(strings.ReplaceAll(baseName(o.name), "-", " "))
 	if o.title != nil {
+		if err := validateTitle(*o.title); err != nil {
+			return "", err
+		}
 		title = *o.title
 	}
 	deferred := ""

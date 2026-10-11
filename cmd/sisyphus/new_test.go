@@ -251,3 +251,22 @@ func TestNewRejectsValuesThatAreNotAllowed(t *testing.T) {
 		})
 	}
 }
+
+func TestNewRejectsATitleWithAControlCharacter(t *testing.T) {
+	for _, title := range []string{"line1\nline2", "carriage\rreturn", "a\ttab", "   "} {
+		r := newTestRepo(t)
+
+		res := r.run("new", "fix-login-bug", "--title", title)
+
+		equal(t, 1, res.exit)
+		isTrue(t, !r.exists("issues/open/fix-login-bug.md"), "no issue is created for title "+title)
+	}
+}
+
+func TestNewAcceptsATitleWithUnicodeText(t *testing.T) {
+	r := newTestRepo(t)
+
+	r.mustRun("new", "fix-login-bug", "--title", "Fix café ✓ 日本")
+
+	equal(t, "Fix café ✓ 日本", r.frontmatter("issues/open/fix-login-bug.md").get("title"))
+}

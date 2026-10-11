@@ -40,7 +40,8 @@ sisyphus new <name> [flags]
    warns and lists those files, because a link to the bare file name is then ambiguous.
 2. Checks the values: state, priority, effort, and resolution must be valid; `--resolution` is
    only allowed for a closed issue; `--parent` and `--depends-on` must name existing issues and
-   cannot create a cycle; `--remote` must be a URL.
+   cannot create a cycle; `--remote` must be a URL; `--title` must not be empty and must not
+   have a line break, a tab, or another control character.
 3. Copies `issues/TEMPLATE.md` from the repo, drops its instruction comments (the `#` lines at the
    top of the frontmatter), and fills in the fields. Inline comments on field lines stay.
 4. Sets `created` to today and, for a closed issue, `closed` to today.
