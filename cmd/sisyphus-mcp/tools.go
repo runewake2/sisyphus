@@ -11,10 +11,58 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+// toolBehavior is what a client can know about a tool before it calls it (see mcp.ToolAnnotations).
+// readOnly tools change no file. A destructive tool can replace or remove what is there, for example a
+// field, a section, or a close; the other tools only add. An idempotent tool gives the same result
+// when it is called again with the same arguments.
+type toolBehavior struct {
+	title                             string
+	readOnly, destructive, idempotent bool
+}
+
+var toolBehaviors = map[string]toolBehavior{
+	"sisyphus_show":       {title: "Show an issue", readOnly: true, idempotent: true},
+	"sisyphus_list":       {title: "List issues", readOnly: true, idempotent: true},
+	"sisyphus_search":     {title: "Search issues", readOnly: true, idempotent: true},
+	"sisyphus_graph":      {title: "Draw the graph of an issue", readOnly: true, idempotent: true},
+	"sisyphus_claims":     {title: "List the claims of the workspaces", idempotent: true}, // prune removes stale claims
+	"sisyphus_slug":       {title: "Make a name for a new issue", readOnly: true, idempotent: true},
+	"sisyphus_resolve":    {title: "Resolve a wikilink", readOnly: true, idempotent: true},
+	"sisyphus_links":      {title: "Check the links of a document", readOnly: true, idempotent: true},
+	"sisyphus_lint":       {title: "Check the repo", readOnly: true, idempotent: true},
+	"sisyphus_new":        {title: "Create an issue"},
+	"sisyphus_start":      {title: "Start an issue", idempotent: true},
+	"sisyphus_close":      {title: "Close an issue", destructive: true, idempotent: true},
+	"sisyphus_abandon":    {title: "Abandon an issue", destructive: true, idempotent: true},
+	"sisyphus_update":     {title: "Update an issue", destructive: true, idempotent: true},
+	"sisyphus_edit":       {title: "Edit a section of an issue", destructive: true},
+	"sisyphus_parent":     {title: "Set the parent of an issue", destructive: true, idempotent: true},
+	"sisyphus_depends_on": {title: "Change the dependencies of an issue", destructive: true, idempotent: true},
+	"sisyphus_remote":     {title: "Set the remote of an issue", destructive: true, idempotent: true},
+	"sisyphus_init":       {title: "Set up issue tracking", destructive: true, idempotent: true}, // force replaces the template
+}
+
+// closedWorld is the OpenWorldHint of every tool: the tools act only on the files of the repo.
+var closedWorld = false
+
 // addTool adds a tool to server. Without o.allowDir, its input schema has no dir argument: small
 // models fill an optional dir with words of its description, and the call fails
 // ([[mcp-hide-dir-argument]]). The tools then act on the directory of the server.
 func addTool[In any](server *mcp.Server, o serverOptions, tool *mcp.Tool, handler mcp.ToolHandlerFor[In, any]) {
+	behavior, ok := toolBehaviors[tool.Name]
+	if !ok {
+		panic("no behavior for the tool " + tool.Name)
+	}
+	tool.Title = behavior.title
+	tool.Annotations = &mcp.ToolAnnotations{
+		Title:          behavior.title,
+		ReadOnlyHint:   behavior.readOnly,
+		IdempotentHint: behavior.idempotent,
+		OpenWorldHint:  &closedWorld,
+	}
+	if !behavior.readOnly {
+		tool.Annotations.DestructiveHint = &behavior.destructive
+	}
 	if !o.allowDir {
 		schema, err := jsonschema.For[In](nil)
 		if err != nil {
@@ -203,11 +251,7 @@ func newHandler(ctx context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.C
 	args = appendFlag(args, "--context", in.Context)
 	args = appendMetadataFlags(args, in.Metadata)
 	args = appendPositionals(args, in.Name)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type updateArgs struct {
@@ -251,11 +295,7 @@ func updateHandler(ctx context.Context, _ *mcp.CallToolRequest, in updateArgs) (
 	args = appendFlag(args, "--message", in.Message)
 	args = appendMetadataFlags(args, in.Metadata)
 	args = appendPositionals(args, in.Name, in.State)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type startArgs struct {
@@ -276,11 +316,7 @@ func startHandler(ctx context.Context, _ *mcp.CallToolRequest, in startArgs) (*m
 	args = appendFlag(args, "--workspace", in.Workspace)
 	args = appendBoolFlag(args, "--take", in.Take)
 	args = appendPositionals(args, in.Name)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type closeArgs struct {
@@ -304,11 +340,7 @@ func closeHandler(command string) func(context.Context, *mcp.CallToolRequest, cl
 		args = appendBoolFlag(args, "--json", in.JSON)
 		args = appendFlag(args, "--message", in.Message)
 		args = appendPositionals(args, in.Name)
-		out, err := runSisyphus(ctx, in.Dir, args...)
-		if err != nil {
-			return nil, nil, err
-		}
-		return textResult(out)
+		return sisyphusResult(ctx, in.Dir, args...)
 	}
 }
 
@@ -324,11 +356,7 @@ func showHandler(ctx context.Context, _ *mcp.CallToolRequest, in showArgs) (*mcp
 	args = appendBoolFlag(args, "--json", !in.Text)
 	args = appendBoolFlag(args, "--all", in.All)
 	args = appendPositionals(args, in.Name)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type listArgs struct {
@@ -359,11 +387,7 @@ func listHandler(ctx context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp
 		args = appendFlag(args, "--limit", strconv.Itoa(in.Limit))
 	}
 	args = appendBoolFlag(args, "--json", !in.Text)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type searchArgs struct {
@@ -400,11 +424,7 @@ func searchHandler(ctx context.Context, _ *mcp.CallToolRequest, in searchArgs) (
 	}
 	args = appendBoolFlag(args, "--json", !in.Text)
 	args = appendPositionals(args, in.Query)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type graphArgs struct {
@@ -425,11 +445,7 @@ func graphHandler(ctx context.Context, _ *mcp.CallToolRequest, in graphArgs) (*m
 		args = appendFlag(args, "--max-issues", strconv.Itoa(in.MaxIssues))
 	}
 	args = appendPositionals(args, in.Name)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type claimsArgs struct {
@@ -440,11 +456,7 @@ type claimsArgs struct {
 func claimsHandler(ctx context.Context, _ *mcp.CallToolRequest, in claimsArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"claims", "--json"}
 	args = appendBoolFlag(args, "--prune", in.Prune)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type parentArgs struct {
@@ -460,11 +472,7 @@ func parentHandler(ctx context.Context, _ *mcp.CallToolRequest, in parentArgs) (
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--clear", in.Clear)
 	args = appendPositionals(args, in.Name, in.Parent)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type remoteArgs struct {
@@ -480,11 +488,7 @@ func remoteHandler(ctx context.Context, _ *mcp.CallToolRequest, in remoteArgs) (
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--clear", in.Clear)
 	args = appendPositionals(args, in.Name, in.URL)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type dependsOnArgs struct {
@@ -500,11 +504,7 @@ func dependsOnHandler(ctx context.Context, _ *mcp.CallToolRequest, in dependsOnA
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--clear", in.Clear)
 	args = appendPositionals(args, in.Name, in.BlockingIssue)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type editArgs struct {
@@ -527,11 +527,7 @@ func editHandler(ctx context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp
 	// The text goes even when it is empty, so that sisyphus tells that the text is empty.
 	// appendPositionals drops an empty value, and edit with two arguments gives a less clear error.
 	args = append(appendPositionals(args, in.Name, in.Section), in.Text)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type slugArgs struct {
@@ -540,11 +536,7 @@ type slugArgs struct {
 }
 
 func slugHandler(ctx context.Context, _ *mcp.CallToolRequest, in slugArgs) (*mcp.CallToolResult, any, error) {
-	out, err := runSisyphus(ctx, in.Dir, appendPositionals([]string{"slug"}, in.Text)...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, appendPositionals([]string{"slug"}, in.Text)...)
 }
 
 type resolveArgs struct {
@@ -559,11 +551,7 @@ func resolveHandler(ctx context.Context, _ *mcp.CallToolRequest, in resolveArgs)
 	args = appendBoolFlag(args, "--all", in.All)
 	args = appendBoolFlag(args, "--absolute", in.Absolute)
 	args = appendPositionals(args, in.Link)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type linksArgs struct {
@@ -576,11 +564,7 @@ func linksHandler(ctx context.Context, _ *mcp.CallToolRequest, in linksArgs) (*m
 	args := []string{"links", "--json"}
 	args = appendBoolFlag(args, "--absolute", in.Absolute)
 	args = appendPositionals(args, in.Document)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }
 
 type lintArgs struct {
@@ -592,7 +576,7 @@ func lintHandler(ctx context.Context, _ *mcp.CallToolRequest, in lintArgs) (*mcp
 	if err != nil {
 		return nil, nil, err
 	}
-	return textResult(out)
+	return withStructuredContent(textResult(out))
 }
 
 type initArgs struct {
@@ -605,9 +589,5 @@ func initHandler(ctx context.Context, _ *mcp.CallToolRequest, in initArgs) (*mcp
 	args := []string{"init"}
 	args = appendBoolFlag(args, "--force", in.Force)
 	args = appendBoolFlag(args, "--nested", in.Nested)
-	out, err := runSisyphus(ctx, in.Dir, args...)
-	if err != nil {
-		return nil, nil, err
-	}
-	return textResult(out)
+	return sisyphusResult(ctx, in.Dir, args...)
 }

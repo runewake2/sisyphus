@@ -137,9 +137,26 @@ Each tool's arguments mirror the command's arguments and flags, in camelCase (fo
 comma-separated string, as on the command line. `metadata` is a JSON object. With `--allow-dir`, every tool
 also takes the optional `dir` (see [[#The repo]]). The client shows the description of each argument.
 
+## Annotations
+
+Each tool has a title and annotations, so that a client can, for example, run the read-only tools
+without a prompt:
+
+| Annotation | Tools |
+|---|---|
+| Read-only | `sisyphus_show`, `sisyphus_list`, `sisyphus_search`, `sisyphus_graph`, `sisyphus_slug`, `sisyphus_resolve`, `sisyphus_links`, `sisyphus_lint` |
+| Only adds | `sisyphus_new`, `sisyphus_start`, `sisyphus_claims` (`prune` removes only stale claims) |
+| Can replace or remove | `sisyphus_update`, `sisyphus_edit`, `sisyphus_close`, `sisyphus_abandon`, `sisyphus_parent`, `sisyphus_depends_on`, `sisyphus_remote`, `sisyphus_init` (`force` replaces the template) |
+| Not idempotent | `sisyphus_new` (a second call makes a second issue), `sisyphus_edit` (`append` adds again) |
+
+No tool acts outside the repo (`openWorldHint: false`).
+
 ## Results
 
-- **Output**: the stdout of the command, as text.
+- **Output**: the stdout of the command, as text. When the output is JSON, the result also has it
+  as `structuredContent`; a JSON array is wrapped as `{"results": [...]}`, because clients expect
+  an object. A path, a table, or a drawing has no structured content. The tools have no
+  `outputSchema`, because the same tool returns text when you ask for it (`text: true`).
 - **Warnings**: the warnings that the command writes to stderr come after the output, in the same
   result, each on a line that starts with `Warning:`. The call succeeds, so the agent must read
   them.

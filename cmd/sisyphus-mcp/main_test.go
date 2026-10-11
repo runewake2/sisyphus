@@ -714,3 +714,78 @@ func TestNameDescriptionsDoNotInviteGuesses(t *testing.T) {
 		}
 	}
 }
+
+func TestEveryToolHasATitleAndAnnotations(t *testing.T) {
+	session := connectedSession(t)
+	tools, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	readOnly := map[string]bool{}
+	for _, tool := range tools.Tools {
+		if tool.Title == "" || tool.Annotations == nil || tool.Annotations.Title == "" {
+			t.Errorf("%s has no title or no annotations", tool.Name)
+			continue
+		}
+		if tool.Annotations.OpenWorldHint == nil || *tool.Annotations.OpenWorldHint {
+			t.Errorf("%s: the tools act only on the repo", tool.Name)
+		}
+		if !tool.Annotations.ReadOnlyHint && tool.Annotations.DestructiveHint == nil {
+			t.Errorf("%s changes files but has no destructiveHint", tool.Name)
+		}
+		readOnly[tool.Name] = tool.Annotations.ReadOnlyHint
+	}
+	for _, name := range []string{"sisyphus_show", "sisyphus_list", "sisyphus_search", "sisyphus_graph", "sisyphus_slug", "sisyphus_resolve", "sisyphus_links", "sisyphus_lint"} {
+		if !readOnly[name] {
+			t.Errorf("%s only reads, but is not read-only", name)
+		}
+	}
+	for _, name := range []string{"sisyphus_new", "sisyphus_update", "sisyphus_edit", "sisyphus_start", "sisyphus_close", "sisyphus_claims", "sisyphus_init"} {
+		if readOnly[name] {
+			t.Errorf("%s changes files, but is read-only", name)
+		}
+	}
+}
+
+func TestJSONResultsHaveStructuredContent(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "title": "Fix the login bug"})
+
+	structuredOf := func(name string, arguments map[string]any) map[string]any {
+		t.Helper()
+		res, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: name, Arguments: arguments})
+		if err != nil || res.IsError {
+			t.Fatalf("%s: %v %v", name, err, res)
+		}
+		if res.StructuredContent == nil {
+			return nil
+		}
+		raw, _ := json.Marshal(res.StructuredContent)
+		var value map[string]any
+		if err := json.Unmarshal(raw, &value); err != nil {
+			t.Fatalf("%s: structured content is not an object: %s", name, raw)
+		}
+		return value
+	}
+
+	shown := structuredOf("sisyphus_show", map[string]any{"dir": dir, "name": "fix-login-bug"})
+	listed := structuredOf("sisyphus_list", map[string]any{"dir": dir})
+	linted := structuredOf("sisyphus_lint", map[string]any{"dir": dir})
+	text := structuredOf("sisyphus_show", map[string]any{"dir": dir, "name": "fix-login-bug", "text": true})
+	path := structuredOf("sisyphus_update", map[string]any{"dir": dir, "name": "fix-login-bug", "priority": "high"})
+
+	if shown["name"] != "fix-login-bug" {
+		t.Errorf("show: got %v", shown)
+	}
+	if rows, ok := listed["results"].([]any); !ok || len(rows) != 1 {
+		t.Errorf("list: want the rows in results, got %v", listed)
+	}
+	if _, ok := linted["problems"]; !ok {
+		t.Errorf("lint: got %v", linted)
+	}
+	if text != nil || path != nil {
+		t.Errorf("text and paths have no structured content, got %v and %v", text, path)
+	}
+}

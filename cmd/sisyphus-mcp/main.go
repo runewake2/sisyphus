@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -180,15 +181,6 @@ func timeout() time.Duration {
 	return limit
 }
 
-// runSisyphus runs sisyphus and returns its stdout, followed by any warnings it wrote to stderr.
-func runSisyphus(ctx context.Context, dir string, args ...string) (string, error) {
-	stdout, stderr, err := execSisyphus(ctx, dir, args...)
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(stdout + "\n" + stderr), nil
-}
-
 // runSisyphusReport runs sisyphus for a command that reports findings on stdout and exits 1 when
 // it finds any, such as lint. A run that wrote to stdout is a result, even with exit code 1; only a
 // run that wrote nothing to stdout is an error.
@@ -198,6 +190,45 @@ func runSisyphusReport(ctx context.Context, dir string, args ...string) (string,
 		return "", err
 	}
 	return stdout, nil
+}
+
+// sisyphusResult runs sisyphus and returns its stdout, followed by any warnings that it wrote to
+// stderr. When stdout is JSON, the result also has it as structured content (see
+// withStructuredContent).
+func sisyphusResult(ctx context.Context, dir string, args ...string) (*mcp.CallToolResult, any, error) {
+	stdout, stderr, err := execSisyphus(ctx, dir, args...)
+	if err != nil {
+		return nil, nil, err
+	}
+	result := &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: strings.TrimSpace(stdout + "\n" + stderr)}}}
+	result.StructuredContent = structured(stdout)
+	return result, nil, nil
+}
+
+// withStructuredContent adds the JSON of the text of a result as its structured content.
+func withStructuredContent(result *mcp.CallToolResult, out any, err error) (*mcp.CallToolResult, any, error) {
+	if result != nil && len(result.Content) == 1 {
+		if text, ok := result.Content[0].(*mcp.TextContent); ok {
+			result.StructuredContent = structured(text.Text)
+		}
+	}
+	return result, out, err
+}
+
+// structured returns stdout as structured content when it is JSON, and nil otherwise, for example
+// for a path or a drawing. Clients expect an object, so an array is wrapped: {"results": [...]}.
+func structured(stdout string) any {
+	raw := json.RawMessage(strings.TrimSpace(stdout))
+	if !json.Valid(raw) {
+		return nil
+	}
+	switch raw[0] {
+	case '{':
+		return raw
+	case '[':
+		return map[string]json.RawMessage{"results": raw}
+	}
+	return nil
 }
 
 // textResult wraps text as a successful CallToolResult.

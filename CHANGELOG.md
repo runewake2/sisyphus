@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.102]] - 2026-10-11
+- Give the MCP tools titles and annotations, and return JSON results as structured content.
+
 ## [[0.0.101]] - 2026-10-11
 - Add the bookmark to the JSON rows of list and search.
 
