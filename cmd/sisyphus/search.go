@@ -34,9 +34,13 @@ type searchOptions struct {
 func searchIssues(root string, o searchOptions) ([]searchRow, error) {
 	query := strings.ToLower(o.query)
 
+	x := loadIndex(root)
+	if err := checkParentFilter(x, o.filters); err != nil {
+		return nil, err
+	}
 	rows := []searchRow{}
 	sectionFound := false
-	for _, m := range matchingIssues(loadIndex(root), o.filters) {
+	for _, m := range matchingIssues(x, o.filters) {
 		var haystack, content string
 		if o.section != "" {
 			section, ok := sectionIn(m.doc.body, o.section)

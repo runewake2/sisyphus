@@ -465,7 +465,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rows := listIssues(root, listOptions{
+			rows, err := listIssues(root, listOptions{
 				states:      stateValues,
 				priorities:  priorityValues,
 				tags:        parseList(tags),
@@ -475,6 +475,9 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 				readyOnly:   ready,
 				warnings:    cmd.ErrOrStderr(),
 			})
+			if err != nil {
+				return err
+			}
 			if asJSON {
 				encoder := json.NewEncoder(cmd.OutOrStdout())
 				encoder.SetEscapeHTML(false)

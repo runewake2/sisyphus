@@ -120,9 +120,23 @@ func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 	return matches
 }
 
+// checkParentFilter fails when o.parent is given and does not name exactly one issue, so that a
+// typo is not shown as an epic with no sub-issues.
+func checkParentFilter(x *issueIndex, o listOptions) error {
+	if o.parent == "" {
+		return nil
+	}
+	_, err := x.find(issueName(o.parent))
+	return err
+}
+
 // listIssues returns every issue that matches o, sorted by state, then priority, then name.
-func listIssues(root string, o listOptions) []listRow {
-	matches := matchingIssues(loadIndex(root), o)
+func listIssues(root string, o listOptions) ([]listRow, error) {
+	x := loadIndex(root)
+	if err := checkParentFilter(x, o); err != nil {
+		return nil, err
+	}
+	matches := matchingIssues(x, o)
 	rows := make([]listRow, 0, len(matches))
 	for _, m := range matches {
 		rows = append(rows, listRow{
@@ -137,7 +151,7 @@ func listIssues(root string, o listOptions) []listRow {
 	slices.SortFunc(rows, func(a, b listRow) int {
 		return compareByStatePriorityName(a.State, b.State, a.Priority, b.Priority, a.Name, b.Name)
 	})
-	return rows
+	return rows, nil
 }
 
 // compareByStatePriorityName orders issues by state (open, in-progress, closed), then priority

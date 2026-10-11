@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.52]] - 2026-10-11
+- Fail `sisyphus list --parent` and `search --parent` for a name that gives no issue.
+
 ## [[0.0.51]] - 2026-10-11
 - Warn when `sisyphus new --deferred-from` names no issue and is not a bookmark.
 

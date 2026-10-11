@@ -213,3 +213,16 @@ func TestListRefusesReadyTogetherWithBlocked(t *testing.T) {
 
 	equal(t, 1, r.run("list", "--ready", "--blocked").exit)
 }
+
+func TestListAndSearchFailForAParentThatNamesNoIssue(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "auth-epic-test")
+	r.mustRun("new", "login-sub-test", "--parent", "auth-epic-test")
+
+	for _, command := range []string{"list", "search"} {
+		res := r.run(command, "--parent", "auth-epci-test")
+		equal(t, 1, res.exit)
+		contains(t, res.error, "No issue named 'auth-epci-test'")
+	}
+	contains(t, r.mustRun("list", "--parent", "[[auth-epic-test]]").output, "login-sub-test")
+}
