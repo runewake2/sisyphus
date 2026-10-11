@@ -70,6 +70,7 @@ func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
 		addJSONFlag(closeCommand(findRoot, "abandon", "abandoned")),
 		slugCommand(findRoot),
 		showCommand(findRoot),
+		openCommand(findRoot),
 		graphCommand(findRoot),
 		listCommand(findRoot),
 		searchCommand(findRoot),

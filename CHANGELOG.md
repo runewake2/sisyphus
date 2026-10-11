@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.76]] - 2026-10-11
+- Add `sisyphus open` to open an issue in your editor and check it after.
+
 ## [[0.0.75]] - 2026-10-11
 - Shorten the title column of `sisyphus list` to fit the terminal; `--wide` keeps full titles.
 

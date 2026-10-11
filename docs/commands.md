@@ -16,6 +16,7 @@ sisyphus is a command-line issue manager. Every issue is one Markdown file with 
 | [[sisyphus-abandon]] | Close an issue as abandoned, with an optional Resolution text. |
 | [[sisyphus-edit]] | Replace or append to one section of an issue's body. |
 | [[sisyphus-show]] | Print one issue. |
+| [[sisyphus-open]] | Open an issue in your editor, and check it after. |
 | [[sisyphus-list]] | List and filter issues. |
 | [[sisyphus-search]] | Search issues by content and filters. |
 | [[sisyphus-graph]] | Draw an issue, everything below it, and the path above it. |
