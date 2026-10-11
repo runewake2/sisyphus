@@ -68,6 +68,26 @@ does in a shell. Claude Code starts it in the project directory. When a client s
 else, or the agent works in more than one repo, give each tool call a `dir` argument: a directory
 in the repo.
 
+## Instructions
+
+When a client connects, the server gives it these instructions, which the client shows to the
+model:
+
+```
+sisyphus tracks the issues of this repo as Markdown files in issues/. Work on one issue at a time:
+
+1. Find work: sisyphus_list with ready true and state open. sisyphus_claims shows the issues that other workspaces have started.
+2. Read the issue with sisyphus_show.
+3. Claim it with sisyphus_start and your owner name. If the start fails because another owner or workspace has the issue, select another issue. Do not use take unless a human tells you to.
+4. Record progress with sisyphus_edit, section notes, and append true.
+5. For work that you find but that is out of scope, create an issue with sisyphus_new and deferredFrom.
+6. When the work is complete, use sisyphus_close with a message that tells what was done, or sisyphus_abandon with a message that tells why the work stopped. Then run sisyphus_lint.
+
+Read the warnings at the end of each result. Lists, for example tags and dependsOn, are comma-separated strings. Leave dir empty unless the user names another repo.
+```
+
+When the `sisyphus` binary has another version than `sisyphus-mcp`, a warning line follows them.
+
 ## Tools
 
 | Tool | Command | Default output |

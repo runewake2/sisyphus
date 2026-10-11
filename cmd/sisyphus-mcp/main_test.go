@@ -38,8 +38,7 @@ func connectedSession(t *testing.T) *mcp.ClientSession {
 	buildSisyphusOnce()
 	ctx := context.Background()
 
-	server := mcp.NewServer(&mcp.Implementation{Name: "sisyphus-test"}, nil)
-	registerTools(server)
+	server := newServer()
 	serverTransport, clientTransport := mcp.NewInMemoryTransports()
 	if _, err := server.Connect(ctx, serverTransport, nil); err != nil {
 		t.Fatal(err)
@@ -516,5 +515,42 @@ func TestTheSameVersionAddsNothingToErrors(t *testing.T) {
 
 	if strings.Contains(text, "Install the same version") {
 		t.Errorf("the test binary has the version of sisyphus-mcp, got: %s", text)
+	}
+}
+
+func TestInstructionsAreShortAndNameOnlyToolsThatExist(t *testing.T) {
+	session := connectedSession(t)
+	text := session.InitializeResult().Instructions
+	tools, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	names := map[string]bool{}
+	for _, tool := range tools.Tools {
+		names[tool.Name] = true
+	}
+
+	if words := len(strings.Fields(text)); words == 0 || words > 200 {
+		t.Errorf("want 1-200 words of instructions, got %d", words)
+	}
+	for _, word := range strings.FieldsFunc(text, func(r rune) bool { return r == ' ' || r == ',' || r == '.' || r == '\n' }) {
+		if strings.HasPrefix(word, "sisyphus_") && !names[word] {
+			t.Errorf("the instructions name %s, which is not a tool", word)
+		}
+	}
+	for _, step := range []string{"sisyphus_start", "sisyphus_close", "sisyphus_list"} {
+		if !strings.Contains(text, step) {
+			t.Errorf("the instructions do not name %s", step)
+		}
+	}
+}
+
+func TestTheDocsShowTheInstructions(t *testing.T) {
+	page, err := os.ReadFile("../../docs/sisyphus-mcp.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(page), instructions) {
+		t.Error("docs/sisyphus-mcp.md does not show the instructions of the server as they are")
 	}
 }

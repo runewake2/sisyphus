@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.92]] - 2026-10-11
+- Give MCP clients instructions that tell agents the sisyphus workflow.
+
 ## [[0.0.91]] - 2026-10-11
 - Tell the agent in MCP errors when sisyphus and sisyphus-mcp have different versions.
 

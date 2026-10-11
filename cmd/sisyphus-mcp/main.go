@@ -20,11 +20,36 @@ import (
 )
 
 func main() {
-	server := mcp.NewServer(&mcp.Implementation{Name: "sisyphus", Version: sisyphus.Version()}, nil)
-	registerTools(server)
-	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
+	if err := newServer().Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// instructions tell the agent how to use the tools together. The client shows them to the model in
+// every session, so they are short.
+const instructions = `sisyphus tracks the issues of this repo as Markdown files in issues/. Work on one issue at a time:
+
+1. Find work: sisyphus_list with ready true and state open. sisyphus_claims shows the issues that other workspaces have started.
+2. Read the issue with sisyphus_show.
+3. Claim it with sisyphus_start and your owner name. If the start fails because another owner or workspace has the issue, select another issue. Do not use take unless a human tells you to.
+4. Record progress with sisyphus_edit, section notes, and append true.
+5. For work that you find but that is out of scope, create an issue with sisyphus_new and deferredFrom.
+6. When the work is complete, use sisyphus_close with a message that tells what was done, or sisyphus_abandon with a message that tells why the work stopped. Then run sisyphus_lint.
+
+Read the warnings at the end of each result. Lists, for example tags and dependsOn, are comma-separated strings. Leave dir empty unless the user names another repo.`
+
+// newServer returns the server with every tool. Its instructions also tell about a sisyphus binary
+// with another version, so that the agent can tell the user before a tool fails.
+func newServer() *mcp.Server {
+	text := instructions
+	if path, err := exec.LookPath("sisyphus"); err == nil {
+		if mismatch := versionMismatch(path); mismatch != "" {
+			text += "\n\nWarning: " + mismatch
+		}
+	}
+	server := mcp.NewServer(&mcp.Implementation{Name: "sisyphus", Version: sisyphus.Version()}, &mcp.ServerOptions{Instructions: text})
+	registerTools(server)
+	return server
 }
 
 // errNotInstalled is the error of every tool when the sisyphus binary is not on PATH.
