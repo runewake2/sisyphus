@@ -114,6 +114,7 @@ With `--allow-dir`, they end with "Leave dir out unless the user names another r
 | `sisyphus_abandon` | [[sisyphus-abandon]] | the path (`json: true` for the issue as JSON) |
 | `sisyphus_update` | [[sisyphus-update]] | the path (`json: true` for the issue as JSON) |
 | `sisyphus_edit` | [[sisyphus-edit]] | the path (`json: true` for the issue as JSON) |
+| `sisyphus_rename` | [[sisyphus-rename]] | the path (`json: true` for the issue as JSON, `dryRun: true` for the plan as JSON) |
 | `sisyphus_show` | [[sisyphus-show]] | JSON (`text: true` for text) |
 | `sisyphus_list` | [[sisyphus-list]] | JSON (`text: true` for the table) |
 | `sisyphus_search` | [[sisyphus-search]] | JSON (`text: true` for text) |
@@ -146,8 +147,8 @@ without a prompt:
 |---|---|
 | Read-only | `sisyphus_show`, `sisyphus_list`, `sisyphus_search`, `sisyphus_graph`, `sisyphus_slug`, `sisyphus_resolve`, `sisyphus_links`, `sisyphus_lint` |
 | Only adds | `sisyphus_new`, `sisyphus_start`, `sisyphus_claims` (`prune` removes only stale claims) |
-| Can replace or remove | `sisyphus_update`, `sisyphus_edit`, `sisyphus_close`, `sisyphus_abandon`, `sisyphus_parent`, `sisyphus_depends_on`, `sisyphus_remote`, `sisyphus_init` (`force` replaces the template) |
-| Not idempotent | `sisyphus_new` (a second call makes a second issue), `sisyphus_edit` (`append` adds again) |
+| Can replace or remove | `sisyphus_update`, `sisyphus_edit`, `sisyphus_rename`, `sisyphus_close`, `sisyphus_abandon`, `sisyphus_parent`, `sisyphus_depends_on`, `sisyphus_remote`, `sisyphus_init` (`force` replaces the template) |
+| Not idempotent | `sisyphus_new` (a second call makes a second issue), `sisyphus_edit` (`append` adds again), `sisyphus_rename` (a second call fails) |
 
 No tool acts outside the repo (`openWorldHint: false`).
 

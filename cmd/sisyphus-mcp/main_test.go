@@ -789,3 +789,25 @@ func TestJSONResultsHaveStructuredContent(t *testing.T) {
 		t.Errorf("text and paths have no structured content, got %v and %v", text, path)
 	}
 }
+
+func TestRenameToolMovesAnIssueAndItsLinks(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "split-login-form", "parent": "fix-login-bug"})
+
+	plan := callTool(t, session, "sisyphus_rename", map[string]any{"dir": dir, "name": "fix-login-bug", "newName": "web/fix-login-bug", "dryRun": true})
+	moved := callTool(t, session, "sisyphus_rename", map[string]any{"dir": dir, "name": "fix-login-bug", "newName": "web/fix-login-bug"})
+
+	if !strings.Contains(plan, `"to": "[[web/fix-login-bug]]"`) {
+		t.Errorf("the plan does not have the link: %s", plan)
+	}
+	if moved != "issues/open/web/fix-login-bug.md" {
+		t.Errorf("got %q", moved)
+	}
+	shown := callTool(t, session, "sisyphus_show", map[string]any{"dir": dir, "name": "split-login-form"})
+	if !strings.Contains(shown, `"parent": "[[web/fix-login-bug]]"`) {
+		t.Errorf("the parent link did not change: %s", shown)
+	}
+}

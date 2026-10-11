@@ -1021,6 +1021,15 @@ func saveIssue(root string, doc *document, from, to string) error {
 	if from == to {
 		return nil
 	}
+	return moveIssueFile(root, from, to)
+}
+
+// moveIssueFile moves the file of an issue from "from" to "to", through git when git tracks it (see
+// saveIssue), and removes the directories that the move leaves empty.
+func moveIssueFile(root, from, to string) error {
+	if err := os.MkdirAll(filepath.Dir(to), 0o755); err != nil {
+		return err
+	}
 	var err error
 	if usesGit(root) && gitTracks(root, from) {
 		err = gitMove(root, from, to)

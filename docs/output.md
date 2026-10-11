@@ -34,7 +34,8 @@ on them, and the shape of each JSON output.
 | Commands | Shape |
 |---|---|
 | [[sisyphus-show]] | [[#An issue]] |
-| [[sisyphus-new]], [[sisyphus-update]], [[sisyphus-start]], [[sisyphus-close]], [[sisyphus-abandon]], [[sisyphus-edit]], [[sisyphus-parent]], [[sisyphus-depends-on]], [[sisyphus-remote]] | [[#A changed issue]] |
+| [[sisyphus-new]], [[sisyphus-update]], [[sisyphus-start]], [[sisyphus-close]], [[sisyphus-abandon]], [[sisyphus-edit]], [[sisyphus-rename]], [[sisyphus-parent]], [[sisyphus-depends-on]], [[sisyphus-remote]] | [[#A changed issue]] |
+| [[sisyphus-rename]] `--dry-run` | [[#A rename plan]] |
 | [[sisyphus-list]] | An array of [[#A list row]] |
 | [[sisyphus-search]] | An array of [[#A search row]] |
 | [[sisyphus-graph]] | [[#A graph]] |
@@ -101,6 +102,13 @@ JSON array, and a map is a JSON object.
 | `link` | The link as it is written, for example `[[fix-login-bug#Notes]]`. |
 | `status` | `ok`, `missing`, `ambiguous`, or `missing-heading`. |
 | `resolved` | The path of the target from the repo root, or `""`. Always. |
+
+### A rename plan
+
+| Field | Value |
+|---|---|
+| `from`, `to` | The path of the issue's file before and after, from the repo root. |
+| `links` | An array of the links that change, each with `file`, `line`, `from` (the link as it is), and `to` (the new link). Always; empty when no link changes. |
 
 ### A lint report
 

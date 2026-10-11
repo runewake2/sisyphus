@@ -71,6 +71,7 @@ func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
 		addJSONFlag(remoteCommand(findRoot)),
 		addJSONFlag(dependsOnCommand(findRoot)),
 		addJSONFlag(editCommand(findRoot)),
+		addJSONFlag(renameCommand(findRoot)),
 		addJSONFlag(startCommand(findRoot)),
 		addJSONFlag(closeCommand(findRoot, "close", "completed")),
 		addJSONFlag(closeCommand(findRoot, "abandon", "abandoned")),

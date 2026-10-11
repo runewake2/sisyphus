@@ -36,6 +36,7 @@ var toolBehaviors = map[string]toolBehavior{
 	"sisyphus_abandon":    {title: "Abandon an issue", destructive: true, idempotent: true},
 	"sisyphus_update":     {title: "Update an issue", destructive: true, idempotent: true},
 	"sisyphus_edit":       {title: "Edit a section of an issue", destructive: true},
+	"sisyphus_rename":     {title: "Rename an issue", destructive: true},
 	"sisyphus_parent":     {title: "Set the parent of an issue", destructive: true, idempotent: true},
 	"sisyphus_depends_on": {title: "Change the dependencies of an issue", destructive: true, idempotent: true},
 	"sisyphus_remote":     {title: "Set the remote of an issue", destructive: true, idempotent: true},
@@ -178,6 +179,12 @@ func registerTools(server *mcp.Server, o serverOptions) {
 			"or append to it, for example a dated line in Notes. Use it to complete the Resolution section when " +
 			"an issue closes. An append to a section that holds only the template placeholder replaces the placeholder.",
 	}, editHandler)
+	addTool(server, o, &mcp.Tool{
+		Name: "sisyphus_rename",
+		Description: "Rename a sisyphus issue, or move it to a directory, and change every wikilink to it in the repo. " +
+			"Prefer a move to a directory, for example fix-login-bug to web/fix-login-bug: it keeps the file name, which " +
+			"commit messages use. Use dryRun to see the changes first.",
+	}, renameHandler)
 	addTool(server, o, &mcp.Tool{
 		Name: "sisyphus_slug",
 		Description: "Make a valid name for a NEW issue from text, for example a title: an ASCII name that no file in the repo has. " +
@@ -527,6 +534,22 @@ func editHandler(ctx context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp
 	// The text goes even when it is empty, so that sisyphus tells that the text is empty.
 	// appendPositionals drops an empty value, and edit with two arguments gives a less clear error.
 	args = append(appendPositionals(args, in.Name, in.Section), in.Text)
+	return sisyphusResult(ctx, in.Dir, args...)
+}
+
+type renameArgs struct {
+	Dir     string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
+	Name    string `json:"name" jsonschema:"The exact name of an existing issue, as sisyphus_list or sisyphus_search returns it, for example fix-login-bug. Do not guess a name: search for the issue first."`
+	NewName string `json:"newName" jsonschema:"The new full name: 2-6 lowercase kebab-case words, optionally below kebab-case directories, for example web/fix-login-bug."`
+	DryRun  bool   `json:"dryRun,omitempty" jsonschema:"Return the move and each link that would change, as JSON, and change nothing."`
+	JSON    bool   `json:"json,omitempty" jsonschema:"Return the renamed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
+}
+
+func renameHandler(ctx context.Context, _ *mcp.CallToolRequest, in renameArgs) (*mcp.CallToolResult, any, error) {
+	args := []string{"rename"}
+	args = appendBoolFlag(args, "--json", in.JSON || in.DryRun)
+	args = appendBoolFlag(args, "--dry-run", in.DryRun)
+	args = appendPositionals(args, in.Name, in.NewName)
 	return sisyphusResult(ctx, in.Dir, args...)
 }
 

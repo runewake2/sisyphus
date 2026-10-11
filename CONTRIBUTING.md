@@ -143,7 +143,7 @@ issues/
 
 - The file name without `.md` is the **issue name**, for example `issues/open/faster-startup.md` has the name `faster-startup`.
 - Use 2–6 words in kebab-case. The name must be unique across all Markdown files in the repo. Do not use the name `cleanup`.
-- Do not rename an issue. The name is the permanent id of the issue.
+- Keep the file name of an issue: commit messages refer to it. To move an issue into a directory, use `sisyphus rename <name> <directory>/<name>`, which changes every link to it. Do not move or rename issue files by hand.
 - Refer to an issue by its name, not by its path: `[[<issue-name>]]` in Markdown files, and `#<issue-name>` in change descriptions and code comments.
 
 ### Frontmatter

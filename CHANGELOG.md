@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.105]] - 2026-10-11
+- Add sisyphus rename, which renames an issue or moves it to a directory and updates every link to it.
+
 ## [[0.0.104]] - 2026-10-11
 - List all among the valid values of --state of list and search.
 

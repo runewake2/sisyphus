@@ -98,6 +98,7 @@ var commandArguments = map[string][]argumentKind{
 	"depends-on": {anyIssue, anyIssue},
 	"remote":     {anyIssue},
 	"edit":       {anyIssue, sectionArgument},
+	"rename":     {anyIssue},
 	"show":       {anyIssue},
 	"graph":      {anyIssue},
 }

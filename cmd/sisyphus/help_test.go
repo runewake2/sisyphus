@@ -177,7 +177,7 @@ func TestTheOutputPageNamesEveryJSONField(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, value := range []any{issueView{}, writeResult{}, listRow{}, searchRow{}, lineMatch{}, issueGraph{}, graphNode{}, graphEdge{}, linkRow{}, lintResult{}, lintProblem{}, claimView{}} {
+	for _, value := range []any{issueView{}, writeResult{}, listRow{}, searchRow{}, lineMatch{}, issueGraph{}, graphNode{}, graphEdge{}, linkRow{}, lintResult{}, lintProblem{}, claimView{}, renamePlan{}, linkChange{}} {
 		for _, field := range jsonFields(reflect.TypeOf(value)) {
 			if !strings.Contains(string(page), "`"+field+"`") {
 				t.Errorf("docs/output.md does not name the field %s of %T", field, value)

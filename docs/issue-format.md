@@ -69,8 +69,9 @@ issues/
 The path of the file below `issues/<state>/`, without `.md`, is the **full name** of the issue, for
 example `web/fix-login-bug`. The file name alone, `fix-login-bug`, also names the issue while no
 other issue has that file name. A name is 2-6 lowercase words in kebab-case, below optional
-kebab-case directories. The name is the permanent id of the issue: links use it, so do not rename an
-issue. See [[commands#Naming an issue]].
+kebab-case directories. Links use the name, so change it only with [[sisyphus-rename]], which
+changes the links too, and prefer a move to a directory, which keeps the file name. See
+[[commands#Naming an issue]].
 
 ## Fields
 

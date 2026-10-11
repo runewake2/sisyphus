@@ -20,6 +20,7 @@ The groups are the same as in `sisyphus --help`.
 | [[sisyphus-close]] | Close an issue as completed, with an optional Resolution text. |
 | [[sisyphus-abandon]] | Close an issue as abandoned, with an optional Resolution text. |
 | [[sisyphus-edit]] | Edit an issue in your editor, or replace or append to one section. |
+| [[sisyphus-rename]] | Rename an issue, or move it to a directory, and update every link to it. |
 
 ### Read and find issues
 
@@ -112,7 +113,10 @@ An issue's file name, without `.md`, is 2-6 lowercase words in kebab-case, for e
 `fix-login-bug`. The file can sit directly in its state directory, or in kebab-case subdirectories
 below it, for example `issues/open/web/auth/fix-login-bug.md`. The issue's **full name** is its
 path below the state directory, without `.md`: `web/auth/fix-login-bug`. The subdirectories stay
-with the issue when its state changes. A full name is permanent: never rename or move an issue.
+with the issue when its state changes. To move an issue to another directory, or to change its
+name, use [[sisyphus-rename]]: it changes every link to the issue in the repo. Prefer a move to a
+directory over a new file name: commit messages, other branches, and other repos refer to the file
+name, and [[sisyphus-rename]] cannot change them.
 
 Every command that takes an existing issue accepts any of these forms:
 
