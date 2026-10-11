@@ -1,12 +1,12 @@
 ---
 title: "Spike: compare local Ollama models as sisyphus task managers"
-state: in-progress     # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: large          # small | medium | large | x-large
 tags: [spike, ollama, sisyphus-mcp] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-09
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-11     # YYYY-MM-DD. Set this only when state is closed.
 owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark: samw/ai/ollama-model-spike # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -98,4 +98,6 @@ the `qwen3` family, `llama3.1` / `llama3.2`, `mistral` / `mistral-nemo`, `granit
   The spike is ready to close when a human accepts the report.
 
 ## Resolution
+
+Completed. A human accepted the report [[ollama-local-models]] on 2026-10-11. The harness in `design/ollama-local-models/harness/` ran 6 local models and Claude Opus 5.5 on 14 tasks. qwen3.5:9b with thinking on passed 28 of 28 runs at 3.3 s for each task. The follow-up work is [[small-model-friendly-mcp]] (its sub-issues are closed in [[0.0.97]] to [[0.0.101]]), [[ollama-task-manager-guide]], and [[compare-cloud-claude-models]].
 

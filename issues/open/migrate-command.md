@@ -13,7 +13,7 @@ bookmark:              # samw/ai/<workspace-name> of the agent that does the wor
 workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
-parent: "[[issue-manager-gaps]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
+parent:                          # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 depends-on: []           # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example `["[[faster-startup]]"]`.
 remote:                # Optional. A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.
 ---
@@ -73,7 +73,7 @@ Suggested design:
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-11: moved out of [[issue-manager-gaps]] by a human, so that the epic can close. No schema change needs a migration yet.
 
 ## Resolution
 

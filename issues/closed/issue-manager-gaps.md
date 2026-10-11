@@ -1,12 +1,12 @@
 ---
 title: "Fill the gaps that keep sisyphus from being a complete issue manager"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: high         # critical | high | medium | low
 effort: large          # small | medium | large | x-large
 tags: [cli]            # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-07
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-11     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -66,7 +66,8 @@ hand. The sub-issues below each cover one missing piece:
 - [x] Issues can express depends-on/blocks relationships ([[issue-dependencies]]).
 - [x] `sisyphus lint` validates the whole `issues/` tree ([[lint-issues-command]]).
 - [x] `sisyphus graph` shows a large task's family tree in the terminal ([[graph-view-command]]).
-- [ ] `sisyphus migrate` upgrades every issue to the current schema ([[migrate-command]]).
+- [x] Deferred: `sisyphus migrate` upgrades every issue to the current schema ([[migrate-command]]).
+      A human moved it out of this epic on 2026-10-11; it is now a separate issue.
 - [x] `sisyphus update` can change fields without a state argument ([[update-without-state-change]]).
 - [x] `sisyphus update` can change the title ([[retitle-issue]]).
 - [x] `sisyphus list --ready` shows the issues that can start now ([[list-ready-issues]]).
@@ -87,6 +88,5 @@ hand. The sub-issues below each cover one missing piece:
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example [[0.0.5]].
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed. 14 of the 15 gaps are closed: list, show, search, editable fields, dependencies, lint, graph, update without a state, retitle, list --ready, more than one dependency, single tags, the resolution in show, and section edits. [[migrate-command]] was moved out of the epic on 2026-10-11 and stays open as a separate issue, because no schema change needs it yet.
+
