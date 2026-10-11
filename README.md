@@ -123,6 +123,9 @@ claude mcp add sisyphus -- sisyphus-mcp      # Claude Code
 [docs/sisyphus-mcp.md](docs/sisyphus-mcp.md) tells how to set up other clients, lists the tools,
 and shows how warnings and errors come back, with an example session and troubleshooting.
 
+[docs/agents.md](docs/agents.md) has instructions to paste into the `AGENTS.md` or `CLAUDE.md` of
+your repo, and tells how several agents work together without taking the same issue.
+
 ## Contributing
 
 To work on sisyphus itself, read [CONTRIBUTING.md](CONTRIBUTING.md).

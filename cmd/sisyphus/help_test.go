@@ -115,3 +115,56 @@ func TestReadmeLinksWorkOnGitHub(t *testing.T) {
 		}
 	}
 }
+
+// TestTheAgentGuideUsesCommandsAndFlagsThatExist checks each command in docs/agents.md, in inline code
+// and on indented lines, because agents copy that text into their instructions.
+func TestTheAgentGuideUsesCommandsAndFlagsThatExist(t *testing.T) {
+	page, err := os.ReadFile(filepath.Join("..", "..", "docs", "agents.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var commands []string
+	for _, span := range regexp.MustCompile("`([^`\n]+)`").FindAllStringSubmatch(string(page), -1) {
+		commands = append(commands, span[1])
+	}
+	for _, line := range strings.Split(string(page), "\n") {
+		if trimmed := strings.TrimSpace(line); strings.HasPrefix(line, "    ") && strings.HasPrefix(trimmed, "sisyphus ") {
+			commands = append(commands, trimmed)
+		}
+	}
+	root := newRootCommand(findRoot)
+	checked := 0
+	for _, command := range commands {
+		words := strings.Fields(command)
+		if len(words) < 2 || words[0] != "sisyphus" {
+			continue
+		}
+		cmd, _, err := root.Find(words[1:2])
+		if err != nil || cmd == root {
+			t.Errorf("%q: no command %s", command, words[1])
+			continue
+		}
+		checked++
+		for _, word := range words[2:] {
+			if !strings.HasPrefix(word, "-") {
+				continue
+			}
+			name := strings.SplitN(word, "=", 2)[0]
+			var flag *pflag.Flag
+			if long, ok := strings.CutPrefix(name, "--"); ok {
+				flag = cmd.Flags().Lookup(long)
+				if flag == nil {
+					flag = cmd.InheritedFlags().Lookup(long)
+				}
+			} else {
+				flag = cmd.Flags().ShorthandLookup(strings.TrimPrefix(name, "-"))
+			}
+			if flag == nil {
+				t.Errorf("%q: %s has no flag %s", command, words[1], name)
+			}
+		}
+	}
+	if checked < 10 {
+		t.Errorf("checked only %d commands; the test does not find them", checked)
+	}
+}

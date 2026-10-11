@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.93]] - 2026-10-11
+- Add a guide with instructions to paste for repos that let AI agents use sisyphus.
+
 ## [[0.0.92]] - 2026-10-11
 - Give MCP clients instructions that tell agents the sisyphus workflow.
 
