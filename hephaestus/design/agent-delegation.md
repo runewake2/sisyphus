@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11
 - Issue: [[delegate-issues-to-agents]]
-- Status: Draft. Q1-Q5, Q9, and Q10 are answered, and Q8 in part; Q6, Q7, and Q11-Q14 are not.
+- Status: Draft. Q1-Q5, Q9-Q12 are answered, and Q8 and Q14 in part; Q6, Q7, and Q13 are not.
 
 ## Summary
 
@@ -106,8 +106,20 @@ of its own, the **message queue** ([[message-queue]]), relays the messages:
 
 A message has: an id, the sender, the receiver (a worker, a role, or `broadcast`), a kind (for
 example `task`, `info`, or `referendum`), the issue that it is about, if any, the time, and a body
-(text, and data as JSON for tool agents). Q11-Q14 are open: where messages are kept, how they
-travel, how they are addressed, and what is promised about their delivery.
+(text, and data as JSON for tool agents).
+
+Answered by the human on 2026-10-11:
+
+- **An append-only log** keeps every message (Q11). Nothing changes or removes a message after it is
+  sent. A receiver still records in the `Notes` of an issue what a message changes for that issue,
+  as [[#Rules for every role]] ask.
+- **A service** passes the messages (Q12): the message queue runs as a service that the workers
+  connect to, not as files in a shared directory.
+- **At-least-once delivery** (Q14): each receiver gets each message at least once. A receiver can get
+  a copy, so each message has an id, and a receiver ignores an id that it already handled.
+
+How a receiver is addressed (Q13), and whether the messages of one sender keep their order (Q14),
+are still open.
 
 ## How an issue gets to an agent
 
@@ -236,7 +248,7 @@ A human answers a question with a reply such as "Q1 yes", or another answer.
 | Q8 | How does a tool agent get its task and report its result? | [[tool-agents]] | Context answered by the human on 2026-10-11: a tool agent gets its context as a message, which any agent can send or broadcast ([[#Messages between workers]]). Result, proposed: hephaestus runs the command in the workspace of the task with the message; exit code 0 closes the issue with the summary that the command prints; another exit code stops it with the output in `Notes`, tagged `needs-human`, unless the role file names an AI role to delegate the rest to. |
 | Q9 | Can a tool agent be a reviewer in a referendum ([[referendum]])? | [[tool-agents]] | Answered by the human on 2026-10-11: yes. A check, for example a lint or the tests, votes with its exit code, `yes` for 0 and `no` for another code. A formatter can submit its changes as a modification. A tool reviewer never abstains. |
 | Q10 | Is the merge queue a tool agent? Its order, rebases, renumbering, and checks follow fixed rules. | [[merge-queue-agent]] | Answered by the human on 2026-10-11: yes. It stops at a conflict that is not mechanical, records it, and sends a message to the engineer or a human. |
-| Q11 | Where are messages kept: only in the message queue, or also in the repo? | [[message-queue]] | In an append-only log of the message queue, outside the working copies, so that every workspace sees it and no commit gets it. A message that matters to an issue is also recorded in its `Notes` by the receiver, as [[#Rules for every role]] ask. |
-| Q12 | How do messages travel? | [[message-queue]] | First, one file for each message in a shared directory, as sisyphus does with claims; the message queue moves them to the inbox of each receiver. A socket or a service later, if needed. |
+| Q11 | Where are messages kept: only in the message queue, or also in the repo? | [[message-queue]] | Answered by the human on 2026-10-11: in an append-only log. A message that matters to an issue is also recorded in its `Notes` by the receiver. |
+| Q12 | How do messages travel? | [[message-queue]] | Answered by the human on 2026-10-11: through a service, the message queue, that the workers connect to. |
 | Q13 | How is a receiver addressed? | [[message-queue]] | By owner name (one worker), by role (any one worker of the role, or all of them, by a flag of the message), or `broadcast` (every listener; a listener can filter by kind). |
-| Q14 | What does the message queue promise? | [[message-queue]] | Each message reaches each receiver at least once, in the order that one sender sent them. Each message has an id, so that a receiver can ignore a copy. |
+| Q14 | What does the message queue promise? | [[message-queue]] | Answered by the human on 2026-10-11: at-least-once delivery; each message has an id, so that a receiver can ignore a copy. Still open: whether the messages of one sender arrive in the order that it sent them (proposed: yes). |

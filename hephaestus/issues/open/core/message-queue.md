@@ -33,7 +33,8 @@ Requested by a human on 2026-10-11: agents must be able to send information to e
 - [ ] A decision record answers Q11-Q14.
 - [ ] Any worker (a human, an AI agent, or a tool agent) can send a message to one worker, to a role, or as a broadcast, and the receivers get it.
 - [ ] A tool agent can listen for broadcasts of one kind, and starts its task from the message.
-- [ ] Messages reach their receivers across workspaces of one repo, as the guarantees of Q14 say.
+- [ ] The message queue is a service that the workers connect to, and keeps every message in an append-only log.
+- [ ] Each message reaches each receiver at least once, across the workspaces of one repo, and a receiver can ignore a copy by its id.
 - [ ] Tests cover direct messages, role messages, broadcasts, and a copy of a message.
 
 ## Out of scope
@@ -43,7 +44,7 @@ Requested by a human on 2026-10-11: agents must be able to send information to e
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-11, from the human: messages are kept in an append-only log (Q11), are passed through a service (Q12), and have at-least-once delivery (Q14). Q13 and the order of messages are still open in [[agent-delegation]].
 
 ## Resolution
 
