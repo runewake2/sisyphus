@@ -67,11 +67,11 @@ hand. The sub-issues below each cover one missing piece:
 - [ ] `sisyphus lint` validates the whole `issues/` tree ([[lint-issues-command]]).
 - [x] `sisyphus graph` shows a large task's family tree in the terminal ([[graph-view-command]]).
 - [ ] `sisyphus migrate` upgrades every issue to the current schema ([[migrate-command]]).
-- [ ] `sisyphus update` can change fields without a state argument ([[update-without-state-change]]).
-- [ ] `sisyphus update` can change the title ([[retitle-issue]]).
-- [ ] `sisyphus list --ready` shows the issues that can start now ([[list-ready-issues]]).
-- [ ] `sisyphus new` takes more than one dependency ([[new-multiple-dependencies]]).
-- [ ] `sisyphus update` can add or remove one tag ([[add-remove-single-tags]]).
+- [x] `sisyphus update` can change fields without a state argument ([[update-without-state-change]]).
+- [x] `sisyphus update` can change the title ([[retitle-issue]]).
+- [x] `sisyphus list --ready` shows the issues that can start now ([[list-ready-issues]]).
+- [x] `sisyphus new` takes more than one dependency ([[new-multiple-dependencies]]).
+- [x] `sisyphus update` can add or remove one tag ([[add-remove-single-tags]]).
 - [x] `sisyphus show` prints the resolution ([[show-prints-resolution]]).
 - [x] A command edits a section of an issue's body ([[edit-issue-body-command]]).
 
