@@ -482,7 +482,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 			"the given tags. Every given flag narrows the list together (AND).",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			stateValues := parseList(state)
+			stateValues := stateFilter(state)
 			priorityValues := parseList(priority)
 			if err := firstError(
 				validateEach("state", stateValues, states),
@@ -522,7 +522,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 		},
 	}
 	flags := cmd.Flags()
-	flags.StringVarP(&state, "state", "s", "", "Comma-separated states to include: "+strings.Join(states, ", ")+". Default: open, in-progress.")
+	flags.StringVarP(&state, "state", "s", "", "Comma-separated states to include: "+strings.Join(states, ", ")+", or all. Default: open, in-progress.")
 	flags.StringVarP(&priority, "priority", "p", "", "Comma-separated priorities to include: "+strings.Join(priorities, ", ")+".")
 	flags.StringVar(&tags, "tags", "", "Comma-separated tags, for example \"bug\"; matches an issue with any of them. Built-in: "+strings.Join(builtinTags, ", ")+".")
 	flags.StringVar(&owner, "owner", "", "Only issues with exactly this owner.")
@@ -551,7 +551,7 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 			if len(args) == 1 {
 				query = args[0]
 			}
-			stateValues := parseList(state)
+			stateValues := stateFilter(state)
 			priorityValues := parseList(priority)
 			if err := firstError(
 				validateEach("state", stateValues, states),
@@ -597,7 +597,7 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 		},
 	}
 	flags := cmd.Flags()
-	flags.StringVarP(&state, "state", "s", "", "Comma-separated states to include: "+strings.Join(states, ", ")+". Default: open, in-progress.")
+	flags.StringVarP(&state, "state", "s", "", "Comma-separated states to include: "+strings.Join(states, ", ")+", or all. Default: open, in-progress.")
 	flags.StringVarP(&priority, "priority", "p", "", "Comma-separated priorities to include: "+strings.Join(priorities, ", ")+".")
 	flags.StringVar(&tags, "tags", "", "Comma-separated tags, for example \"bug\"; matches an issue with any of them. Built-in: "+strings.Join(builtinTags, ", ")+".")
 	flags.StringVar(&owner, "owner", "", "Only issues with exactly this owner.")
@@ -868,7 +868,83 @@ func oneOf(what, value string, choices []string) error {
 	if slices.Contains(choices, value) {
 		return nil
 	}
-	return fmt.Errorf("Invalid %s '%s'. Use one of: %s.", what, value, strings.Join(choices, ", "))
+	message := fmt.Sprintf("Invalid %s '%s'. Use one of: %s.", what, value, strings.Join(choices, ", "))
+	if suggestion := suggestValue(value, choices); suggestion != "" {
+		message += fmt.Sprintf(" Did you mean '%s'?", suggestion)
+	}
+	return errors.New(message)
+}
+
+// valueSynonyms are words that people use for a valid value. They give a suggestion, never the value.
+var valueSynonyms = map[string]string{
+	"done": "closed", "close": "closed", "finished": "closed", "complete": "closed", "resolved": "closed",
+	"start": "in-progress", "started": "in-progress", "doing": "in-progress", "wip": "in-progress",
+	"active": "in-progress", "progress": "in-progress", "inprogress": "in-progress", "in_progress": "in-progress",
+	"new": "open", "todo": "open", "backlog": "open", "reopen": "open",
+	"urgent": "critical", "blocker": "critical", "med": "medium", "normal": "medium",
+	"xl": "x-large", "xlarge": "x-large", "x_large": "x-large", "huge": "x-large",
+	"cancelled": "abandoned", "canceled": "abandoned", "dropped": "abandoned",
+}
+
+// suggestValue returns the valid value that value most likely meant, or "": a synonym, else the only
+// choice that starts with value, else the only choice within two edits.
+func suggestValue(value string, choices []string) string {
+	lower := strings.ToLower(strings.TrimSpace(value))
+	if synonym, ok := valueSynonyms[lower]; ok && slices.Contains(choices, synonym) {
+		return synonym
+	}
+	if slices.Contains(choices, lower) {
+		return lower
+	}
+	var prefixed []string
+	for _, choice := range choices {
+		if lower != "" && strings.HasPrefix(choice, lower) {
+			prefixed = append(prefixed, choice)
+		}
+	}
+	if len(prefixed) == 1 {
+		return prefixed[0]
+	}
+	var near []string
+	for _, choice := range choices {
+		if editDistance(lower, choice) <= 2 {
+			near = append(near, choice)
+		}
+	}
+	if len(near) == 1 {
+		return near[0]
+	}
+	return ""
+}
+
+// editDistance is the Levenshtein distance between a and b.
+func editDistance(a, b string) int {
+	previous := make([]int, len(b)+1)
+	for j := range previous {
+		previous[j] = j
+	}
+	for i := 1; i <= len(a); i++ {
+		current := make([]int, len(b)+1)
+		current[0] = i
+		for j := 1; j <= len(b); j++ {
+			cost := 1
+			if a[i-1] == b[j-1] {
+				cost = 0
+			}
+			current[j] = min(previous[j]+1, current[j-1]+1, previous[j-1]+cost)
+		}
+		previous = current
+	}
+	return previous[len(b)]
+}
+
+// stateFilter reads a --state value of list or search: a comma-separated list of states, or "all".
+func stateFilter(value string) []string {
+	values := parseList(value)
+	if slices.Contains(values, "all") {
+		return slices.Clone(states)
+	}
+	return values
 }
 
 func validateEach(what string, values, choices []string) error {

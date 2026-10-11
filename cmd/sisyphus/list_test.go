@@ -241,3 +241,35 @@ func TestTagsAreStoredInLowercaseAndMatchedWithoutRegardToCase(t *testing.T) {
 	r.mustRun("update", "hand-tag-test", "--add-tags", "BUG,Feature", "--remove-tags", "bug")
 	equal(t, "[feature]", r.frontmatter("issues/open/hand-tag-test.md").get("tags"))
 }
+
+func TestListAndSearchAcceptStateAll(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "open-issue-test")
+	r.mustRun("new", "closed-issue-test", "--state", "closed")
+
+	for _, args := range [][]string{{"list", "--state", "all"}, {"search", "issue", "--state", "all"}} {
+		output := r.mustRun(args...).output
+		contains(t, output, "open-issue-test")
+		contains(t, output, "closed-issue-test")
+	}
+}
+
+func TestInvalidValuesSuggestTheNearestValidValue(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+
+	for args, want := range map[string]string{
+		"update fix-login-bug done":            "Did you mean 'closed'?",
+		"update fix-login-bug start":           "Did you mean 'in-progress'?",
+		"update fix-login-bug --priority hi":   "Did you mean 'high'?",
+		"update fix-login-bug --priority hihg": "Did you mean 'high'?",
+		"update fix-login-bug --effort XL":     "Did you mean 'x-large'?",
+		"list --state inprogress":              "Did you mean 'in-progress'?",
+	} {
+		res := r.run(strings.Fields(args)...)
+		equal(t, 1, res.exit)
+		contains(t, res.error, want)
+	}
+	res := r.run("update", "fix-login-bug", "--priority", "zzzzzz")
+	isTrue(t, !strings.Contains(res.error, "Did you mean"), "no suggestion for a value that is not near")
+}

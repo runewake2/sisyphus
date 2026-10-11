@@ -43,6 +43,13 @@ When there is no repo root, a command fails with:
 Error: Cannot find the repo root. Run sisyphus in a directory below the one that contains issues/TEMPLATE.md. To set up issue tracking here, run: sisyphus init
 ```
 
+## Invalid values
+
+A `state`, `priority`, `effort`, or `resolution` that is not valid is an error that lists the valid
+values. When one valid value is near, the error suggests it: a common word (`done` → `closed`,
+`start` → `in-progress`), the only value that starts with it (`hi` → `high`), or the only value
+within two typing errors (`hihg` → `high`). sisyphus never uses the suggestion by itself.
+
 ## Naming an issue
 
 An issue's file name, without `.md`, is 2-6 lowercase words in kebab-case, for example

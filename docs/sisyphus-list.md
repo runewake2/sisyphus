@@ -12,7 +12,7 @@ sisyphus list [flags]
 
 | Flag | Meaning |
 |---|---|
-| `-s`, `--state` | Comma-separated states to include. Default: `open,in-progress`. |
+| `-s`, `--state` | Comma-separated states to include, or `all`. Default: `open,in-progress`. |
 | `-p`, `--priority` | Comma-separated priorities to include. |
 | `--tags` | Comma-separated tags. An issue matches if it has any of them. |
 | `--owner` | Only issues with exactly this owner. |

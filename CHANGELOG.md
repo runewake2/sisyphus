@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.70]] - 2026-10-11
+- Accept `--state all`, and suggest the nearest valid value for an invalid state, priority, effort, or resolution.
+
 ## [[0.0.69]] - 2026-10-11
 - Tell a new user to run `sisyphus init` outside a repo, and the next step after `init`.
 

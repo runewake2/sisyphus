@@ -225,7 +225,7 @@ func showHandler(_ context.Context, _ *mcp.CallToolRequest, in showArgs) (*mcp.C
 
 type listArgs struct {
 	Dir      string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed. Defaults to open and in-progress."`
+	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed, or all. Defaults to open and in-progress."`
 	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
 	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
 	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
@@ -255,7 +255,7 @@ func listHandler(_ context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp.C
 type searchArgs struct {
 	Dir      string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
 	Query    string `json:"query,omitempty" jsonschema:"A case-insensitive query matched against title and body. Optional: filters alone also work."`
-	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed. Defaults to open and in-progress."`
+	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed, or all. Defaults to open and in-progress."`
 	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
 	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
 	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
