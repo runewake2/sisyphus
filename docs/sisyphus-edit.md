@@ -15,11 +15,14 @@ sisyphus edit <name> <section> - [--append]      # read the text from standard i
 heading of the section, matched case-insensitively, for example `resolution` or
 `"acceptance criteria"`.
 
+## Flags
+
 | Flag | Meaning |
 |---|---|
 | `-a`, `--append` | Add the text at the end of the section, after a blank line, instead of replacing the section. |
+| `--json` | Print the changed issue as JSON, as [[sisyphus-show]] `--json` does, with its path and the warnings. |
 
-## Rules
+## Behavior
 
 - The text replaces everything between the section's heading and the next heading at the same or a
   higher level. The heading line, the frontmatter, and every other section do not change.

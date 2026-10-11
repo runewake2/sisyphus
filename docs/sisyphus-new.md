@@ -36,8 +36,9 @@ error that gives the command to use instead.
 | `--remote` | none | The URL of an external ticket. See [[sisyphus-remote]]. |
 | `--context` | none | Text that replaces the Context section's placeholder. |
 | `--metadata` | none | `key=value` notes. Repeat the flag, or separate pairs with commas. |
+| `--json` | Print the changed issue as JSON, as [[sisyphus-show]] `--json` does, with its path and the warnings. |
 
-## What it does
+## Behavior
 
 1. Checks the name: its shape, and that no issue in any state directory already has that full
    name. If another Markdown file anywhere in the repo has the same file name, ignoring case, it

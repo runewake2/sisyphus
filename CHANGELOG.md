@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.80]] - 2026-10-11
+- Give every command page the sections Usage, Flags, Behavior, Output, and Examples, and test them.
+
 ## [[0.0.79]] - 2026-10-11
 - Add examples to the help of every command, and group the commands in the root help.
 

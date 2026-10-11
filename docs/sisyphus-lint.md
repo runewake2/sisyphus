@@ -8,11 +8,13 @@ Check every issue and every wikilink in the repo at once, and write nothing.
 sisyphus lint [--json]
 ```
 
+## Flags
+
 | Flag | Meaning |
 |---|---|
 | `--json` | Print the result as JSON: the counts and the list of problems. |
 
-## What it checks
+## Behavior
 
 For each issue file in `issues/open`, `issues/in-progress`, and `issues/closed`, also in
 subdirectories:

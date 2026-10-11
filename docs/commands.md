@@ -6,27 +6,51 @@ sisyphus is a command-line issue manager. Every issue is one Markdown file with 
 
 ## Commands
 
+The groups are the same as in `sisyphus --help`.
+
+### Create and change issues
+
 | Command | What it does |
 |---|---|
-| [[sisyphus-init]] | Set up `issues/` in a repo. |
 | [[sisyphus-new]] | Create an issue. |
-| [[sisyphus-update]] | Change an issue's state, or edit its fields. |
 | [[sisyphus-start]] | Start work on an issue (`update <name> in-progress`). |
+| [[sisyphus-update]] | Change an issue's state, or edit its fields. |
 | [[sisyphus-close]] | Close an issue as completed, with an optional Resolution text. |
 | [[sisyphus-abandon]] | Close an issue as abandoned, with an optional Resolution text. |
 | [[sisyphus-edit]] | Replace or append to one section of an issue's body. |
-| [[sisyphus-show]] | Print one issue. |
 | [[sisyphus-open]] | Open an issue in your editor, and check it after. |
+
+### Read and find issues
+
+| Command | What it does |
+|---|---|
+| [[sisyphus-show]] | Print one issue. |
 | [[sisyphus-list]] | List and filter issues. |
 | [[sisyphus-search]] | Search issues by content and filters. |
 | [[sisyphus-graph]] | Draw an issue, everything below it, and the path above it. |
+
+### Relate issues
+
+| Command | What it does |
+|---|---|
 | [[sisyphus-parent]] | Set or remove an issue's parent. |
 | [[sisyphus-depends-on]] | Add or remove an issue that must close first. |
 | [[sisyphus-remote]] | Pin an issue to an external ticket URL. |
+
+### Check names and links
+
+| Command | What it does |
+|---|---|
 | [[sisyphus-slug]] | Turn text into a unique, valid issue name. |
 | [[sisyphus-resolve]] | Find the file a wikilink points to. |
 | [[sisyphus-links]] | Check every wikilink in a document. |
 | [[sisyphus-lint]] | Check every issue and every wikilink in the repo. |
+
+### Set up
+
+| Command | What it does |
+|---|---|
+| [[sisyphus-init]] | Set up `issues/` in a repo. |
 | [[sisyphus-completion]] | Print the shell completion script. |
 
 [[sisyphus-mcp]] gives an agent all of these as tools over the Model Context Protocol.

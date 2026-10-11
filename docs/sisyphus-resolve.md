@@ -18,7 +18,7 @@ or path. Only the target matters: the heading and the display text are ignored.
 | `-a`, `--all` | Print every match. Without it, more than one match is an error. |
 | `--absolute` | Print absolute paths. The default is paths from the repo root. |
 
-## How a link matches
+## Behavior
 
 The same way Obsidian matches it:
 

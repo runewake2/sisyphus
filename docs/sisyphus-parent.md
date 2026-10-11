@@ -12,7 +12,14 @@ sisyphus parent <name> --clear
 Both `<name>` and `<parent>` take any form of an issue name (see [[commands#Naming an issue]]).
 Give exactly one of `<parent>` and `--clear`.
 
-## Rules
+## Flags
+
+| Flag | Meaning |
+|---|---|
+| `--clear` | Remove the parent. Not with `<parent>`. |
+| `--json` | Print the changed issue as JSON, as [[sisyphus-show]] `--json` does, with its path and the warnings. |
+
+## Behavior
 
 - An issue has at most one parent. Setting a parent replaces the old one.
 - The parent must exist, in any state directory.

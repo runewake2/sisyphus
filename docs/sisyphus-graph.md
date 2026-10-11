@@ -11,7 +11,19 @@ sisyphus graph <name> [--full] [--color auto|always|never] [--json | --mermaid]
 
 `<name>` is any form of an existing issue (see [[commands#Naming an issue]]).
 
-## What it does
+## Flags
+
+| Flag | Meaning |
+| --- | --- |
+| `--full` | Draw every issue linked to `<name>`, not only what is below it and the path above it. |
+| `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, `available`, which is `true` for an available issue and left out otherwise, and `indirect`, which is `true` for an issue that only `--full` draws and left out otherwise, and `resolution` for a closed issue that has one), `edges` (each with `from`, `to`, and `kind`), and `hidden` (how many linked issues are not drawn). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
+| `--mermaid` | Print the Mermaid flowchart source instead of drawing it. Paste it into a ` ```mermaid ` block in a Markdown file, and Obsidian or GitHub renders it. The note about issues not drawn becomes a `%%` comment. |
+| `--color` | `auto` (the default), `always`, or `never`. With `auto`, the drawing has color only on a terminal, and not when `NO_COLOR` is set or `TERM` is `dumb`. `--json` and `--mermaid` output never has color. |
+| `--max-issues` | Do not draw more than this many issues (default 200; `0` means no limit). A larger graph is an error that tells how many issues it has: use `--json` or `--mermaid`, which have no limit, or draw a narrower issue. A drawing of thousands of boxes is megabytes of text that nobody can read. |
+
+`--json` and `--mermaid` cannot be used together. `--full` works with either.
+
+## Behavior
 
 Every arrow points from the issue that comes first to the issue that comes after it:
 
@@ -76,6 +88,24 @@ that `<name>` does not need. A work path follows only the arrows that the graph 
 Each directory that holds a drawn issue is a rounded box around the issues and directories below
 it, nested as the directories nest. So an issue box shows only the file name of its issue, with
 its state on the line below, and the legend gives the full name of `<name>`.
+
+### Color
+
+As of 0.0.28, color is an experiment. `<name>` and each arrow that leaves or enters it are bold
+bright cyan. Each issue that such an arrow links to `<name>` is bold in the color of its state:
+
+| Color | State |
+| --- | --- |
+| Blue | open |
+| Yellow | in-progress |
+| Green | closed and completed, or closed with no resolution |
+| Red | closed and abandoned |
+
+The rest of the drawing is gray, so the issue and its direct links stand out. Where an arrow
+shares a line with the arrows of other issues, only the part that leads to or from `<name>` is
+bright. The arrows of the work path and the borders of the issues to start now are bold magenta.
+The legend has no color, except a line that names each state color the drawing uses. Each colored
+line resets the color at its end.
 
 ## Output
 
@@ -169,37 +199,6 @@ Each directory has lines of its own, so no box of a directory holds an issue fro
 the boxes of two sibling directories do not overlap. An arrow that crosses a border joins it with
 `┼`, and never runs along it. Arrows that leave one issue share a line, and so do arrows that enter
 one issue. Use `--json` or `--mermaid` when the exact links matter.
-
-## Options
-
-| Option | Effect |
-| --- | --- |
-| `--full` | Draw every issue linked to `<name>`, not only what is below it and the path above it. |
-| `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, `available`, which is `true` for an available issue and left out otherwise, and `indirect`, which is `true` for an issue that only `--full` draws and left out otherwise, and `resolution` for a closed issue that has one), `edges` (each with `from`, `to`, and `kind`), and `hidden` (how many linked issues are not drawn). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
-| `--mermaid` | Print the Mermaid flowchart source instead of drawing it. Paste it into a ` ```mermaid ` block in a Markdown file, and Obsidian or GitHub renders it. The note about issues not drawn becomes a `%%` comment. |
-
-| `--color` | `auto` (the default), `always`, or `never`. With `auto`, the drawing has color only on a terminal, and not when `NO_COLOR` is set or `TERM` is `dumb`. `--json` and `--mermaid` output never has color. |
-| `--max-issues` | Do not draw more than this many issues (default 200; `0` means no limit). A larger graph is an error that tells how many issues it has: use `--json` or `--mermaid`, which have no limit, or draw a narrower issue. A drawing of thousands of boxes is megabytes of text that nobody can read. |
-
-`--json` and `--mermaid` cannot be used together. `--full` works with either.
-
-## Color
-
-As of 0.0.28, color is an experiment. `<name>` and each arrow that leaves or enters it are bold
-bright cyan. Each issue that such an arrow links to `<name>` is bold in the color of its state:
-
-| Color | State |
-| --- | --- |
-| Blue | open |
-| Yellow | in-progress |
-| Green | closed and completed, or closed with no resolution |
-| Red | closed and abandoned |
-
-The rest of the drawing is gray, so the issue and its direct links stand out. Where an arrow
-shares a line with the arrows of other issues, only the part that leads to or from `<name>` is
-bright. The arrows of the work path and the borders of the issues to start now are bold magenta.
-The legend has no color, except a line that names each state color the drawing uses. Each colored
-line resets the color at its end.
 
 The epic with `--mermaid`. Each directory becomes a `subgraph`. The `focus` and `available` classes
 give `<name>` and the available issues thicker borders. With `--full`, the `indirect` class gives

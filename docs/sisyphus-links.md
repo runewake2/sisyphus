@@ -10,7 +10,14 @@ sisyphus links <document> [--json] [--absolute]
 
 `<document>` is a path, or a wikilink to the document, resolved the way [[sisyphus-resolve]] does.
 
-## What it checks
+## Flags
+
+| Flag | Meaning |
+|---|---|
+| `--json` | Print a JSON array instead of a table. |
+| `--absolute` | Print absolute paths in `resolved`, instead of paths relative to the repo root. |
+
+## Behavior
 
 Every wikilink in the document, in the frontmatter and the body, is resolved the way
 [[sisyphus-resolve]] resolves a link. Each gets a status:

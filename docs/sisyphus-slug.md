@@ -8,7 +8,11 @@ Turn any text, for example a title, into a valid ASCII issue name that no file i
 sisyphus slug <text>
 ```
 
-## Rules
+## Flags
+
+None.
+
+## Behavior
 
 1. Lowercase the text and spell its letters in ASCII. Accents go (`é` becomes `e`, `ñ` becomes
    `n`), and letters without an accent form get an ASCII spelling (`ß` becomes `ss`, `æ` becomes

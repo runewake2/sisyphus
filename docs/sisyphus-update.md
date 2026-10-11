@@ -32,10 +32,11 @@ resolution and its closed date. The warnings about closing an issue come only wh
 | `--add-tags` | Tags to add, comma-separated, in lowercase. A tag that is there in another case is not added again. The other tags stay, in their order. Not with `--tags`. |
 | `--remove-tags` | Tags to remove, comma-separated. A tag that is not there is not an error. Not with `--tags`. |
 | `--metadata` | `key=value` notes to add or change. Repeat the flag, or separate pairs with commas. |
+| `--json` | Print the changed issue as JSON, as [[sisyphus-show]] `--json` does, with its path and the warnings. |
 
 A flag you do not give leaves its field as it is, except where the rules below say otherwise.
 
-## Rules
+## Behavior
 
 **State**
 

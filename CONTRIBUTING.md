@@ -296,4 +296,5 @@ If this prints nothing, the work is complete.
 - [ ] Markdown files link with `[[wikilinks]]`, and `sisyphus links` reports only `ok` links
 - [ ] `sisyphus lint` reports no problems
 - [ ] The tests of the repo pass
+- [ ] A new or changed command has a page `docs/sisyphus-<command>.md` with the sections Usage, Flags, Behavior, Output, and Examples, and its `--help` examples are lines of that page (a test checks both)
 - [ ] SHAME version bumped, with a new `changelog/<version>.md`, a `CHANGELOG.md` entry, and `VERSION` updated

@@ -18,7 +18,7 @@ sisyphus search [<query>] [flags]
 | `--section` | Search, and print, only one section of each issue, for example `summary`. |
 | `--json` | Print JSON instead of text. |
 
-## What it matches
+## Behavior
 
 - `<query>` is a plain substring, matched without regard to case. Without `--section`, it is
   matched against the title and the whole body. Without a query, every issue that passes the

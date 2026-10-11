@@ -10,12 +10,26 @@ sisyphus show <name> [--all] [--json]
 
 `<name>` is any form of an existing issue (see [[commands#Naming an issue]]).
 
+## Flags
+
+| Flag | Meaning |
+|---|---|
+| `--all` | Print every field and every section, also the empty ones and the ones that hold only template text. |
+| `--json` | Print one JSON object with every frontmatter field and the body. |
+
+## Behavior
+
+- By default, `show` prints the fields that have a value, aligned, then the body without the
+  sections that hold only the template text (the `<...>` placeholders). `title`, `state`,
+  `priority`, `effort`, and `created` always show. `resolution` and `closed` have a value only when
+  the issue is closed, so they show whether a close or an abandon worked.
+- `--all` prints every field and every section.
+- A missing issue, or an issue in more than one state directory, is an error.
+- `show` checks the issue that it prints, and warns on stderr about each problem (see Output).
+
 ## Output
 
-By default, the fields that have a value, aligned, then the body without the sections that hold only
-the template text (the `<...>` placeholders). `title`, `state`, `priority`, `effort`, and `created`
-always show. `resolution` and `closed` have a value only when the issue is closed, so they show
-whether a close or an abandon worked. `--all` prints every field and every section:
+The fields, then the body. With `--all`:
 
 ```
 title:      Fix login bug
@@ -57,8 +71,6 @@ arrays and objects, `depends-on` holds plain issue names, and empty optional fie
   "body": "\n# Fix login bug\n..."
 }
 ```
-
-A missing issue, or an issue in more than one state directory, is an error.
 
 Warnings, on stderr: one for each issue file that sisyphus cannot read, or whose frontmatter has a
 line that is not a `key: value` field, a value that opens `[`, `{`, or a quote and does not close

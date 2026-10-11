@@ -12,7 +12,14 @@ sisyphus depends-on <name> --clear                    # remove every dependency
 
 Both arguments take any form of an issue name (see [[commands#Naming an issue]]).
 
-## Rules
+## Flags
+
+| Flag | Meaning |
+|---|---|
+| `--clear` | With `<blocking-issue>`, remove that dependency; without it, remove every dependency. |
+| `--json` | Print the changed issue as JSON, as [[sisyphus-show]] `--json` does, with its path and the warnings. |
+
+## Behavior
 
 - An issue can depend on any number of issues. Adding one that is already there changes nothing.
 - The blocking issue must exist. A closed blocking issue is allowed, with a warning.
@@ -25,7 +32,7 @@ Both arguments take any form of an issue name (see [[commands#Naming an issue]])
 
 The list is written as quoted wikilinks: `depends-on: ["[[fix-login-bug]]", "[[session-timeouts]]"]`.
 
-## Where it shows up
+### Where it shows up
 
 - `sisyphus list --blocked` lists issues that depend on an issue that is not closed yet.
 - Closing an issue that open or in-progress issues still depend on gives a warning.

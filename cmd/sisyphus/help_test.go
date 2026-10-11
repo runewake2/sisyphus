@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/pflag"
 )
 
 func TestEveryCommandHasExamplesFromItsDocsPage(t *testing.T) {
@@ -49,5 +51,41 @@ func TestRootHelpGroupsTheCommandsOnLinesThatFit(t *testing.T) {
 		if strings.HasPrefix(line, "  ") && len(line) > 80 {
 			t.Errorf("help line longer than 80 characters: %q", line)
 		}
+	}
+}
+
+// pageSections are the level-2 headings of every command page, in order.
+var pageSections = []string{"Usage", "Flags", "Behavior", "Output", "Examples"}
+
+func TestEveryCommandPageHasTheSameSectionsAndItsFlags(t *testing.T) {
+	root := newRootCommand(findRoot)
+	for _, cmd := range root.Commands() {
+		if cmd.Name() == "help" || cmd.Hidden {
+			continue
+		}
+		page, err := os.ReadFile(filepath.Join("..", "..", "docs", "sisyphus-"+cmd.Name()+".md"))
+		if err != nil {
+			t.Errorf("%s: %v", cmd.Name(), err)
+			continue
+		}
+		lines := splitLines(string(page))
+		var sections []string
+		flagsText := ""
+		inFlags := false
+		for _, index := range outsideCodeFences(lines) {
+			line := lines[index]
+			if strings.HasPrefix(line, "## ") {
+				sections = append(sections, strings.TrimPrefix(line, "## "))
+				inFlags = line == "## Flags"
+			} else if inFlags {
+				flagsText += line + "\n"
+			}
+		}
+		equalSlices(t, pageSections, sections)
+		cmd.LocalNonPersistentFlags().VisitAll(func(flag *pflag.Flag) {
+			if flag.Name != "help" && !flag.Hidden && !strings.Contains(flagsText, "`--"+flag.Name+"`") {
+				t.Errorf("docs/sisyphus-%s.md: --%s is not in the Flags table", cmd.Name(), flag.Name)
+			}
+		})
 	}
 }

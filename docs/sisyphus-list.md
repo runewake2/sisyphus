@@ -22,6 +22,8 @@ sisyphus list [flags]
 | `--wide` | Do not shorten titles to fit the terminal. |
 | `--json` | Print JSON instead of a table. |
 
+## Behavior
+
 Within one flag, the values are alternatives (OR). Different flags must all match (AND).
 Closed issues are listed only when `--state` includes `closed`.
 
