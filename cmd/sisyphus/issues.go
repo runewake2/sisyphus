@@ -289,6 +289,9 @@ type updateOptions struct {
 	priority, effort, tags, title        *string
 	addTags, removeTags                  string
 	reopen                               bool
+	// start is true for sisyphus start: a claim of the issue, also when it is already in progress.
+	// take lets the claim replace the owner of an issue that another owner has.
+	start, take bool
 	// message is the text for the Resolution section, for an issue that closes.
 	message  *string
 	metadata map[string]string
@@ -322,10 +325,13 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 		return "", err
 	}
 	starts := state == "in-progress" && current.state != "in-progress"
-	if starts && o.owner == nil {
+	if (starts || o.start) && o.owner == nil {
 		if owner := environmentOwner(); owner != "" {
 			o.owner = &owner
 		}
+	}
+	if err := checkClaim(name, current.state, state, doc.get("owner"), o, warnings); err != nil {
+		return "", err
 	}
 	if recorded := doc.get("state"); recorded != current.state {
 		warn(warnings, fmt.Sprintf("The issue was in issues/%s/ but its state field was '%s'. The update corrects both.", current.state, recorded))
@@ -445,6 +451,30 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 		return "", err
 	}
 	return relative(root, destination), nil
+}
+
+// checkClaim fails when the update would take an issue in progress from its owner: a start by a
+// different owner, or an --owner change. With take, it warns instead. A start by the same owner
+// changes nothing, so an agent can repeat it. An issue in progress with no owner can get one.
+func checkClaim(name, currentState, state, owner string, o updateOptions, warnings io.Writer) error {
+	if currentState != "in-progress" || state != "in-progress" || owner == "" {
+		return nil
+	}
+	if !o.start && o.owner == nil {
+		return nil
+	}
+	requested := valueOrEmpty(o.owner)
+	if requested == owner {
+		return nil
+	}
+	if !o.take {
+		return fmt.Errorf("Issue '%s' is in progress, owned by %s. Select another issue, or to take it from %s, add --take.", name, owner, owner)
+	}
+	if requested == "" {
+		return fmt.Errorf("--take needs the new owner. Give --owner, or set %s.", ownerVariable)
+	}
+	warn(warnings, fmt.Sprintf("Issue '%s' was owned by %s. Its owner is now %s.", name, owner, requested))
+	return nil
 }
 
 func setParent(root, reference string, parent *string, warnings io.Writer) (string, error) {

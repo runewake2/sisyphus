@@ -9,11 +9,15 @@ import (
 // startCommand is "sisyphus update <name> in-progress" in fewer words.
 func startCommand(findRoot func() (string, error)) *cobra.Command {
 	var owner, bookmark, workspace string
+	var take bool
 	cmd := &cobra.Command{
 		Use:   "start <name>",
 		Short: "Start work on an issue: update <name> in-progress.",
 		Long: "Start work on an issue. It is sisyphus update <name> in-progress, with the same rules and " +
-			"warnings: for example, a warning when an issue that the issue depends on is not closed.",
+			"warnings: for example, a warning when an issue that the issue depends on is not closed.\n\n" +
+			"An issue that is in progress with a different owner is refused, unless you add --take. A start " +
+			"by the same owner changes nothing, so it is safe to repeat. Without --owner, the owner is the " +
+			"value of " + ownerVariable + ".",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return printPath(cmd, findRoot, func(root string, warnings io.Writer) (string, error) {
@@ -21,11 +25,14 @@ func startCommand(findRoot func() (string, error)) *cobra.Command {
 					owner:     optional(cmd, "owner", owner),
 					bookmark:  optional(cmd, "bookmark", bookmark),
 					workspace: optional(cmd, "workspace", workspace),
+					start:     true,
+					take:      take,
 				}, warnings)
 			})
 		},
 	}
-	cmd.Flags().StringVar(&owner, "owner", "", "The person or agent working on the issue.")
+	cmd.Flags().StringVar(&owner, "owner", "", "The person or agent working on the issue. Default: the value of "+ownerVariable+".")
+	cmd.Flags().BoolVar(&take, "take", false, takeHelp)
 	cmd.Flags().StringVarP(&bookmark, "bookmark", "b", "", "The jj bookmark or git branch of the work.")
 	cmd.Flags().StringVar(&workspace, "workspace", "", "The jj workspace or git worktree where the work happens. Appended to the issue's workspace history.")
 	return cmd

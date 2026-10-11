@@ -164,7 +164,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 
 func updateCommand(findRoot func() (string, error)) *cobra.Command {
 	var resolution, bookmark, owner, approver, workspace, priority, effort, tags, title, addTags, removeTags, message string
-	var reopen bool
+	var reopen, take bool
 	var metadata map[string]string
 	cmd := &cobra.Command{
 		Use:   "update <name> [<state>]",
@@ -201,6 +201,7 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 					addTags:    addTags,
 					removeTags: removeTags,
 					reopen:     reopen,
+					take:       take,
 					message:    optional(cmd, "message", message),
 					metadata:   metadata,
 				}, warnings)
@@ -219,6 +220,7 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&tags, "tags", "", `Replace the tags, comma-separated, for example "bug,scheduler". Built-in: `+strings.Join(builtinTags, ", ")+`; any other tag works too.`)
 	flags.StringVarP(&message, "message", "m", "", "The text of the Resolution section, for an issue that closes: what was done, or why it stopped.")
 	flags.BoolVar(&reopen, "reopen", false, "Reopen an issue whose close was a mistake: move a closed issue back to open or in-progress, clear its resolution and closed date, and note it in Notes. For work that needs more after a real close, create a new issue instead.")
+	flags.BoolVar(&take, "take", false, takeHelp)
 	flags.StringVar(&addTags, "add-tags", "", `Add tags, comma-separated, and keep the others, for example "bug".`)
 	flags.StringVar(&removeTags, "remove-tags", "", `Remove tags, comma-separated, and keep the others. A tag that is not there is not an error.`)
 	flags.StringToStringVar(&metadata, "metadata", nil, `Arbitrary key=value notes to add or update, for example "session-id=abc123". Repeatable, or comma-separated. Never cleared automatically.`)
@@ -668,6 +670,9 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("owner", "mine")
 	return cmd
 }
+
+// takeHelp is the help of --take of start and update.
+const takeHelp = "Take an issue that is in progress from its owner, and warn with the old owner. Only when the owner has stopped the work."
 
 // ownerFilter returns the owner that list and search filter on: owner, or with mine the value of
 // SISYPHUS_OWNER.

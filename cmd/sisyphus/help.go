@@ -30,6 +30,7 @@ var commandExamples = map[string][]string{
 	"start": {
 		`sisyphus start fix-login-bug`,
 		`sisyphus start fix-login-bug --owner alice --bookmark ai/fix-login-bug`,
+		`sisyphus start fix-login-bug --owner bob --take   # alice has stopped the work`,
 	},
 	"update": {
 		`sisyphus update fix-login-bug in-progress --priority critical --tags bug,auth`,

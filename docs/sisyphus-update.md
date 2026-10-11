@@ -19,15 +19,16 @@ resolution and its closed date. The warnings about closing an issue come only wh
 | Flag | Meaning |
 |---|---|
 | `-r`, `--resolution` | `completed` or `abandoned`. Only when the new state is closed; defaults to `completed`. |
-| `-b`, `--bookmark` | The jj bookmark of the work. Set it when work starts. |
+| `-b`, `--bookmark` | The jj bookmark or git branch of the work. Set it when work starts. |
 | `--owner` | The person or agent working on the issue. When an issue starts (the state changes to `in-progress`), the default is the value of `SISYPHUS_OWNER`. |
 | `--approver` | The person or agent who accepts the issue when it closes. |
-| `--workspace` | A jj workspace where work on the issue happens. Added to `workspaces`. |
+| `--workspace` | A jj workspace or git worktree where work on the issue happens. Added to `workspaces`. |
 | `--priority` | A new priority: `critical`, `high`, `medium`, or `low`. |
 | `--effort` | A new effort: `small`, `medium`, `large`, or `x-large`. |
 | `-t`, `--title` | A new title. It changes the `title` field and the first `#` heading of the body. The same rules as for `sisyphus new --title` apply. |
 | `--tags` | New tags, comma-separated. They replace the old tags. A tag cannot contain a space. |
 | `-m`, `--message` | With the state `closed`: the text of the Resolution section, with the rules of [[sisyphus-edit]]. [[sisyphus-close]] and [[sisyphus-abandon]] are shortcuts. |
+| `--take` | Take an issue that is in progress from its owner: change `owner` and warn with the old owner. See **Owner** below. |
 | `--reopen` | Reopen an issue whose close was a mistake. Only for a closed issue, with the state `open` or `in-progress`. |
 | `--add-tags` | Tags to add, comma-separated, in lowercase. A tag that is there in another case is not added again. The other tags stay, in their order. Not with `--tags`. |
 | `--remove-tags` | Tags to remove, comma-separated. A tag that is not there is not an error. Not with `--tags`. |
@@ -61,6 +62,22 @@ A flag you do not give leaves its field as it is, except where the rules below s
 
 `workspaces` is a history: `--workspace` adds a name once, and nothing ever removes one. `metadata`
 is never cleared automatically.
+
+**Owner**
+
+The owner of an issue in progress has claimed it. `update` does not take an issue from its owner
+without `--take`:
+
+- `--owner` with a different owner, on an issue that is in progress with an owner, fails:
+  `Issue 'fix-login-bug' is in progress, owned by a1. Select another issue, or to take it from a1, add --take.`
+- With `--take`, the owner changes, and a warning names the old owner. Use it only when the old
+  owner has stopped the work.
+- An issue in progress with no owner can get one without `--take`.
+- Changes of other fields, a close, and a stop (`update <name> open`) do not check the owner.
+- When the issue starts and `--owner` is not given, the owner is the value of `SISYPHUS_OWNER`. An
+  issue that starts with no owner gives a warning.
+
+See [[0022-refuse-to-take-a-claimed-issue]].
 
 **Moving the file**
 

@@ -399,3 +399,21 @@ func TestToolDescriptionsDoNotAssumeJJ(t *testing.T) {
 		}
 	}
 }
+
+func TestUpdateToolRefusesAClaimedIssueWithoutTake(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+	callTool(t, session, "sisyphus_update", map[string]any{"dir": dir, "name": "fix-login-bug", "state": "in-progress", "owner": "a1"})
+
+	refused := callToolExpectingError(t, session, "sisyphus_update", map[string]any{"dir": dir, "name": "fix-login-bug", "owner": "a2"})
+	taken := callTool(t, session, "sisyphus_update", map[string]any{"dir": dir, "name": "fix-login-bug", "owner": "a2", "take": true})
+
+	if !strings.Contains(refused, "owned by a1") {
+		t.Errorf("want the owner in the error, got: %s", refused)
+	}
+	if !strings.Contains(taken, "was owned by a1") {
+		t.Errorf("want a warning with the old owner, got: %s", taken)
+	}
+}

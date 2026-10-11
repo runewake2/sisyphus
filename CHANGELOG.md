@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.87]] - 2026-10-11
+- Refuse to start an issue that another owner has in progress, unless --take is given.
+
 ## [[0.0.86]] - 2026-10-11
 - Take the owner of an issue that starts from SISYPHUS_OWNER, and add list --mine and search --mine.
 
