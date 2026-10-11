@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.60]] - 2026-10-11
+- Refuse to draw a graph of more than 200 issues in `sisyphus graph`, and point to `--json` or `--mermaid`.
+
 ## [[0.0.59]] - 2026-10-11
 - Find cycles in `sisyphus lint` with one pass over the graph, and report each cycle once.
 

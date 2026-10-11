@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -67,7 +68,7 @@ func registerTools(server *mcp.Server) {
 	}, searchHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_graph",
-		Description: "Draw a sisyphus issue, everything below it (sub-issues and dependents, all the way down), and the path above it (parents and dependencies, all the way up), with their states, and say how many other linked issues are not drawn. Each directory is a rounded box around its issues, and each issue box shows only the file name, with the state on the line below. The issue itself has a double box. Available issues (not closed, with no open dependency or sub-issue, so ready to start) have a heavy box and available: true in JSON. With full, an issue that is not below the issue or on its path above has a dashed box and indirect: true in JSON. Heavy arrows trace the work path from what the issue waits on down to the available issues to start now, which a \"start now:\" legend line names. With full, draw every linked issue. Arrows point from the issue that comes first: solid from a parent to a sub-issue, dotted from a dependency to the issue that depends on it.",
+		Description: "Draw a sisyphus issue, everything below it (sub-issues and dependents, all the way down), and the path above it (parents and dependencies, all the way up), with their states, and say how many other linked issues are not drawn. Each directory is a rounded box around its issues, and each issue box shows only the file name, with the state on the line below. The issue itself has a double box. Available issues (not closed, with no open dependency or sub-issue, so ready to start) have a heavy box and available: true in JSON. With full, an issue that is not below the issue or on its path above has a dashed box and indirect: true in JSON. Heavy arrows trace the work path from what the issue waits on down to the available issues to start now, which a \"start now:\" legend line names. With full, draw every linked issue. A drawing of more than maxIssues issues (default 200) is refused: use json or mermaid for a large graph. Arrows point from the issue that comes first: solid from a parent to a sub-issue, dotted from a dependency to the issue that depends on it.",
 	}, graphHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_parent",
@@ -285,11 +286,12 @@ func searchHandler(_ context.Context, _ *mcp.CallToolRequest, in searchArgs) (*m
 }
 
 type graphArgs struct {
-	Dir     string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name    string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
-	JSON    bool   `json:"json,omitempty" jsonschema:"Return the nodes and edges as JSON instead of a drawing."`
-	Mermaid bool   `json:"mermaid,omitempty" jsonschema:"Return Mermaid flowchart source instead of a drawing."`
-	Full    bool   `json:"full,omitempty" jsonschema:"Draw every linked issue, not only what is below this issue and the path above it."`
+	Dir       string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Name      string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	JSON      bool   `json:"json,omitempty" jsonschema:"Return the nodes and edges as JSON instead of a drawing."`
+	Mermaid   bool   `json:"mermaid,omitempty" jsonschema:"Return Mermaid flowchart source instead of a drawing."`
+	Full      bool   `json:"full,omitempty" jsonschema:"Draw every linked issue, not only what is below this issue and the path above it."`
+	MaxIssues int    `json:"maxIssues,omitempty" jsonschema:"Do not draw more issues than this (default 200); use json or mermaid for a larger graph."`
 }
 
 func graphHandler(_ context.Context, _ *mcp.CallToolRequest, in graphArgs) (*mcp.CallToolResult, any, error) {
@@ -297,6 +299,9 @@ func graphHandler(_ context.Context, _ *mcp.CallToolRequest, in graphArgs) (*mcp
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--mermaid", in.Mermaid)
 	args = appendBoolFlag(args, "--full", in.Full)
+	if in.MaxIssues > 0 {
+		args = appendFlag(args, "--max-issues", strconv.Itoa(in.MaxIssues))
+	}
 	args = appendPositionals(args, in.Name)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {

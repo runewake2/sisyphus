@@ -327,3 +327,17 @@ func TestLintToolReturnsTheProblems(t *testing.T) {
 		t.Errorf("want the priority problem: %s", found)
 	}
 }
+
+func TestGraphToolRefusesAnUnreadableDrawing(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "big-epic-test"})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "one-sub-test", "parent": "big-epic-test"})
+
+	message := callToolExpectingError(t, session, "sisyphus_graph", map[string]any{"dir": dir, "name": "big-epic-test", "maxIssues": 1})
+	if !strings.Contains(message, "more than --max-issues (1)") {
+		t.Errorf("want the size error: %s", message)
+	}
+	callTool(t, session, "sisyphus_graph", map[string]any{"dir": dir, "name": "big-epic-test", "json": true, "maxIssues": 1})
+}

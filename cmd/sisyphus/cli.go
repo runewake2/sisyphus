@@ -361,6 +361,7 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 
 func graphCommand(findRoot func() (string, error)) *cobra.Command {
 	var asJSON, asMermaid, full bool
+	maxIssues := defaultMaxDrawnIssues
 	color := "auto"
 	cmd := &cobra.Command{
 		Use:   "graph <name>",
@@ -403,6 +404,10 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 				_, err := io.WriteString(cmd.OutOrStdout(), source)
 				return err
 			}
+			if n := len(graph.Nodes); maxIssues > 0 && n > maxIssues {
+				return fmt.Errorf("The drawing would have %d issues, more than --max-issues (%d), and could not be read. "+
+					"Use --json or --mermaid, which have no limit, draw a narrower issue, or raise --max-issues (0 means no limit).", n, maxIssues)
+			}
 			colored, err := useColor(color, cmd.OutOrStdout())
 			if err != nil {
 				return err
@@ -415,9 +420,14 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 	cmd.Flags().BoolVar(&asMermaid, "mermaid", false, "Print Mermaid flowchart source instead of a drawing, for example to paste into a Markdown file.")
 	cmd.Flags().BoolVar(&full, "full", false, "Draw every issue linked to <name> by parent or depends-on, not only what is below it and the path above it.")
 	cmd.Flags().StringVar(&color, "color", color, "Color the drawing: auto (on a terminal, unless NO_COLOR is set), always, or never.")
+	cmd.Flags().IntVar(&maxIssues, "max-issues", maxIssues, "Do not draw more issues than this; use --json or --mermaid for a larger graph. 0 means no limit.")
 	cmd.MarkFlagsMutuallyExclusive("json", "mermaid")
 	return cmd
 }
+
+// defaultMaxDrawnIssues is the largest number of issues that graph draws by default. A drawing of
+// thousands of boxes is megabytes of text that nobody can read, and takes a long time to make.
+const defaultMaxDrawnIssues = 200
 
 // useColor decides from the --color value whether a drawing written to out has color. auto means
 // color only on a terminal, and never when NO_COLOR is set (see https://no-color.org) or TERM is dumb.

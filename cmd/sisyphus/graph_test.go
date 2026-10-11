@@ -736,3 +736,21 @@ func TestCanvasMixesLineWeights(t *testing.T) {
 		equal(t, tc.want, tc.cell.rune())
 	}
 }
+
+func TestGraphRefusesToDrawMoreIssuesThanTheLimit(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "big-epic-test")
+	for _, name := range []string{"one-sub-test", "two-sub-test", "three-sub-test"} {
+		r.mustRun("new", name, "--parent", "big-epic-test")
+	}
+
+	res := r.run("graph", "big-epic-test", "--max-issues", "3")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "The drawing would have 4 issues, more than --max-issues (3)")
+	equal(t, "", res.output)
+	equal(t, 0, r.run("graph", "big-epic-test", "--max-issues", "3", "--json").exit)
+	equal(t, 0, r.run("graph", "big-epic-test", "--max-issues", "3", "--mermaid").exit)
+	equal(t, 0, r.run("graph", "big-epic-test", "--max-issues", "0").exit)
+	equal(t, 0, r.run("graph", "big-epic-test").exit)
+}

@@ -179,6 +179,7 @@ one issue. Use `--json` or `--mermaid` when the exact links matter.
 | `--mermaid` | Print the Mermaid flowchart source instead of drawing it. Paste it into a ` ```mermaid ` block in a Markdown file, and Obsidian or GitHub renders it. The note about issues not drawn becomes a `%%` comment. |
 
 | `--color` | `auto` (the default), `always`, or `never`. With `auto`, the drawing has color only on a terminal, and not when `NO_COLOR` is set or `TERM` is `dumb`. `--json` and `--mermaid` output never has color. |
+| `--max-issues` | Do not draw more than this many issues (default 200; `0` means no limit). A larger graph is an error that tells how many issues it has: use `--json` or `--mermaid`, which have no limit, or draw a narrower issue. A drawing of thousands of boxes is megabytes of text that nobody can read. |
 
 `--json` and `--mermaid` cannot be used together. `--full` works with either.
 
