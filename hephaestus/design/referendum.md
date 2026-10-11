@@ -33,7 +33,7 @@ implementation. A referendum is hephaestus work. sisyphus only stores the issue 
 |---|---|
 | Referendum | One vote on one implementation, from the call to the result. It has one or more rounds. |
 | Contents | What the reviewers vote on: the issue, the question, and the implementation (a bookmark and the change ids of its head), as one numbered version: v1, v2, and so on. |
-| Reviewer | An agent with one role ([[agent-delegation]]) that hephaestus gives a ballot. The call makes each reviewer required or non-required. |
+| Reviewer | An agent with one role ([[agent-delegation]]) that hephaestus gives a ballot: an AI agent, or a tool agent, for example a lint, if Q9 of [[agent-delegation]] allows it. The call makes each reviewer required or non-required. |
 | Required reviewer | A reviewer whose `yes` the referendum needs. It also decides, with the other required reviewers, which modifications go on. There is at least one. |
 | Non-required reviewer | A reviewer that is only related to the referendum at its edges. Its ballot is advice: it can submit modifications, but its `no` does not fail the referendum. |
 | Scope | The part of the work that a reviewer judges, from the charter of its role: for example the docs for `technical-docs`. |

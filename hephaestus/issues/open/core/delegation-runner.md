@@ -42,6 +42,8 @@ The proposal is to start with Claude Code subagents that a human starts, made fr
 
 2026-10-11, from the human: the proposal for Q5 of [[agent-delegation]] is right for now: the merge queue starts on a human request (later on a schedule), the technical docs agent on each close, and the other roles on a human request. Q4 is still open.
 
+2026-10-11, from the human: Q4 is correct: AI agents start as Claude Code subagents, then the Agent SDK. hephaestus must also run tool agents, which do not use AI, for large refactors, lints, and other work, to avoid large token spend ([[tool-agents]]).
+
 ## Resolution
 
 <Complete this section when you close the issue.

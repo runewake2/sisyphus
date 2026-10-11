@@ -35,6 +35,7 @@ Sub-issues:
 - [[project-manager-agent]], [[engineer-agent]], [[ux-researcher-agent]], [[technical-docs-agent]]: the other roles.
 - [[delegation-runner]]: the system that holds the agents and starts them.
 - [[referendum-voting]]: several role agents vote on an implementation, and a modification reruns the vote.
+- [[tool-agents]]: agents that do delegated work with a program, not a model, so that it costs no tokens.
 
 ## Acceptance criteria
 

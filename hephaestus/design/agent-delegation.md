@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11
 - Issue: [[delegate-issues-to-agents]]
-- Status: Draft. Q1, Q2, Q3, and Q5 are answered; Q4, Q6, and Q7 are not.
+- Status: Draft. Q1-Q5 are answered; Q6-Q10 are not.
 
 ## Summary
 
@@ -58,6 +58,30 @@ runs.
 6. **Stop and ask.** When the work needs a choice that the issue does not make, the agent writes
    the question in `Notes`, stops the issue (`sisyphus update <name> open`), and tags it
    `needs-human`.
+
+## AI agents and tool agents
+
+hephaestus runs two kinds of agents (from the human, 2026-10-11):
+
+| Kind | What does the work | Use for | Cost |
+|---|---|---|---|
+| **AI agent** | A model, for example a Claude Code subagent, then the Claude Agent SDK (Q4). | Work that needs judgment: a design, a review, a conflict of direction, a text. | Tokens for each task. |
+| **Tool agent** | A program that does not use AI: a command with fixed rules. | Work that a program can do with no judgment: large refactors (a codemod, `gofmt -r`, a rename across the repo), lints, formatters, and renumbering. | No tokens: only the time of the program. |
+
+A tool agent is a role like any other: it has a role file (`hephaestus/roles/<role>.md`, with
+`kind: tool` and its command), an owner name, its own workspace and bookmark, and it claims,
+records, and closes its tasks with sisyphus, as the [[#Rules for every role]] ask. Only the worker
+differs: hephaestus runs the command of the role on the task, instead of a model.
+
+- **Delegate to a tool when you can.** A large refactor that a codemod can do costs no tokens as a
+  tool task, and many tokens as an AI task. Split a large task into the part that a tool can do and
+  the part that needs judgment, and delegate each part to its kind of agent.
+- **A tool does not decide.** A tool agent does what its command does, and nothing more. When the
+  command fails, or cannot do the task, the tool agent stops the issue with the output of the
+  command in `Notes`, and tags it `needs-human`, or hephaestus delegates the rest to an AI role
+  (Q8).
+- **Results are checked the same way.** The work of a tool agent goes through the same checks,
+  referendums, and merge queue as the work of an AI agent.
 
 ## How an issue gets to an agent
 
@@ -176,7 +200,10 @@ A human answers a question with a reply such as "Q1 yes", or another answer.
 | Q1 | How is an issue delegated to a role: the `metadata` key `delegate`, a tag, or the `owner`? | [[delegation-model]] | Answered by the human on 2026-10-11: the `metadata` key `delegate`, the role assigned to own the task (`metadata: {delegate: merge-queue}`), with the sisyphus filter `filter-by-metadata`. Not a frontmatter field of its own. The `owner` stays the agent instance that works on it. |
 | Q2 | Where are the roles described: `hephaestus/roles/<role>.md`, `.claude/agents/`, or in code? | [[delegation-model]] | Answered by the human on 2026-10-11: each role is a Markdown file of its own, `hephaestus/roles/<role>.md`, readable by people and by any runtime. hephaestus can generate `.claude/agents/` files from it. |
 | Q3 | May the merge queue move `main`, or only prepare a bookmark? | [[merge-queue-agent]] | Answered by the human on 2026-10-11: the merge queue never moves `main`. Its only job is to make a linear history from a set of tasks. |
-| Q4 | What runs the agents: Claude Code subagents, the Claude Agent SDK, Claude Managed Agents, or local models? | [[delegation-runner]] | Start with Claude Code subagents, started by a human, then hephaestus on the Agent SDK. Local models only for roles that a task suite shows they can do. |
+| Q4 | What runs the agents: Claude Code subagents, the Claude Agent SDK, Claude Managed Agents, or local models? | [[delegation-runner]] | Answered by the human on 2026-10-11: AI agents start as Claude Code subagents, started by a human, then hephaestus on the Agent SDK. Local models only for roles that a task suite shows they can do. hephaestus also runs tool agents, which use no AI ([[#AI agents and tool agents]]). |
 | Q5 | Which roles start by themselves, and on what trigger? | [[delegation-runner]] | Answered by the human on 2026-10-11, for now: the merge queue on a human request, later on a schedule; technical docs on each close; the others on a human request. |
 | Q6 | Does the merge queue merge the work of humans too, or only of agents? | [[merge-queue-agent]] | With Q3, its input is a set of tasks, so: every task in the set, whoever did its work. |
 | Q7 | Is hephaestus a Go program in the sisyphus module (`cmd/hephaestus`) or a module of its own in `hephaestus/`? | [[delegate-issues-to-agents]] | A module of its own in `hephaestus/`, so that it can only use sisyphus through its CLI and MCP server, as any other client. |
+| Q8 | How does a tool agent get its task and report its result? | [[tool-agents]] | hephaestus runs the command of the role in the workspace of the task, with the issue name, the issue as JSON (`sisyphus show --json`), and `SISYPHUS_OWNER` in its environment. Exit code 0: the task is done, and hephaestus closes the issue with the summary that the command prints. Another exit code: the issue stops with the output in `Notes`, tagged `needs-human`, unless the role file names an AI role to delegate the rest to. |
+| Q9 | Can a tool agent be a reviewer in a referendum ([[referendum]])? | [[tool-agents]] | Yes. A check, for example a lint or the tests, is a good required reviewer: its exit code is its ballot, `yes` for 0 and `no` for another code. A formatter can also submit its changes as a modification. A tool reviewer never abstains. |
+| Q10 | Is the merge queue a tool agent? Its order, rebases, renumbering, and checks follow fixed rules. | [[merge-queue-agent]] | Yes: a tool agent that stops at a conflict that is not mechanical, and records it for an AI role (the engineer) or a human. It then costs no tokens for the common case. |

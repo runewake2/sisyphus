@@ -39,7 +39,7 @@ Compare at least two drafts (for example the field against a tag), as `CONTRIBUT
 
 - [ ] A decision record answers Q1 and Q2.
 - [ ] hephaestus records the role of an issue in `metadata`, and finds the issues of a role with the filter of the sisyphus issue `filter-by-metadata`.
-- [ ] A role description format exists, with one example: `hephaestus/roles/merge-queue.md`.
+- [ ] A role description format exists, with one example: `hephaestus/roles/merge-queue.md`. It tells the kind of the agent: `ai` or `tool` ([[tool-agents]]).
 
 ## Out of scope
 
