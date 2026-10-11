@@ -133,6 +133,11 @@ the optional `dir` (see [[#The repo]]). The client shows the description of each
 - **Errors**: a command that fails gives a result marked as an error (`isError: true`), with the
   message of the command, for example `Error: Invalid priority 'urgent'. ...`. The message tells
   what to change, so the agent can correct the call.
+- **Time limit**: each run of `sisyphus` stops after 60 seconds, with an error that tells the limit.
+  A command takes much less; a longer run waits for something, for example a lock. Set
+  `SISYPHUS_MCP_TIMEOUT` in the `env` of the server to change it, for example to `2m`.
+- **Cancel**: when the client cancels a call, sisyphus-mcp stops the `sisyphus` run of the call. A
+  change that the run made before it stopped stays.
 - **Invalid arguments**: an argument of the wrong type, for example a JSON array for `dependsOn`, is
   an error from the MCP library, before sisyphus runs.
 
@@ -194,4 +199,5 @@ closed yet.
 | The issues of another repo | The server started in another repo. Give a `dir`. |
 | `validating "arguments": ...` | An argument has the wrong type. Lists are comma-separated strings. |
 | `sisyphus-mcp X runs sisyphus Y from <path>` after an error | The two binaries have different versions, so a tool can pass a flag that the binary does not know. Install the same version of both, and restart the server. The server also writes this line to its log. |
+| `sisyphus ... did not finish in 1m0s` | The command waited, for example for a lock of the git index that another process holds. Find that process, or raise `SISYPHUS_MCP_TIMEOUT`. |
 | Old behavior after an update | The client still runs the old `sisyphus-mcp`. Restart the client, or the server in the client. |

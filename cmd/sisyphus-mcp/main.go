@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
@@ -59,19 +60,30 @@ var errNotInstalled = errors.New("sisyphus is not installed or not on PATH. Inst
 // execSisyphus runs the sisyphus binary with args, in dir if given (otherwise sisyphus-mcp's own
 // working directory), and returns its trimmed stdout and stderr. A failed run gives sisyphus's own
 // stderr message as the error, the same message a human running the command would see.
-func execSisyphus(dir string, args ...string) (stdout, stderr string, err error) {
+func execSisyphus(ctx context.Context, dir string, args ...string) (stdout, stderr string, err error) {
 	path, err := exec.LookPath("sisyphus")
 	if err != nil {
 		return "", "", errNotInstalled
 	}
 	mismatch := versionMismatch(path)
-	cmd := exec.Command(path, args...)
+	limit := timeout()
+	ctx, cancel := context.WithTimeout(ctx, limit)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, path, args...)
+	// A child of sisyphus, for example git, can keep the pipes open after sisyphus stops.
+	cmd.WaitDelay = time.Second
 	cmd.Dir = dir
 	var out, errOut bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &errOut
 	err = cmd.Run()
 	stdout, stderr = strings.TrimSpace(out.String()), strings.TrimSpace(errOut.String())
+	switch {
+	case errors.Is(ctx.Err(), context.DeadlineExceeded):
+		return stdout, stderr, fmt.Errorf("sisyphus %s did not finish in %s, so sisyphus-mcp stopped it. To change the limit, set %s in the environment of the server, for example to 2m.", strings.Join(args, " "), limit, timeoutVariable)
+	case errors.Is(ctx.Err(), context.Canceled):
+		return stdout, stderr, fmt.Errorf("The call was cancelled, so sisyphus-mcp stopped sisyphus %s. A change that it made before it stopped stays.", strings.Join(args, " "))
+	}
 	if err != nil {
 		if stderr != "" {
 			err = errors.New(stderr)
@@ -118,9 +130,31 @@ func versionMismatch(path string) string {
 	return message
 }
 
+// timeoutVariable names the environment variable that sets the time limit of one sisyphus run.
+const timeoutVariable = "SISYPHUS_MCP_TIMEOUT"
+
+// defaultTimeout is the time limit of one sisyphus run. A command takes much less; a run that takes
+// longer waits for something that will not come, for example a lock of the git index.
+const defaultTimeout = 60 * time.Second
+
+// timeout returns the time limit of one sisyphus run: SISYPHUS_MCP_TIMEOUT, a Go duration such as
+// 2m, or defaultTimeout. An invalid value is logged and ignored.
+func timeout() time.Duration {
+	value := os.Getenv(timeoutVariable)
+	if value == "" {
+		return defaultTimeout
+	}
+	limit, err := time.ParseDuration(value)
+	if err != nil || limit <= 0 {
+		log.Printf("%s=%q is not a positive duration such as 90s or 2m. The limit is %s.", timeoutVariable, value, defaultTimeout)
+		return defaultTimeout
+	}
+	return limit
+}
+
 // runSisyphus runs sisyphus and returns its stdout, followed by any warnings it wrote to stderr.
-func runSisyphus(dir string, args ...string) (string, error) {
-	stdout, stderr, err := execSisyphus(dir, args...)
+func runSisyphus(ctx context.Context, dir string, args ...string) (string, error) {
+	stdout, stderr, err := execSisyphus(ctx, dir, args...)
 	if err != nil {
 		return "", err
 	}
@@ -130,8 +164,8 @@ func runSisyphus(dir string, args ...string) (string, error) {
 // runSisyphusReport runs sisyphus for a command that reports findings on stdout and exits 1 when
 // it finds any, such as lint. A run that wrote to stdout is a result, even with exit code 1; only a
 // run that wrote nothing to stdout is an error.
-func runSisyphusReport(dir string, args ...string) (string, error) {
-	stdout, _, err := execSisyphus(dir, args...)
+func runSisyphusReport(ctx context.Context, dir string, args ...string) (string, error) {
+	stdout, _, err := execSisyphus(ctx, dir, args...)
 	if err != nil && stdout == "" {
 		return "", err
 	}

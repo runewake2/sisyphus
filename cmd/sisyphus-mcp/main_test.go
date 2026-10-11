@@ -10,8 +10,10 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/runewake2/sisyphus"
 )
 
 // buildSisyphusOnce builds the sisyphus binary this test's tools shell out to, once per test run,
@@ -579,5 +581,63 @@ func TestEditToolWithEmptyTextSaysThatTheTextIsEmpty(t *testing.T) {
 
 	if !strings.Contains(text, "The text is empty") {
 		t.Errorf("got %q", text)
+	}
+}
+
+// slowSisyphus puts a fake sisyphus first on PATH that has the version of sisyphus-mcp, and that
+// waits for seconds and then creates the file marker for every other command.
+func slowSisyphus(t *testing.T, seconds, marker string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake sisyphus is a shell script")
+	}
+	bin := t.TempDir()
+	script := "#!/bin/sh\nif [ \"$1\" = --version ]; then echo " + sisyphus.Version() + "; exit 0; fi\nsleep " + seconds + "\ntouch " + marker + "\n"
+	if err := os.WriteFile(filepath.Join(bin, "sisyphus"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
+
+func TestASlowCommandStopsAtTheTimeLimit(t *testing.T) {
+	session := connectedSession(t)
+	marker := filepath.Join(t.TempDir(), "finished")
+	slowSisyphus(t, "3", marker)
+	t.Setenv(timeoutVariable, "200ms")
+
+	start := time.Now()
+	text := callToolExpectingError(t, session, "sisyphus_list", map[string]any{"dir": t.TempDir()})
+
+	if !strings.Contains(text, "did not finish in 200ms") || !strings.Contains(text, timeoutVariable) {
+		t.Errorf("got %q", text)
+	}
+	if elapsed := time.Since(start); elapsed > 2*time.Second {
+		t.Errorf("the call took %s", elapsed)
+	}
+}
+
+func TestACancelledCallStopsTheCommand(t *testing.T) {
+	session := connectedSession(t)
+	marker := filepath.Join(t.TempDir(), "finished")
+	slowSisyphus(t, "1", marker)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	_, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "sisyphus_list", Arguments: map[string]any{"dir": t.TempDir()}})
+	if err == nil {
+		t.Fatal("want the cancelled call to fail")
+	}
+	time.Sleep(1500 * time.Millisecond)
+
+	if _, err := os.Stat(marker); err == nil {
+		t.Error("the sisyphus process ran to its end after the call was cancelled")
+	}
+}
+
+func TestAnInvalidTimeoutUsesTheDefault(t *testing.T) {
+	t.Setenv(timeoutVariable, "soon")
+
+	if got := timeout(); got != defaultTimeout {
+		t.Errorf("want %s, got %s", defaultTimeout, got)
 	}
 }

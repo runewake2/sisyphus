@@ -165,7 +165,7 @@ type newArgs struct {
 	JSON         bool              `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
-func newHandler(_ context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.CallToolResult, any, error) {
+func newHandler(ctx context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"new"}
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendFlag(args, "--title", in.Title)
@@ -185,7 +185,7 @@ func newHandler(_ context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.Cal
 	args = appendFlag(args, "--context", in.Context)
 	args = appendMetadataFlags(args, in.Metadata)
 	args = appendPositionals(args, in.Name)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -214,7 +214,7 @@ type updateArgs struct {
 	JSON       bool              `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
-func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*mcp.CallToolResult, any, error) {
+func updateHandler(ctx context.Context, _ *mcp.CallToolRequest, in updateArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"update"}
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendFlag(args, "--resolution", in.Resolution)
@@ -233,7 +233,7 @@ func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*m
 	args = appendFlag(args, "--message", in.Message)
 	args = appendMetadataFlags(args, in.Metadata)
 	args = appendPositionals(args, in.Name, in.State)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -250,7 +250,7 @@ type startArgs struct {
 	JSON      bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
-func startHandler(_ context.Context, _ *mcp.CallToolRequest, in startArgs) (*mcp.CallToolResult, any, error) {
+func startHandler(ctx context.Context, _ *mcp.CallToolRequest, in startArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"start"}
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendFlag(args, "--owner", in.Owner)
@@ -258,7 +258,7 @@ func startHandler(_ context.Context, _ *mcp.CallToolRequest, in startArgs) (*mcp
 	args = appendFlag(args, "--workspace", in.Workspace)
 	args = appendBoolFlag(args, "--take", in.Take)
 	args = appendPositionals(args, in.Name)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -275,7 +275,7 @@ type closeArgs struct {
 // closeHandler returns the handler of sisyphus_close or sisyphus_abandon, which run the command of
 // the same name. Both need a message, so that the Resolution section tells what happened.
 func closeHandler(command string) func(context.Context, *mcp.CallToolRequest, closeArgs) (*mcp.CallToolResult, any, error) {
-	return func(_ context.Context, _ *mcp.CallToolRequest, in closeArgs) (*mcp.CallToolResult, any, error) {
+	return func(ctx context.Context, _ *mcp.CallToolRequest, in closeArgs) (*mcp.CallToolResult, any, error) {
 		if strings.TrimSpace(in.Message) == "" {
 			return nil, nil, fmt.Errorf("Give message: the text of the Resolution section. For sisyphus_%s, tell %s.", command, map[string]string{
 				"close":   "what was done",
@@ -286,7 +286,7 @@ func closeHandler(command string) func(context.Context, *mcp.CallToolRequest, cl
 		args = appendBoolFlag(args, "--json", in.JSON)
 		args = appendFlag(args, "--message", in.Message)
 		args = appendPositionals(args, in.Name)
-		out, err := runSisyphus(in.Dir, args...)
+		out, err := runSisyphus(ctx, in.Dir, args...)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -301,12 +301,12 @@ type showArgs struct {
 	All  bool   `json:"all,omitempty" jsonschema:"Keep the sections that hold only template text in the body, as the file has them."`
 }
 
-func showHandler(_ context.Context, _ *mcp.CallToolRequest, in showArgs) (*mcp.CallToolResult, any, error) {
+func showHandler(ctx context.Context, _ *mcp.CallToolRequest, in showArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"show"}
 	args = appendBoolFlag(args, "--json", !in.Text)
 	args = appendBoolFlag(args, "--all", in.All)
 	args = appendPositionals(args, in.Name)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -327,7 +327,7 @@ type listArgs struct {
 	Limit    int    `json:"limit,omitempty" jsonschema:"Return at most this many issues. A warning tells how many were left out."`
 }
 
-func listHandler(_ context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp.CallToolResult, any, error) {
+func listHandler(ctx context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"list"}
 	args = appendFlag(args, "--state", in.State)
 	args = appendFlag(args, "--priority", in.Priority)
@@ -341,7 +341,7 @@ func listHandler(_ context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp.C
 		args = appendFlag(args, "--limit", strconv.Itoa(in.Limit))
 	}
 	args = appendBoolFlag(args, "--json", !in.Text)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -365,7 +365,7 @@ type searchArgs struct {
 	Text     bool   `json:"text,omitempty" jsonschema:"Return human-readable text instead of JSON."`
 }
 
-func searchHandler(_ context.Context, _ *mcp.CallToolRequest, in searchArgs) (*mcp.CallToolResult, any, error) {
+func searchHandler(ctx context.Context, _ *mcp.CallToolRequest, in searchArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"search"}
 	args = appendFlag(args, "--state", in.State)
 	args = appendFlag(args, "--priority", in.Priority)
@@ -382,7 +382,7 @@ func searchHandler(_ context.Context, _ *mcp.CallToolRequest, in searchArgs) (*m
 	}
 	args = appendBoolFlag(args, "--json", !in.Text)
 	args = appendPositionals(args, in.Query)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -398,7 +398,7 @@ type graphArgs struct {
 	MaxIssues int    `json:"maxIssues,omitempty" jsonschema:"Do not draw more issues than this (default 200); use json or mermaid for a larger graph."`
 }
 
-func graphHandler(_ context.Context, _ *mcp.CallToolRequest, in graphArgs) (*mcp.CallToolResult, any, error) {
+func graphHandler(ctx context.Context, _ *mcp.CallToolRequest, in graphArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"graph"}
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--mermaid", in.Mermaid)
@@ -407,7 +407,7 @@ func graphHandler(_ context.Context, _ *mcp.CallToolRequest, in graphArgs) (*mcp
 		args = appendFlag(args, "--max-issues", strconv.Itoa(in.MaxIssues))
 	}
 	args = appendPositionals(args, in.Name)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -419,10 +419,10 @@ type claimsArgs struct {
 	Prune bool   `json:"prune,omitempty" jsonschema:"Remove the stale claims, and list the others."`
 }
 
-func claimsHandler(_ context.Context, _ *mcp.CallToolRequest, in claimsArgs) (*mcp.CallToolResult, any, error) {
+func claimsHandler(ctx context.Context, _ *mcp.CallToolRequest, in claimsArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"claims", "--json"}
 	args = appendBoolFlag(args, "--prune", in.Prune)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -437,12 +437,12 @@ type parentArgs struct {
 	JSON   bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
-func parentHandler(_ context.Context, _ *mcp.CallToolRequest, in parentArgs) (*mcp.CallToolResult, any, error) {
+func parentHandler(ctx context.Context, _ *mcp.CallToolRequest, in parentArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"parent"}
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--clear", in.Clear)
 	args = appendPositionals(args, in.Name, in.Parent)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -457,12 +457,12 @@ type remoteArgs struct {
 	JSON  bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
-func remoteHandler(_ context.Context, _ *mcp.CallToolRequest, in remoteArgs) (*mcp.CallToolResult, any, error) {
+func remoteHandler(ctx context.Context, _ *mcp.CallToolRequest, in remoteArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"remote"}
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--clear", in.Clear)
 	args = appendPositionals(args, in.Name, in.URL)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -477,12 +477,12 @@ type dependsOnArgs struct {
 	JSON          bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
-func dependsOnHandler(_ context.Context, _ *mcp.CallToolRequest, in dependsOnArgs) (*mcp.CallToolResult, any, error) {
+func dependsOnHandler(ctx context.Context, _ *mcp.CallToolRequest, in dependsOnArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"depends-on"}
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--clear", in.Clear)
 	args = appendPositionals(args, in.Name, in.BlockingIssue)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -498,7 +498,7 @@ type editArgs struct {
 	JSON    bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
-func editHandler(_ context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp.CallToolResult, any, error) {
+func editHandler(ctx context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp.CallToolResult, any, error) {
 	// sisyphus edit with only a name opens an editor, which an MCP server cannot use.
 	if strings.TrimSpace(in.Section) == "" {
 		return nil, nil, errors.New("Give section: the heading of the section to change, for example notes, summary, or resolution.")
@@ -509,7 +509,7 @@ func editHandler(_ context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp.C
 	// The text goes even when it is empty, so that sisyphus tells that the text is empty.
 	// appendPositionals drops an empty value, and edit with two arguments gives a less clear error.
 	args = append(appendPositionals(args, in.Name, in.Section), in.Text)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -521,8 +521,8 @@ type slugArgs struct {
 	Text string `json:"text" jsonschema:"Arbitrary text, for example a title, to turn into a unique issue name."`
 }
 
-func slugHandler(_ context.Context, _ *mcp.CallToolRequest, in slugArgs) (*mcp.CallToolResult, any, error) {
-	out, err := runSisyphus(in.Dir, appendPositionals([]string{"slug"}, in.Text)...)
+func slugHandler(ctx context.Context, _ *mcp.CallToolRequest, in slugArgs) (*mcp.CallToolResult, any, error) {
+	out, err := runSisyphus(ctx, in.Dir, appendPositionals([]string{"slug"}, in.Text)...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -536,12 +536,12 @@ type resolveArgs struct {
 	Absolute bool   `json:"absolute,omitempty" jsonschema:"Print absolute paths instead of paths from the repo root."`
 }
 
-func resolveHandler(_ context.Context, _ *mcp.CallToolRequest, in resolveArgs) (*mcp.CallToolResult, any, error) {
+func resolveHandler(ctx context.Context, _ *mcp.CallToolRequest, in resolveArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"resolve"}
 	args = appendBoolFlag(args, "--all", in.All)
 	args = appendBoolFlag(args, "--absolute", in.Absolute)
 	args = appendPositionals(args, in.Link)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -554,11 +554,11 @@ type linksArgs struct {
 	Absolute bool   `json:"absolute,omitempty" jsonschema:"Report absolute paths instead of paths from the repo root."`
 }
 
-func linksHandler(_ context.Context, _ *mcp.CallToolRequest, in linksArgs) (*mcp.CallToolResult, any, error) {
+func linksHandler(ctx context.Context, _ *mcp.CallToolRequest, in linksArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"links", "--json"}
 	args = appendBoolFlag(args, "--absolute", in.Absolute)
 	args = appendPositionals(args, in.Document)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -569,8 +569,8 @@ type lintArgs struct {
 	Dir string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
 }
 
-func lintHandler(_ context.Context, _ *mcp.CallToolRequest, in lintArgs) (*mcp.CallToolResult, any, error) {
-	out, err := runSisyphusReport(in.Dir, "lint", "--json")
+func lintHandler(ctx context.Context, _ *mcp.CallToolRequest, in lintArgs) (*mcp.CallToolResult, any, error) {
+	out, err := runSisyphusReport(ctx, in.Dir, "lint", "--json")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -583,11 +583,11 @@ type initArgs struct {
 	Nested bool   `json:"nested,omitempty" jsonschema:"Make a tracker below a directory that already has one. Without it, that is an error."`
 }
 
-func initHandler(_ context.Context, _ *mcp.CallToolRequest, in initArgs) (*mcp.CallToolResult, any, error) {
+func initHandler(ctx context.Context, _ *mcp.CallToolRequest, in initArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"init"}
 	args = appendBoolFlag(args, "--force", in.Force)
 	args = appendBoolFlag(args, "--nested", in.Nested)
-	out, err := runSisyphus(in.Dir, args...)
+	out, err := runSisyphus(ctx, in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
 	}

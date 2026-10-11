@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.96]] - 2026-10-11
+- Stop the sisyphus run of an MCP call that is cancelled or takes longer than 60 seconds.
+
 ## [[0.0.95]] - 2026-10-11
 - Refuse to start an editor without a terminal, and refuse sisyphus_edit without a section.
 
