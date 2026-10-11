@@ -36,6 +36,7 @@ Sub-issues:
 - [[delegation-runner]]: the system that holds the agents and starts them.
 - [[referendum-voting]]: several role agents vote on an implementation, and a modification reruns the vote.
 - [[tool-agents]]: agents that do delegated work with a program, not a model, so that it costs no tokens.
+- [[message-queue]]: a tool agent that relays messages between workers, and public broadcasts.
 
 ## Acceptance criteria
 

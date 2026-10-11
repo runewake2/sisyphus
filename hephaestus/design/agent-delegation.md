@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11
 - Issue: [[delegate-issues-to-agents]]
-- Status: Draft. Q1-Q5 are answered; Q6-Q10 are not.
+- Status: Draft. Q1-Q5, Q9, and Q10 are answered, and Q8 in part; Q6, Q7, and Q11-Q14 are not.
 
 ## Summary
 
@@ -82,6 +82,32 @@ differs: hephaestus runs the command of the role on the task, instead of a model
   (Q8).
 - **Results are checked the same way.** The work of a tool agent goes through the same checks,
   referendums, and merge queue as the work of an AI agent.
+- **Context is a message.** A tool agent gets the context of its task as a message (Q8, answered by
+  the human on 2026-10-11): hephaestus, a human, or any other agent sends it, to the tool agent or
+  as a public broadcast ([[#Messages between workers]]).
+- **Reviewers too.** A tool agent can be a reviewer in a referendum (Q9, answered by the human on
+  2026-10-11): a lint or the tests vote with their exit code, and a formatter can submit its changes
+  as a modification.
+
+## Messages between workers
+
+Agents must be able to send information to each other: one worker to another, and to every worker
+at once, across kinds (AI and tool) and across workspaces (from the human, 2026-10-11). A tool agent
+of its own, the **message queue** ([[message-queue]]), relays the messages:
+
+- **Direct:** from one worker to another worker, by its owner name (for example
+  `merge-queue-1`), or to any worker of a role (for example `engineer`) (Q13).
+- **Broadcast:** from one worker to every worker that listens, as a public message. A tool agent
+  can listen for broadcasts of one kind, for example a lint that runs on each "bookmark ready".
+- **Any worker:** humans, AI agents, and tool agents send and receive the same messages. A message
+  is how a tool agent gets the context of its task.
+- **A message is information, not a decision.** Agents that must agree use a referendum
+  ([[referendum]]); a message can call one, or tell its result.
+
+A message has: an id, the sender, the receiver (a worker, a role, or `broadcast`), a kind (for
+example `task`, `info`, or `referendum`), the issue that it is about, if any, the time, and a body
+(text, and data as JSON for tool agents). Q11-Q14 are open: where messages are kept, how they
+travel, how they are addressed, and what is promised about their delivery.
 
 ## How an issue gets to an agent
 
@@ -121,7 +147,9 @@ A new need goes to sisyphus only if it is generic issue data. Everything else is
 
 ## Merge queue
 
-The first role. [[merge-queue-agent]] tracks it.
+The first role. [[merge-queue-agent]] tracks it. It is a tool agent (Q10, answered by the human
+on 2026-10-11): its order, rebases, renumbering, and checks follow fixed rules, so it uses no
+model, and costs no tokens.
 
 **Job:** the merge queue's only job is to make one linear history from a set of tasks. It never
 moves `main` (Q3, answered by the human on 2026-10-11), and it does nothing else: it does not
@@ -150,8 +178,9 @@ mechanical conflicts, check, and go on:
   decision record files, and every link to them ([[renumber-versions-on-merge]]). These are the
   rules of the repo, not of sisyphus, so this is hephaestus code.
 - Other conflicts, for example two changes of one function, are not mechanical. The merge queue
-  stops at that bookmark, records the conflict in the notes of its issues, and goes on with the
-  bookmarks that do not depend on it.
+  stops at that bookmark, records the conflict in the notes of its issues, sends a message about it
+  to the `engineer` role or a human, and goes on with the bookmarks that do not depend on it. A tool
+  does not resolve a conflict that needs judgment.
 - After each rebase: the checks of the repo must pass, for example `gofmt`, `go vet`, the tests,
   and `sisyphus lint`.
 
@@ -204,6 +233,10 @@ A human answers a question with a reply such as "Q1 yes", or another answer.
 | Q5 | Which roles start by themselves, and on what trigger? | [[delegation-runner]] | Answered by the human on 2026-10-11, for now: the merge queue on a human request, later on a schedule; technical docs on each close; the others on a human request. |
 | Q6 | Does the merge queue merge the work of humans too, or only of agents? | [[merge-queue-agent]] | With Q3, its input is a set of tasks, so: every task in the set, whoever did its work. |
 | Q7 | Is hephaestus a Go program in the sisyphus module (`cmd/hephaestus`) or a module of its own in `hephaestus/`? | [[delegate-issues-to-agents]] | A module of its own in `hephaestus/`, so that it can only use sisyphus through its CLI and MCP server, as any other client. |
-| Q8 | How does a tool agent get its task and report its result? | [[tool-agents]] | hephaestus runs the command of the role in the workspace of the task, with the issue name, the issue as JSON (`sisyphus show --json`), and `SISYPHUS_OWNER` in its environment. Exit code 0: the task is done, and hephaestus closes the issue with the summary that the command prints. Another exit code: the issue stops with the output in `Notes`, tagged `needs-human`, unless the role file names an AI role to delegate the rest to. |
-| Q9 | Can a tool agent be a reviewer in a referendum ([[referendum]])? | [[tool-agents]] | Yes. A check, for example a lint or the tests, is a good required reviewer: its exit code is its ballot, `yes` for 0 and `no` for another code. A formatter can also submit its changes as a modification. A tool reviewer never abstains. |
-| Q10 | Is the merge queue a tool agent? Its order, rebases, renumbering, and checks follow fixed rules. | [[merge-queue-agent]] | Yes: a tool agent that stops at a conflict that is not mechanical, and records it for an AI role (the engineer) or a human. It then costs no tokens for the common case. |
+| Q8 | How does a tool agent get its task and report its result? | [[tool-agents]] | Context answered by the human on 2026-10-11: a tool agent gets its context as a message, which any agent can send or broadcast ([[#Messages between workers]]). Result, proposed: hephaestus runs the command in the workspace of the task with the message; exit code 0 closes the issue with the summary that the command prints; another exit code stops it with the output in `Notes`, tagged `needs-human`, unless the role file names an AI role to delegate the rest to. |
+| Q9 | Can a tool agent be a reviewer in a referendum ([[referendum]])? | [[tool-agents]] | Answered by the human on 2026-10-11: yes. A check, for example a lint or the tests, votes with its exit code, `yes` for 0 and `no` for another code. A formatter can submit its changes as a modification. A tool reviewer never abstains. |
+| Q10 | Is the merge queue a tool agent? Its order, rebases, renumbering, and checks follow fixed rules. | [[merge-queue-agent]] | Answered by the human on 2026-10-11: yes. It stops at a conflict that is not mechanical, records it, and sends a message to the engineer or a human. |
+| Q11 | Where are messages kept: only in the message queue, or also in the repo? | [[message-queue]] | In an append-only log of the message queue, outside the working copies, so that every workspace sees it and no commit gets it. A message that matters to an issue is also recorded in its `Notes` by the receiver, as [[#Rules for every role]] ask. |
+| Q12 | How do messages travel? | [[message-queue]] | First, one file for each message in a shared directory, as sisyphus does with claims; the message queue moves them to the inbox of each receiver. A socket or a service later, if needed. |
+| Q13 | How is a receiver addressed? | [[message-queue]] | By owner name (one worker), by role (any one worker of the role, or all of them, by a flag of the message), or `broadcast` (every listener; a listener can filter by kind). |
+| Q14 | What does the message queue promise? | [[message-queue]] | Each message reaches each receiver at least once, in the order that one sender sent them. Each message has an id, so that a receiver can ignore a copy. |

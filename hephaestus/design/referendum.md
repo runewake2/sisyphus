@@ -9,7 +9,8 @@
 The referendum is how hephaestus coordinates many concurrent agents (from the human, 2026-10-11).
 When the work of several agents must agree, a human or an allowed agent calls a referendum, with
 the agents whose scope the work touches as its reviewers. The agents then agree, or the referendum
-fails, through one recorded procedure, not through talks between agents.
+fails, through one recorded procedure. Messages between agents carry information
+([[agent-delegation#Messages between workers]]); the referendum is how they decide.
 
 A **referendum** lets a series of delegated agents vote on an implementation before it goes on.
 The agents are **reviewers** of two kinds:
@@ -33,7 +34,7 @@ implementation. A referendum is hephaestus work. sisyphus only stores the issue 
 |---|---|
 | Referendum | One vote on one implementation, from the call to the result. It has one or more rounds. |
 | Contents | What the reviewers vote on: the issue, the question, and the implementation (a bookmark and the change ids of its head), as one numbered version: v1, v2, and so on. |
-| Reviewer | An agent with one role ([[agent-delegation]]) that hephaestus gives a ballot: an AI agent, or a tool agent, for example a lint, if Q9 of [[agent-delegation]] allows it. The call makes each reviewer required or non-required. |
+| Reviewer | An agent with one role ([[agent-delegation]]) that hephaestus gives a ballot: an AI agent, or a tool agent, for example a lint, which votes with its exit code (Q9 of [[agent-delegation]]). The call makes each reviewer required or non-required. |
 | Required reviewer | A reviewer whose `yes` the referendum needs. It also decides, with the other required reviewers, which modifications go on. There is at least one. |
 | Non-required reviewer | A reviewer that is only related to the referendum at its edges. Its ballot is advice: it can submit modifications, but its `no` does not fail the referendum. |
 | Scope | The part of the work that a reviewer judges, from the charter of its role: for example the docs for `technical-docs`. |

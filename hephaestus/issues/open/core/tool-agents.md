@@ -14,7 +14,7 @@ workspaces: []         # jj workspaces where local work on the issue has happene
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent: "[[core/delegate-issues-to-agents]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
-depends-on: ["[[core/delegation-model]]"] # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example `["[[faster-startup]]"]`.
+depends-on: ["[[core/delegation-model]]", "[[core/message-queue]]"] # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example `["[[faster-startup]]"]`.
 remote:                # Optional. A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.
 ---
 
@@ -31,7 +31,8 @@ Requested by a human on 2026-10-11, with the answer to Q4: AI agents start as Cl
 ## Acceptance criteria
 
 - [ ] A role file can describe a tool agent: `kind: tool`, its command, and what it does when the command fails.
-- [ ] hephaestus runs a tool agent on a delegated task: it claims the issue, runs the command in the workspace of the task, and closes or stops the issue from the result, with no model call.
+- [ ] hephaestus runs a tool agent on a delegated task, from a message that gives its context ([[message-queue]]): it claims the issue, runs the command in the workspace of the task, and closes or stops the issue from the result, with no model call.
+- [ ] A tool agent can be a reviewer in a referendum: its exit code is its ballot, and a formatter can submit a modification.
 - [ ] A decision record answers Q8, Q9, and Q10.
 - [ ] One real tool agent, for example a lint or a codemod, resolves a real task of this repo.
 
@@ -41,7 +42,7 @@ Requested by a human on 2026-10-11, with the answer to Q4: AI agents start as Cl
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-11, from the human: tool agents can be referendum reviewers (Q9). Tool agents get their context as a message, which other agents can broadcast (Q8, the context part); the message queue is another tool agent ([[message-queue]]). The merge queue is a tool agent (Q10).
 
 ## Resolution
 

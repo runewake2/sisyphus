@@ -1,0 +1,52 @@
+---
+title: "Add a message queue tool agent that relays messages between workers"
+state: open            # open | in-progress | closed. Must match the directory of the file.
+resolution:            # completed | abandoned. Set this only when state is closed.
+priority: high         # critical | high | medium | low
+effort: large          # small | medium | large | x-large
+tags: [hephaestus]     # The components that the work touches, for example [widget-scheduler, plan]
+created: 2026-10-11
+closed:                # YYYY-MM-DD. Set this only when state is closed.
+owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
+approver:              # The person or agent who accepts the issue when it closes.
+bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
+deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
+parent: "[[core/delegate-issues-to-agents]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
+depends-on: ["[[core/delegation-model]]"] # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example `["[[faster-startup]]"]`.
+remote:                # Optional. A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.
+---
+
+# Add a message queue tool agent that relays messages between workers
+
+## Summary
+
+Add the message queue: a tool agent that relays messages from any hephaestus worker to another, and public broadcasts to every worker that listens, across AI and tool agents and across workspaces. Tool agents get the context of their tasks as messages. [[agent-delegation#Messages between workers]] describes it.
+
+## Context
+
+Requested by a human on 2026-10-11: agents must be able to send information to each other, including across agents, and tool agents get their context as a message that other agents can broadcast. The message queue is itself a tool agent: it uses no model. A message is information, not a decision; agents that must agree use a referendum ([[referendum-voting]]). Open questions: Q11 (where messages are kept), Q12 (how they travel), Q13 (addressing), and Q14 (delivery).
+
+## Acceptance criteria
+
+- [ ] A decision record answers Q11-Q14.
+- [ ] Any worker (a human, an AI agent, or a tool agent) can send a message to one worker, to a role, or as a broadcast, and the receivers get it.
+- [ ] A tool agent can listen for broadcasts of one kind, and starts its task from the message.
+- [ ] Messages reach their receivers across workspaces of one repo, as the guarantees of Q14 say.
+- [ ] Tests cover direct messages, role messages, broadcasts, and a copy of a message.
+
+## Out of scope
+
+- Messages between machines.
+- Decisions: they are referendums.
+
+## Notes
+
+<Record progress, findings, and open questions here while the work continues.>
+
+## Resolution
+
+<Complete this section when you close the issue.
+- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
+- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
