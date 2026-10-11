@@ -332,27 +332,13 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 			return "", err
 		}
 		tags := parseList(doc.get("tags"))
-		for _, tag := range parseList(o.addTags) {
-			if !slices.Contains(tags, tag) {
+		for _, tag := range parseList(formatTags(o.addTags)) {
+			if !containsFold(tags, tag) {
 				tags = append(tags, tag)
 			}
 		}
 		removed := parseList(o.removeTags)
-		tags = slices.DeleteFunc(tags, func(tag string) bool { return slices.Contains(removed, tag) })
-		doc.set("tags", formatList(tags))
-	}
-	if o.addTags != "" || o.removeTags != "" {
-		if err := validateTags(o.addTags); err != nil {
-			return "", err
-		}
-		tags := parseList(doc.get("tags"))
-		for _, tag := range parseList(o.addTags) {
-			if !slices.Contains(tags, tag) {
-				tags = append(tags, tag)
-			}
-		}
-		removed := parseList(o.removeTags)
-		tags = slices.DeleteFunc(tags, func(tag string) bool { return slices.Contains(removed, tag) })
+		tags = slices.DeleteFunc(tags, func(tag string) bool { return containsFold(removed, tag) })
 		doc.set("tags", formatList(tags))
 	}
 	if o.title != nil {
@@ -945,10 +931,16 @@ func validateTags(raw string) error {
 	return nil
 }
 
-// formatTags parses a comma-separated list into the frontmatter's bracketed form, for example
-// "plan, widget-scheduler ,,repo" -> "[plan, widget-scheduler, repo]".
+// formatTags parses a comma-separated list into the frontmatter's bracketed form, in lowercase, for
+// example "plan, Widget-Scheduler ,,repo" -> "[plan, widget-scheduler, repo]". Tags are stored in
+// lowercase, like the built-in tags, and compared without regard to case (see containsFold).
 func formatTags(raw string) string {
-	return formatList(parseList(raw))
+	return formatList(parseList(strings.ToLower(raw)))
+}
+
+// containsFold reports whether items contains value, without regard to case.
+func containsFold(items []string, value string) bool {
+	return slices.ContainsFunc(items, func(item string) bool { return strings.EqualFold(item, value) })
 }
 
 // addToList appends value to the frontmatter list field key, unless it is already there.

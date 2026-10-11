@@ -51,7 +51,8 @@ sisyphus new <name> [flags]
 
 Value details:
 
-- `--tags "bug, scheduler ,,ui"` is written as `[bug, scheduler, ui]`: spaces trimmed, empties dropped.
+- `--tags "Bug, scheduler ,,ui"` is written as `[bug, scheduler, ui]`: lowercase, spaces trimmed,
+  empties dropped. Filters compare tags without regard to case.
   A tag with a space inside it, for example `needs review`, is an error: Obsidian reads `tags` as
   tags, and a tag is one word. Use `needs-review`.
 - `--parent` and `--depends-on` are written as quoted wikilinks to the full name, for example

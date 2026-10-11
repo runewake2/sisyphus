@@ -166,10 +166,11 @@ func compareByStatePriorityName(stateA, stateB, priorityA, priorityB, nameA, nam
 	return strings.Compare(nameA, nameB)
 }
 
-// anyOf reports whether haystack contains any element of needles.
+// anyOf reports whether haystack contains any element of needles, without regard to case. It
+// compares tags, which Obsidian treats without regard to case.
 func anyOf(haystack, needles []string) bool {
 	for _, needle := range needles {
-		if slices.Contains(haystack, needle) {
+		if containsFold(haystack, needle) {
 			return true
 		}
 	}

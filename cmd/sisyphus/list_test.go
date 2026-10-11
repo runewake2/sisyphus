@@ -226,3 +226,18 @@ func TestListAndSearchFailForAParentThatNamesNoIssue(t *testing.T) {
 	}
 	contains(t, r.mustRun("list", "--parent", "[[auth-epic-test]]").output, "login-sub-test")
 }
+
+func TestTagsAreStoredInLowercaseAndMatchedWithoutRegardToCase(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "new-tag-test", "--tags", "Bug,UI")
+	r.mustRun("new", "hand-tag-test")
+	r.replaceIn("issues/open/hand-tag-test.md", "tags: []", "tags: [Bug]")
+
+	equal(t, "[bug, ui]", r.frontmatter("issues/open/new-tag-test.md").get("tags"))
+	output := r.mustRun("list", "--tags", "BUG").output
+	contains(t, output, "new-tag-test")
+	contains(t, output, "hand-tag-test")
+
+	r.mustRun("update", "hand-tag-test", "--add-tags", "BUG,Feature", "--remove-tags", "bug")
+	equal(t, "[feature]", r.frontmatter("issues/open/hand-tag-test.md").get("tags"))
+}
