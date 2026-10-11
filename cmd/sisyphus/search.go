@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -26,11 +28,14 @@ type searchOptions struct {
 	section string
 }
 
-// searchIssues finds every issue matching o, sorted the same way sisyphus list is.
-func searchIssues(root string, o searchOptions) []searchRow {
+// searchIssues finds every issue matching o, sorted the same way sisyphus list is. A section that
+// neither issues/TEMPLATE.md nor any filtered issue has is an error, because it is almost always a
+// typo: without the error, the search would only find nothing.
+func searchIssues(root string, o searchOptions) ([]searchRow, error) {
 	query := strings.ToLower(o.query)
 
 	rows := []searchRow{}
+	sectionFound := false
 	for _, m := range matchingIssues(loadIndex(root), o.filters) {
 		var haystack, content string
 		if o.section != "" {
@@ -38,6 +43,7 @@ func searchIssues(root string, o searchOptions) []searchRow {
 			if !ok {
 				continue
 			}
+			sectionFound = true
 			content = strings.TrimSpace(strings.Join(section, "\n"))
 			haystack = content
 		} else {
@@ -58,8 +64,27 @@ func searchIssues(root string, o searchOptions) []searchRow {
 			Content:  content,
 		})
 	}
+	if o.section != "" && !sectionFound {
+		if err := checkTemplateSection(root, o.section); err != nil {
+			return nil, err
+		}
+	}
 	slices.SortFunc(rows, func(a, b searchRow) int {
 		return compareByStatePriorityName(a.State, b.State, a.Priority, b.Priority, a.Name, b.Name)
 	})
-	return rows
+	return rows, nil
+}
+
+// checkTemplateSection returns an error that lists the sections of issues/TEMPLATE.md when the
+// template has no section named heading. A template that cannot be read gives no error.
+func checkTemplateSection(root, heading string) error {
+	template, err := loadDocument(filepath.Join(root, "issues", "TEMPLATE.md"))
+	if err != nil {
+		return nil
+	}
+	if start, _, ok := sectionBounds(template.body, heading); ok && headingLevel(template.body[start]) >= 2 {
+		return nil
+	}
+	return fmt.Errorf("No issue and no section of issues/TEMPLATE.md is named '%s'. The sections are: %s.",
+		heading, strings.Join(sectionNames(template.body), ", "))
 }

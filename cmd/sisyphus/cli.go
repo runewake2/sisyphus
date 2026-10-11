@@ -501,7 +501,7 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			rows := searchIssues(root, searchOptions{
+			rows, err := searchIssues(root, searchOptions{
 				filters: listOptions{
 					states:      stateValues,
 					priorities:  priorityValues,
@@ -513,6 +513,9 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 				query:   query,
 				section: section,
 			})
+			if err != nil {
+				return err
+			}
 			if asJSON {
 				encoder := json.NewEncoder(cmd.OutOrStdout())
 				encoder.SetEscapeHTML(false)

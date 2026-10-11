@@ -27,6 +27,8 @@ sisyphus search [<query>] [flags]
   wikilink's `#heading` does. The section runs until the next heading of the same or a higher
   level. With `--section`, the query is matched against that section only (not the title), and an
   issue without that section does not match.
+- A `--section` that `issues/TEMPLATE.md` does not have, and that no issue in the filtered set has,
+  is an error that lists the sections of the template. It is almost always a typo.
 - The query and every filter must all match (AND). There are no operators such as OR or NOT.
 
 ## Output

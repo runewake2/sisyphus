@@ -121,3 +121,32 @@ func TestSearchRejectsAnInvalidStateOrPriority(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchFailsForASectionThatNoIssueAndNoTemplateHas(t *testing.T) {
+	r := setUpSearchIssues(t)
+
+	res := r.run("search", "--section", "summry", "widget")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "named 'summry'")
+	contains(t, res.error, "Summary, Context, Acceptance criteria")
+}
+
+func TestSearchAcceptsATemplateSectionInAnyCase(t *testing.T) {
+	r := setUpSearchIssues(t)
+
+	res := r.run("search", "--section", "SUMMARY", "faster")
+
+	equal(t, 0, res.exit)
+	contains(t, res.output, "widget-scheduler-test")
+}
+
+func TestSearchAcceptsASectionThatOnlyAnIssueHas(t *testing.T) {
+	r := setUpSearchIssues(t)
+	r.write("issues/open/other-issue-test.md", r.read("issues/open/other-issue-test.md")+"\n## Design\n\nA custom section.\n")
+
+	res := r.run("search", "--section", "design", "custom")
+
+	equal(t, 0, res.exit)
+	contains(t, res.output, "other-issue-test")
+}

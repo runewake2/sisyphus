@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.33]] - 2026-10-11
+- Fail `sisyphus search --section` for a section that no issue and no template has.
+
 ## [[0.0.32]] - 2026-10-11
 - Pass free text that starts with `-` from sisyphus-mcp to sisyphus as text, not as a flag.
 
