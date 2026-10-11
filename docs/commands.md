@@ -142,6 +142,16 @@ sisyphus writes links between issues (`parent`, `depends-on`, `deferred-from`) w
 so that a later issue with the same file name does not make them ambiguous. Obsidian resolves a
 link such as `[[web/auth/fix-login-bug]]` by the end of the path in the same way.
 
+A name that gives no issue is an error. When some issues share words with the name, the error
+suggests up to 3 of them, with their titles. Issues that are not closed come first:
+
+```
+Error: No issue named 'docs-site-theme' in issues/open, issues/in-progress, or issues/closed. Did you mean: update-docs-site (Update the docs site theme)?
+```
+
+A near word counts too, for example `convention` for `conventions`. sisyphus never uses a
+suggestion by itself.
+
 ## Output and exit codes
 
 - A command that writes an issue prints the path of the file it wrote, from the repo root.

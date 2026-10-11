@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.97]] - 2026-10-11
+- Suggest up to 3 existing issues when an issue name does not exist.
+
 ## [[0.0.96]] - 2026-10-11
 - Stop the sisyphus run of an MCP call that is cancelled or takes longer than 60 seconds.
 

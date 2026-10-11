@@ -204,7 +204,7 @@ func (x *issueIndex) find(name string) (issueFile, error) {
 		return issueFile{}, err
 	}
 	if !found {
-		return issueFile{}, fmt.Errorf("No issue named '%s' in %s.", name, stateDirectoryList)
+		return issueFile{}, fmt.Errorf("No issue named '%s' in %s.%s", name, stateDirectoryList, suggestIssues(x, name))
 	}
 	return match, nil
 }
