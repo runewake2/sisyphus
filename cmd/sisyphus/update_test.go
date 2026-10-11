@@ -354,3 +354,14 @@ func TestUpdateKeepsInlineCommentsAndTheBody(t *testing.T) {
 	equalSlices(t, before.body, after.body)
 	equal(t, len(before.front), len(after.front))
 }
+
+func TestUpdateRejectsATagWithASpace(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--tags", "bug")
+
+	res := r.run("update", "fix-login-bug", "open", "--tags", "bug, needs  review")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "'needs-review'")
+	equal(t, "[bug]", r.frontmatter("issues/open/fix-login-bug.md").get("tags"))
+}

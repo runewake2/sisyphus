@@ -51,6 +51,8 @@ sisyphus new <name> [flags]
 Value details:
 
 - `--tags "bug, scheduler ,,ui"` is written as `[bug, scheduler, ui]`: spaces trimmed, empties dropped.
+  A tag with a space inside it, for example `needs review`, is an error: Obsidian reads `tags` as
+  tags, and a tag is one word. Use `needs-review`.
 - `--parent` and `--depends-on` are written as quoted wikilinks to the full name, for example
   `"[[web/some-epic]]"`, whichever form of the name you give.
 - `--deferred-from` takes an issue (any form of its name), written as a quoted wikilink to its full

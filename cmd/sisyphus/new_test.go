@@ -270,3 +270,13 @@ func TestNewAcceptsATitleWithUnicodeText(t *testing.T) {
 
 	equal(t, "Fix café ✓ 日本", r.frontmatter("issues/open/fix-login-bug.md").get("title"))
 }
+
+func TestNewRejectsATagWithASpace(t *testing.T) {
+	r := newTestRepo(t)
+
+	res := r.run("new", "fix-login-bug", "--tags", "needs review, bug")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "'needs-review'")
+	isTrue(t, !r.exists("issues/open/fix-login-bug.md"), "no issue is created")
+}

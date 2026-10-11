@@ -91,6 +91,9 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	if err := checkResolution(o.state, resolution, "Set --resolution only when the state is closed."); err != nil {
 		return "", err
 	}
+	if err := validateTags(o.tags); err != nil {
+		return "", err
+	}
 
 	if existing := x.exact[o.name]; len(existing) > 0 {
 		return "", fmt.Errorf("Issue '%s' already exists: %s.", o.name, relative(root, existing[0].path))
@@ -264,6 +267,9 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 		doc.set("effort", *o.effort)
 	}
 	if o.tags != nil {
+		if err := validateTags(*o.tags); err != nil {
+			return "", err
+		}
 		doc.set("tags", formatTags(*o.tags))
 	}
 	if state == "in-progress" && doc.get("bookmark") == "" {
@@ -788,6 +794,17 @@ func parseList(value string) []string {
 
 func formatList(items []string) string {
 	return "[" + strings.Join(items, ", ") + "]"
+}
+
+// validateTags rejects a tag with whitespace in a comma-separated list. Obsidian reads the tags
+// field as tags, and a tag there cannot contain a space.
+func validateTags(raw string) error {
+	for _, tag := range parseList(raw) {
+		if strings.IndexFunc(tag, unicode.IsSpace) >= 0 {
+			return fmt.Errorf("The tag '%s' has a space. A tag is one word; use '%s'.", tag, strings.Join(strings.Fields(tag), "-"))
+		}
+	}
+	return nil
 }
 
 // formatTags parses a comma-separated list into the frontmatter's bracketed form, for example

@@ -22,7 +22,7 @@ sisyphus update <name> <state> [flags]
 | `--workspace` | A jj workspace where work on the issue happens. Added to `workspaces`. |
 | `--priority` | A new priority: `critical`, `high`, `medium`, or `low`. |
 | `--effort` | A new effort: `small`, `medium`, `large`, or `x-large`. |
-| `--tags` | New tags, comma-separated. They replace the old tags. |
+| `--tags` | New tags, comma-separated. They replace the old tags. A tag cannot contain a space. |
 | `--metadata` | `key=value` notes to add or change. Repeat the flag, or separate pairs with commas. |
 
 A flag you do not give leaves its field as it is, except where the rules below say otherwise.

@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.35]] - 2026-10-11
+- Reject a tag that contains a space in `sisyphus new` and `sisyphus update --tags`.
+
 ## [[0.0.34]] - 2026-10-11
 - Reject an empty title, or a title with a line break or another control character, in `sisyphus new`.
 
