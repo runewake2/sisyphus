@@ -438,13 +438,15 @@ func lintHandler(_ context.Context, _ *mcp.CallToolRequest, in lintArgs) (*mcp.C
 }
 
 type initArgs struct {
-	Dir   string `json:"dir,omitempty" jsonschema:"The repo's root directory to set up. Defaults to sisyphus-mcp's own working directory."`
-	Force bool   `json:"force,omitempty" jsonschema:"Replace issues/TEMPLATE.md if it already exists."`
+	Dir    string `json:"dir,omitempty" jsonschema:"The repo's root directory to set up. Defaults to sisyphus-mcp's own working directory."`
+	Force  bool   `json:"force,omitempty" jsonschema:"Replace issues/TEMPLATE.md if it already exists."`
+	Nested bool   `json:"nested,omitempty" jsonschema:"Make a tracker below a directory that already has one. Without it, that is an error."`
 }
 
 func initHandler(_ context.Context, _ *mcp.CallToolRequest, in initArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"init"}
 	args = appendBoolFlag(args, "--force", in.Force)
+	args = appendBoolFlag(args, "--nested", in.Nested)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err

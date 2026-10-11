@@ -704,7 +704,7 @@ func plural(n int, one, many string) string {
 
 func initCommand() *cobra.Command {
 	var dir string
-	var force bool
+	var force, nested bool
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Write issues/ into a repo: TEMPLATE.md and the open/in-progress/closed directories.",
@@ -720,11 +720,12 @@ func initCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return initRepo(root, force, cmd.OutOrStdout(), cmd.ErrOrStderr())
+			return initRepo(root, force, nested, cmd.OutOrStdout(), cmd.ErrOrStderr())
 		},
 	}
 	cmd.Flags().StringVar(&dir, "dir", ".", "The root directory of the repo.")
 	cmd.Flags().BoolVar(&force, "force", false, "Replace files that exist.")
+	cmd.Flags().BoolVar(&nested, "nested", false, "Make a tracker below a directory that already has one. Without it, that is an error, because the new tracker would hide the other one.")
 	return cmd
 }
 

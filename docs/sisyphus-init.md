@@ -5,7 +5,7 @@ Set up issue tracking in a repo.
 ## Usage
 
 ```bash
-sisyphus init [--dir <directory>] [--force]
+sisyphus init [--dir <directory>] [--force] [--nested]
 ```
 
 ## Flags
@@ -14,6 +14,7 @@ sisyphus init [--dir <directory>] [--force]
 |---|---|---|
 | `--dir` | `.` | The root directory of the repo. |
 | `--force` | off | Replace files that already exist. |
+| `--nested` | off | Make a tracker below a directory that already has one. |
 
 ## What it does
 
@@ -31,6 +32,9 @@ every other command works in the repo, because the repo root is the directory th
 `issues/TEMPLATE.md` (see [[commands#How sisyphus finds the repo]]).
 
 - A file that already exists stays as it is, with a warning. `--force` replaces it.
+- A directory above `--dir` that already has `issues/TEMPLATE.md` is an error, because every
+  command finds the nearest tracker: a new one below would hide the other one. `--nested` makes the
+  second tracker anyway.
 - You can change `issues/TEMPLATE.md` to fit your repo. [[sisyphus-new]] reads it from the repo,
   not from the binary.
 - `init` does not write a contributing guide, agent rules, a changelog, a version file, or CI or

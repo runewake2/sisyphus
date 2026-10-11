@@ -90,3 +90,34 @@ func TestInitMakesARepoThatTheOtherCommandsCanUse(t *testing.T) {
 	equal(t, 0, created.exit)
 	equal(t, "issues/open/first-issue-test.md", strings.TrimSpace(created.output))
 }
+
+func TestInitRefusesToMakeATrackerBelowAnotherOne(t *testing.T) {
+	root := t.TempDir()
+	equal(t, 0, runIn(t, root, "init", "--dir", root).exit)
+	sub := filepath.Join(root, "sub", "pkg")
+
+	res := runIn(t, root, "init", "--dir", sub)
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, root+" already has an issue tracker")
+	isTrue(t, !fileExists(filepath.Join(sub, "issues", "TEMPLATE.md")), "no nested tracker is written")
+}
+
+func TestInitMakesANestedTrackerWithNested(t *testing.T) {
+	root := t.TempDir()
+	runIn(t, root, "init", "--dir", root)
+	sub := filepath.Join(root, "sub")
+
+	equal(t, 0, runIn(t, root, "init", "--dir", sub, "--nested").exit)
+	isTrue(t, fileExists(filepath.Join(sub, "issues", "TEMPLATE.md")), "the nested tracker is written")
+}
+
+func TestInitAgainInTheSameRootIsAllowed(t *testing.T) {
+	root := t.TempDir()
+	runIn(t, root, "init", "--dir", root)
+
+	res := runIn(t, root, "init", "--dir", root)
+
+	equal(t, 0, res.exit)
+	contains(t, res.error, "exists, so init did not change it")
+}

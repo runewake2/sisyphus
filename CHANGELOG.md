@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.50]] - 2026-10-11
+- Refuse `sisyphus init` below a directory that already has a tracker, unless `--nested` is given.
+
 ## [[0.0.49]] - 2026-10-11
 - Refuse text with a heading that would split the section in `sisyphus edit`.
 
