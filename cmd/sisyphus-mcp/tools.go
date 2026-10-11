@@ -83,7 +83,7 @@ func registerTools(server *mcp.Server) {
 	}, listHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_search",
-		Description: "Search sisyphus issues by frontmatter filters and a free-text query over title and body, optionally scoped to one section (for example only the Summary). Each match has the lines that match the query, with their sections; use sisyphus_show to read a whole issue.",
+		Description: "Search sisyphus issues by frontmatter filters and query words, which can be in any order, over title and body, optionally scoped to one section (for example only the Summary). Each match has the lines that match the query, with their sections; use sisyphus_show to read a whole issue.",
 	}, searchHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_graph",
@@ -350,7 +350,7 @@ func listHandler(ctx context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp
 
 type searchArgs struct {
 	Dir      string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Query    string `json:"query,omitempty" jsonschema:"A case-insensitive query matched against title and body. Optional: filters alone also work."`
+	Query    string `json:"query,omitempty" jsonschema:"Words that the title and body must all have, in any order, without regard to case, for example docs site theme. Put words in double quotes to match an exact phrase. Optional: filters alone also work."`
 	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed, or all. Defaults to open and in-progress."`
 	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
 	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`

@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.98]] - 2026-10-11
+- Match all words of a search query in any order, and exact phrases in double quotes.
+
 ## [[0.0.97]] - 2026-10-11
 - Suggest up to 3 existing issues when an issue name does not exist.
 

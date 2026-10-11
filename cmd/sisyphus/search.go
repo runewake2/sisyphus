@@ -54,7 +54,7 @@ type searchOptions struct {
 // neither issues/TEMPLATE.md nor any filtered issue has is an error, because it is almost always a
 // typo: without the error, the search would only find nothing.
 func searchIssues(root string, o searchOptions) ([]searchRow, error) {
-	query := strings.ToLower(o.query)
+	terms := queryTerms(o.query)
 
 	x := loadIndex(root)
 	o.filters.withBody = true
@@ -78,7 +78,7 @@ func searchIssues(root string, o searchOptions) ([]searchRow, error) {
 			content = strings.TrimSpace(strings.Join(withoutTemplateSections(m.doc.body), "\n"))
 			haystack = m.doc.get("title") + "\n" + content
 		}
-		if query != "" && !strings.Contains(strings.ToLower(haystack), query) {
+		if !containsAll(strings.ToLower(haystack), terms) {
 			continue
 		}
 		row := searchRow{
@@ -93,8 +93,8 @@ func searchIssues(root string, o searchOptions) ([]searchRow, error) {
 		switch {
 		case o.section != "" || o.content:
 			row.Content = content
-		case query != "":
-			matches := matchedLines(m.doc.get("title"), strings.Split(content, "\n"), query)
+		case len(terms) > 0:
+			matches := matchedLines(m.doc.get("title"), strings.Split(content, "\n"), terms)
 			if len(matches) > maxMatches {
 				row.MoreMatches = len(matches) - maxMatches
 				matches = matches[:maxMatches]
@@ -128,10 +128,36 @@ func checkTemplateSection(root, heading string) error {
 		heading, strings.Join(sectionNames(template.body), ", "))
 }
 
-// matchedLines returns each line of the title and the body that contains query, without regard to
-// case, with the heading of its section. A query that spans two lines of the body matches no single
-// line; then the lines that contain any word of the query are returned.
-func matchedLines(title string, body []string, query string) []lineMatch {
+// queryTerms splits a query into lowercase terms: each word, and each part in double quotes as one
+// exact phrase. For example, `login "session cache"` gives "login" and "session cache".
+func queryTerms(query string) []string {
+	var terms []string
+	for i, part := range strings.Split(strings.ToLower(query), `"`) {
+		if i%2 == 1 {
+			if phrase := strings.Join(strings.Fields(part), " "); phrase != "" {
+				terms = append(terms, phrase)
+			}
+			continue
+		}
+		terms = append(terms, strings.Fields(part)...)
+	}
+	return terms
+}
+
+// containsAll reports whether text has every term, in any order.
+func containsAll(text string, terms []string) bool {
+	for _, term := range terms {
+		if !strings.Contains(text, term) {
+			return false
+		}
+	}
+	return true
+}
+
+// matchedLines returns each line of the title and the body that contains a term, without regard to
+// case, with the heading of its section. A phrase that spans two lines of the body matches no single
+// line; then the lines that contain any word of the terms are returned.
+func matchedLines(title string, body []string, terms []string) []lineMatch {
 	find := func(match func(line string) bool) []lineMatch {
 		var matches []lineMatch
 		if match(strings.ToLower(title)) {
@@ -150,34 +176,36 @@ func matchedLines(title string, body []string, query string) []lineMatch {
 				}
 			}
 			if trimmed != "" && match(strings.ToLower(line)) {
-				matches = append(matches, lineMatch{Section: section, Text: clip(trimmed, query)})
+				matches = append(matches, lineMatch{Section: section, Text: clip(trimmed, terms)})
 			}
 		}
 		return matches
 	}
-	matches := find(func(line string) bool { return strings.Contains(line, query) })
-	if len(matches) == 0 {
-		words := strings.Fields(query)
-		matches = find(func(line string) bool {
+	containsAny := func(words []string) func(string) bool {
+		return func(line string) bool {
 			return slices.ContainsFunc(words, func(word string) bool { return strings.Contains(line, word) })
-		})
+		}
+	}
+	matches := find(containsAny(terms))
+	if len(matches) == 0 {
+		matches = find(containsAny(strings.Fields(strings.Join(terms, " "))))
 	}
 	return matches
 }
 
-// clip returns line, or a part of it of at most matchWidth characters around the first match of
-// query, with "…" where text was cut.
-func clip(line, query string) string {
+// clip returns line, or a part of it of at most matchWidth characters around the first term that it
+// has, with "…" where text was cut.
+func clip(line string, terms []string) string {
 	runes := []rune(line)
 	if len(runes) <= matchWidth {
 		return line
 	}
-	first, at := query, 0
-	if words := strings.Fields(query); len(words) > 0 {
-		first = words[0]
-	}
-	if index := strings.Index(strings.ToLower(line), first); index >= 0 && index <= len(line) {
-		at = len([]rune(line[:index]))
+	at, lower := 0, strings.ToLower(line)
+	for _, term := range append(slices.Clone(terms), strings.Fields(strings.Join(terms, " "))...) {
+		if index := strings.Index(lower, term); index >= 0 && index <= len(line) {
+			at = len([]rune(line[:index]))
+			break
+		}
 	}
 	start := max(0, at-matchWidth/3)
 	end := min(len(runes), start+matchWidth)

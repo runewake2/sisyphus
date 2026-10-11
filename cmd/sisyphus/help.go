@@ -65,6 +65,7 @@ var commandExamples = map[string][]string{
 	"search": {
 		`sisyphus search timeout`,
 		`sisyphus search timeout --section summary`,
+		`sisyphus search '"session cache" login'   # an exact phrase and a word`,
 		`sisyphus search --section "acceptance criteria" --tags bug --json`,
 	},
 	"graph": {

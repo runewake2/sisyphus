@@ -251,3 +251,56 @@ func TestListAndSearchLimitTheRowsAndTellTheRest(t *testing.T) {
 	contains(t, list.error, "Showing 2 of 3 issues.")
 	contains(t, search.error, "Showing 1 of 3 issues.")
 }
+
+func TestSearchMatchesAllWordsInAnyOrder(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "update-docs-site", "--title", "Update the docs site theme")
+	r.mustRun("new", "docs-site-search", "--title", "Add search to the docs site")
+
+	res := r.mustRun("search", "docs site theme update")
+
+	contains(t, res.output, "update-docs-site")
+	notContains(t, res.output, "docs-site-search")
+}
+
+func TestSearchWordsCanBeInTheTitleAndTheBody(t *testing.T) {
+	r := setUpSearchIssues(t)
+
+	res := r.mustRun("search", "load test") // "test" is only in the title, "load" only in the body
+
+	contains(t, res.output, "widget-scheduler-test")
+}
+
+func TestSearchQuotesMatchAnExactPhrase(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "update-docs-site", "--title", "Update the docs site theme")
+	r.mustRun("new", "theme-site-docs", "--title", "Theme the site docs")
+
+	phrase := r.mustRun("search", `"docs site"`)
+	mixed := r.mustRun("search", `theme "the docs"`)
+
+	contains(t, phrase.output, "update-docs-site")
+	notContains(t, phrase.output, "theme-site-docs")
+	contains(t, mixed.output, "update-docs-site")
+	notContains(t, mixed.output, "theme-site-docs")
+}
+
+func TestSearchShowsTheLinesOfEachWord(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "retry-backoff", "--title", "Add retry backoff", "--context", "The client retries at once.\n\nA cache hides the error.")
+
+	var rows []searchRow
+	if err := json.Unmarshal([]byte(r.mustRun("search", "cache retries", "--json").output), &rows); err != nil {
+		t.Fatal(err)
+	}
+
+	equal(t, 2, len(rows[0].Matches))
+	equal(t, "The client retries at once.", rows[0].Matches[0].Text)
+	equal(t, "A cache hides the error.", rows[0].Matches[1].Text)
+}
+
+func TestQueryTerms(t *testing.T) {
+	equalSlices(t, []string{"login", "session cache", "bug"}, queryTerms(`Login "Session  Cache" bug`))
+	equalSlices(t, []string{"open", "quote"}, queryTerms(`open "quote`))
+	equal(t, 0, len(queryTerms(`  "" `)))
+}

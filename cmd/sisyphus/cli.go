@@ -601,7 +601,9 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 		Use:   "search [<query>]",
 		Short: "Search issues by frontmatter filters and content.",
 		Long: "Search issues by frontmatter filters and content, sorted by state, then priority, then name.\n\n" +
-			"<query> matches case-insensitively against the title and body. The frontmatter filters are " +
+			"<query> matches an issue whose title and body have all of its words, in any order, without regard " +
+			"to case. Put words in double quotes to match them as one exact phrase, for example: " +
+			"sisyphus search 'login \"session cache\"'. The frontmatter filters are " +
 			"the same as sisyphus list's, and combine with the query and with each other using AND. " +
 			"--section restricts the query, when one is given, and the content returned for each match, " +
 			"to one section of the body, matched the same way a wikilink's #heading is.",
