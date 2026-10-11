@@ -58,7 +58,8 @@ sisyphus lint                      # every issue and every wikilink in the repo
 ```
 
 Run `sisyphus <command> --help` for all options on any command, and see [[commands]] (`docs/`)
-for every command in detail. See [[CONTRIBUTING]] for the full
+for every command in detail. See [[issue-format]] for the fields, states, and sections of an issue,
+and how to change the template. See [[CONTRIBUTING]] for the full
 workflow: the design log, decisions, versioning, the changelog, wikilinks, issues, and jj.
 
 ## Shell completion

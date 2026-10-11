@@ -235,9 +235,11 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 		}
 	}
 	if o.context != nil {
-		if replaced, ok := replaceSection(doc.body, "Context", strings.Split(*o.context, "\n")); ok {
-			doc.body = replaced
+		replaced, ok := replaceSection(doc.body, "Context", strings.Split(*o.context, "\n"))
+		if !ok {
+			return "", fmt.Errorf("--context fills the Context section, but issues/TEMPLATE.md has no Context section. Its sections are: %s.", strings.Join(sectionNames(doc.body), ", "))
 		}
+		doc.body = replaced
 	}
 
 	destination := issuePath(root, o.state, o.name)

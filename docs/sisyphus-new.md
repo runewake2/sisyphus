@@ -34,7 +34,7 @@ error that gives the command to use instead.
 | `--depends-on` | none | Issues that must close first, comma-separated or with the flag more than once. See [[sisyphus-depends-on]]. |
 | `-d`, `--deferred-from` | none | The issue or bookmark that deferred this work. |
 | `--remote` | none | The URL of an external ticket. See [[sisyphus-remote]]. |
-| `--context` | none | Text that replaces the Context section's placeholder. |
+| `--context` | none | Text that replaces the Context section's placeholder. A template without a Context section makes it an error. |
 | `--metadata` | none | `key=value` notes. Repeat the flag, or separate pairs with commas. |
 | `--json` | Print the changed issue as JSON, as [[sisyphus-show]] `--json` does, with its path and the warnings. |
 

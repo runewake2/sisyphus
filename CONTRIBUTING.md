@@ -148,7 +148,8 @@ issues/
 
 ### Frontmatter
 
-`issues/TEMPLATE.md` defines the fields:
+`issues/TEMPLATE.md` defines the fields. [[issue-format]] describes them for every repo that uses
+sisyphus; this table adds the rules of this repo:
 
 | Field | Values | Notes |
 |---|---|---|

@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.81]] - 2026-10-11
+- Add a page that describes the issue file and the template, and fail new --context without a Context section.
+
 ## [[0.0.80]] - 2026-10-11
 - Give every command page the sections Usage, Flags, Behavior, Output, and Examples, and test them.
 

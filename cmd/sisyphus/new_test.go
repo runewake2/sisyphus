@@ -234,6 +234,17 @@ func TestNewSetsContextReplacingThePlaceholder(t *testing.T) {
 	isTrue(t, !strings.Contains(body, "<Give the background"), "the placeholder is gone")
 }
 
+func TestNewContextNeedsAContextSectionInTheTemplate(t *testing.T) {
+	r := newTestRepo(t)
+	r.write("issues/TEMPLATE.md", strings.Replace(r.read("issues/TEMPLATE.md"), "## Context", "## Background", 1))
+
+	res := r.run("new", "context-test", "--context", "Steps to reproduce: click the button twice.")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "issues/TEMPLATE.md has no Context section. Its sections are: Summary, Background,")
+	isTrue(t, !r.exists("issues/open/context-test.md"), "no issue is created")
+}
+
 func TestNewRejectsValuesThatAreNotAllowed(t *testing.T) {
 	cases := []struct{ option, value string }{
 		{"--state", "blocked"},

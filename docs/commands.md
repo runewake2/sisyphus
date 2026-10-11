@@ -2,7 +2,9 @@
 
 sisyphus is a command-line issue manager. Every issue is one Markdown file with YAML frontmatter in
 `issues/open/`, `issues/in-progress/`, or `issues/closed/`; the directory always matches the issue's
-`state`. This page describes what every command has in common, then lists the commands.
+`state`. This page describes what every command has in common, then lists the commands. For the
+fields, states, and sections of an issue file, and what a repo can change in its template, see
+[[issue-format]].
 
 ## Commands
 
