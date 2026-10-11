@@ -57,7 +57,8 @@ Value details:
 - `--parent` and `--depends-on` are written as quoted wikilinks to the full name, for example
   `"[[web/some-epic]]"`, whichever form of the name you give.
 - `--deferred-from` takes an issue (any form of its name), written as a quoted wikilink to its full
-  name, or a bookmark (any other value with `/`), written as it is.
+  name, or a bookmark (any other value with `/`), written as it is. A value without `/` that names no issue
+  is written as a wikilink with a warning, because it is most often a typo.
 - `--metadata` values are written quoted, with keys in sorted order:
   `{note: "first pass", session-id: "abc123"}`. A value can hold commas, colons, and quotes.
 

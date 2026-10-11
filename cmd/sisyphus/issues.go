@@ -181,7 +181,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	}
 	deferred := ""
 	if o.deferredFrom != nil {
-		value, err := deferredValue(x, *o.deferredFrom)
+		value, err := deferredValue(x, *o.deferredFrom, warnings)
 		if err != nil {
 			return "", err
 		}
@@ -968,24 +968,29 @@ func resolveResolution(state, resolution string) string {
 }
 
 // deferredValue writes a deferred-from reference: an issue becomes a wikilink to its full name, and
-// any other value with "/" is a bookmark, written as it is.
-func deferredValue(x *issueIndex, reference string) (string, error) {
+// any other value with "/" is a bookmark, written as it is. A wikilink, or a value without "/", that
+// names no issue is still written, as a wikilink, with a warning: it may name an issue that was
+// removed on purpose, but it is more often a typo.
+func deferredValue(x *issueIndex, reference string, warnings io.Writer) (string, error) {
 	r := strings.TrimSpace(reference)
-	if strings.HasPrefix(r, "[[") {
-		return quote(r), nil
-	}
+	explicitLink := strings.HasPrefix(r, "[[")
 	match, found, err := x.match(issueName(r))
 	if err != nil {
 		return "", err
 	}
 	switch {
-	case found:
+	case found && !explicitLink:
 		return quote("[[" + match.name + "]]"), nil
-	case strings.Contains(r, "/"):
+	case found:
 		return quote(r), nil
-	default:
-		return quote("[[" + issueName(r) + "]]"), nil
+	case strings.Contains(r, "/") && !explicitLink:
+		return quote(r), nil
 	}
+	warn(warnings, fmt.Sprintf("--deferred-from names no issue: '%s'. It is written as the link [[%s]]. A bookmark must contain '/'.", issueName(r), issueName(r)))
+	if explicitLink {
+		return quote(r), nil
+	}
+	return quote("[[" + issueName(r) + "]]"), nil
 }
 
 func capitalize(text string) string {

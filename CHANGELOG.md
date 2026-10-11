@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.51]] - 2026-10-11
+- Warn when `sisyphus new --deferred-from` names no issue and is not a bookmark.
+
 ## [[0.0.50]] - 2026-10-11
 - Refuse `sisyphus init` below a directory that already has a tracker, unless `--nested` is given.
 

@@ -323,3 +323,16 @@ func TestNewNamesTheDependencyThatDoesNotExist(t *testing.T) {
 	contains(t, res.error, "'missing-issue-test' does not exist")
 	isTrue(t, !r.exists("issues/open/second-issue-test.md"), "no issue is created")
 }
+
+func TestNewWarnsWhenDeferredFromNamesNoIssue(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "real-issue-test")
+
+	byName := r.mustRun("new", "deferred-name-test", "--deferred-from", "no-such-issue")
+	byLink := r.mustRun("new", "deferred-link-test", "--deferred-from", "[[no-such-issue]]")
+
+	contains(t, byName.error, "--deferred-from names no issue: 'no-such-issue'")
+	contains(t, byLink.error, "--deferred-from names no issue: 'no-such-issue'")
+	equal(t, "", r.mustRun("new", "from-issue-test", "--deferred-from", "real-issue-test").error)
+	equal(t, "", r.mustRun("new", "from-bookmark-test", "--deferred-from", "ai/some-work").error)
+}
