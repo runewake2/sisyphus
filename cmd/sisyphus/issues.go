@@ -116,8 +116,20 @@ func baseName(name string) string {
 
 func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	x := loadIndex(root)
+	if o.name == "" && o.title != nil {
+		// Without a name, make it from the title, as sisyphus slug does.
+		name, err := uniqueSlug(root, *o.title)
+		if err != nil {
+			return "", err
+		}
+		o.name = name
+	}
 	if !validName(o.name) {
-		return "", fmt.Errorf("Invalid issue name '%s'. Use 2-6 lowercase words in kebab-case, for example fix-login-bug, optionally below kebab-case directories, for example web/auth/fix-login-bug.", o.name)
+		message := fmt.Sprintf("Invalid issue name '%s'. Use 2-6 lowercase words in kebab-case, for example fix-login-bug, optionally below kebab-case directories, for example web/auth/fix-login-bug.", o.name)
+		if suggestion, err := uniqueSlug(root, o.name); err == nil && o.title == nil {
+			message += fmt.Sprintf(" To use it as the title, run: sisyphus new %s --title %s", suggestion, quote(o.name))
+		}
+		return "", errors.New(message)
 	}
 	resolution := resolveResolution(o.state, o.resolution)
 	if err := checkResolution(o.state, resolution, "Set --resolution only when the state is closed."); err != nil {

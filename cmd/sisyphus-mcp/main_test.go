@@ -341,3 +341,15 @@ func TestGraphToolRefusesAnUnreadableDrawing(t *testing.T) {
 	}
 	callTool(t, session, "sisyphus_graph", map[string]any{"dir": dir, "name": "big-epic-test", "json": true, "maxIssues": 1})
 }
+
+func TestNewToolMakesTheNameFromTheTitle(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+
+	out := callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "title": "Add a dark mode"})
+
+	if !strings.Contains(out, "issues/open/add-dark-mode.md") {
+		t.Errorf("want the name made from the title: %s", out)
+	}
+}

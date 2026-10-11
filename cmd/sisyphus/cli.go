@@ -82,14 +82,21 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 	var dependsOn []string
 	var metadata map[string]string
 	cmd := &cobra.Command{
-		Use:   "new <name>",
+		Use:   "new [<name>]",
 		Short: "Create an issue from issues/TEMPLATE.md in the directory of its state.",
 		Long: "Create an issue from issues/TEMPLATE.md in the directory of its state.\n\n" +
 			"<name> is 2-6 lowercase words in kebab-case, for example fix-login-bug, optionally below " +
 			"kebab-case directories, for example web/auth/fix-login-bug. The directories stay with the " +
-			"issue when its state changes.",
-		Args: cobra.ExactArgs(1),
+			"issue when its state changes. Without <name>, the name is made from --title, the way " +
+			"sisyphus slug makes it.",
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			name := ""
+			if len(args) == 1 {
+				name = args[0]
+			} else if !cmd.Flags().Changed("title") {
+				return errors.New("Give a name, or a --title to make the name from, for example: sisyphus new --title \"Fix the login bug\"")
+			}
 			if err := firstError(
 				oneOf("state", state, states),
 				oneOf("priority", priority, priorities),
@@ -100,7 +107,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 			}
 			return printPath(cmd, findRoot, func(root string, warnings io.Writer) (string, error) {
 				return newIssue(root, newOptions{
-					name:         args[0],
+					name:         name,
 					state:        state,
 					resolution:   resolution,
 					priority:     priority,

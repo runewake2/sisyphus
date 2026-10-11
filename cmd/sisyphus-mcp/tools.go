@@ -119,7 +119,7 @@ func registerTools(server *mcp.Server) {
 
 type newArgs struct {
 	Dir          string            `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
-	Name         string            `json:"name" jsonschema:"The issue name: 2-6 lowercase kebab-case words, optionally below kebab-case directories, for example fix-login-bug or web/auth/fix-login-bug. No other issue can have the same full name."`
+	Name         string            `json:"name,omitempty" jsonschema:"The issue name: 2-6 lowercase kebab-case words, optionally below kebab-case directories, for example fix-login-bug or web/auth/fix-login-bug. No other issue can have the same full name. Leave it out to make the name from the title."`
 	Title        string            `json:"title,omitempty" jsonschema:"The issue title. Defaults to a title made from the name."`
 	State        string            `json:"state,omitempty" jsonschema:"open, in-progress, or closed. Defaults to open."`
 	Priority     string            `json:"priority,omitempty" jsonschema:"critical, high, medium, or low. Defaults to medium."`

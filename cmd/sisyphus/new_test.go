@@ -336,3 +336,32 @@ func TestNewWarnsWhenDeferredFromNamesNoIssue(t *testing.T) {
 	equal(t, "", r.mustRun("new", "from-issue-test", "--deferred-from", "real-issue-test").error)
 	equal(t, "", r.mustRun("new", "from-bookmark-test", "--deferred-from", "ai/some-work").error)
 }
+
+func TestNewMakesTheNameFromTheTitle(t *testing.T) {
+	r := newTestRepo(t)
+
+	res := r.mustRun("new", "--title", "Fix the login bug")
+	again := r.mustRun("new", "--title", "Fix the login bug")
+
+	equal(t, "issues/open/fix-login-bug.md\n", res.output)
+	equal(t, "Fix the login bug", r.frontmatter("issues/open/fix-login-bug.md").get("title"))
+	equal(t, "issues/open/fix-login-bug-2.md\n", again.output)
+}
+
+func TestNewSuggestsTheNameForATitle(t *testing.T) {
+	r := newTestRepo(t)
+
+	res := r.run("new", "Fix the login bug")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, `To use it as the title, run: sisyphus new fix-login-bug --title "Fix the login bug"`)
+}
+
+func TestNewWithoutANameOrATitleFails(t *testing.T) {
+	r := newTestRepo(t)
+
+	res := r.run("new")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "Give a name, or a --title")
+}

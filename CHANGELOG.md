@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.71]] - 2026-10-11
+- Let `sisyphus new --title` make the issue name from the title.
+
 ## [[0.0.70]] - 2026-10-11
 - Accept `--state all`, and suggest the nearest valid value for an invalid state, priority, effort, or resolution.
 
