@@ -302,3 +302,28 @@ func TestNewToolTakesMoreThanOneDependency(t *testing.T) {
 		t.Errorf("want both dependencies: %s", show)
 	}
 }
+
+func TestLintToolReturnsTheProblems(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+
+	clean := callTool(t, session, "sisyphus_lint", map[string]any{"dir": dir})
+	if !strings.Contains(clean, `"problems": []`) {
+		t.Errorf("want no problems: %s", clean)
+	}
+
+	path := filepath.Join(dir, "issues", "open", "fix-login-bug.md")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(strings.Replace(string(content), "priority: medium", "priority: urgent", 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	found := callTool(t, session, "sisyphus_lint", map[string]any{"dir": dir})
+	if !strings.Contains(found, "its priority 'urgent'") {
+		t.Errorf("want the priority problem: %s", found)
+	}
+}

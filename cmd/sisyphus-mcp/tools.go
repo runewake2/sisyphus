@@ -103,6 +103,14 @@ func registerTools(server *mcp.Server) {
 		Description: "List every wikilink in a document and whether each one resolves.",
 	}, linksHandler)
 	mcp.AddTool(server, &mcp.Tool{
+		Name: "sisyphus_lint",
+		Description: "Check every sisyphus issue and every wikilink in the repo, and change nothing. Returns JSON: " +
+			"the number of issues and Markdown files checked, and a list of problems, each with a file, a line " +
+			"for a link problem, and the problem. An empty list means no problems. Checks: frontmatter shape " +
+			"and values, state matches the directory, one state directory per issue, tags without spaces, " +
+			"parent and depends-on issues exist with no cycles, and every wikilink resolves.",
+	}, lintHandler)
+	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_init",
 		Description: "Set up issue tracking (issues/TEMPLATE.md and the open/in-progress/closed directories) in a repo.",
 	}, initHandler)
@@ -411,6 +419,18 @@ func linksHandler(_ context.Context, _ *mcp.CallToolRequest, in linksArgs) (*mcp
 	args = appendBoolFlag(args, "--absolute", in.Absolute)
 	args = appendPositionals(args, in.Document)
 	out, err := runSisyphus(in.Dir, args...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return textResult(out)
+}
+
+type lintArgs struct {
+	Dir string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+}
+
+func lintHandler(_ context.Context, _ *mcp.CallToolRequest, in lintArgs) (*mcp.CallToolResult, any, error) {
+	out, err := runSisyphusReport(in.Dir, "lint", "--json")
 	if err != nil {
 		return nil, nil, err
 	}

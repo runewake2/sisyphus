@@ -25,31 +25,53 @@ func main() {
 	}
 }
 
-// runSisyphus runs the sisyphus binary with args, in dir if given (otherwise sisyphus-mcp's own
-// working directory), and returns its trimmed stdout, followed by any warnings it wrote to stderr. On
-// failure, the error is sisyphus's own stderr message, the same message a human running the command would see.
-func runSisyphus(dir string, args ...string) (string, error) {
+// errNotInstalled is the error of every tool when the sisyphus binary is not on PATH.
+var errNotInstalled = errors.New("sisyphus is not installed or not on PATH. Install it with " +
+	"`go install github.com/runewake2/sisyphus/cmd/sisyphus@latest`.")
+
+// execSisyphus runs the sisyphus binary with args, in dir if given (otherwise sisyphus-mcp's own
+// working directory), and returns its trimmed stdout and stderr. A failed run gives sisyphus's own
+// stderr message as the error, the same message a human running the command would see.
+func execSisyphus(dir string, args ...string) (stdout, stderr string, err error) {
 	path, err := exec.LookPath("sisyphus")
 	if err != nil {
-		return "", errors.New("sisyphus is not installed or not on PATH. Install it with " +
-			"`go install github.com/runewake2/sisyphus/cmd/sisyphus@latest`.")
+		return "", "", errNotInstalled
 	}
 	cmd := exec.Command(path, args...)
 	cmd.Dir = dir
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		if message := strings.TrimSpace(stderr.String()); message != "" {
-			return "", errors.New(message)
+	var out, errOut bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &errOut
+	err = cmd.Run()
+	stdout, stderr = strings.TrimSpace(out.String()), strings.TrimSpace(errOut.String())
+	if err != nil {
+		if stderr != "" {
+			err = errors.New(stderr)
+		} else {
+			err = fmt.Errorf("sisyphus %s: %w", strings.Join(args, " "), err)
 		}
-		return "", fmt.Errorf("sisyphus %s: %w", strings.Join(args, " "), err)
 	}
-	output := strings.TrimSpace(stdout.String())
-	if warnings := strings.TrimSpace(stderr.String()); warnings != "" {
-		output = strings.TrimSpace(output + "\n" + warnings)
+	return stdout, stderr, err
+}
+
+// runSisyphus runs sisyphus and returns its stdout, followed by any warnings it wrote to stderr.
+func runSisyphus(dir string, args ...string) (string, error) {
+	stdout, stderr, err := execSisyphus(dir, args...)
+	if err != nil {
+		return "", err
 	}
-	return output, nil
+	return strings.TrimSpace(stdout + "\n" + stderr), nil
+}
+
+// runSisyphusReport runs sisyphus for a command that reports findings on stdout and exits 1 when
+// it finds any, such as lint. A run that wrote to stdout is a result, even with exit code 1; only a
+// run that wrote nothing to stdout is an error.
+func runSisyphusReport(dir string, args ...string) (string, error) {
+	stdout, _, err := execSisyphus(dir, args...)
+	if err != nil && stdout == "" {
+		return "", err
+	}
+	return stdout, nil
 }
 
 // textResult wraps text as a successful CallToolResult.

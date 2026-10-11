@@ -64,7 +64,7 @@ hand. The sub-issues below each cover one missing piece:
       ([[search-issues-command]]).
 - [x] `sisyphus update` can change priority, effort, and tags ([[update-editable-metadata]]).
 - [x] Issues can express depends-on/blocks relationships ([[issue-dependencies]]).
-- [ ] `sisyphus lint` validates the whole `issues/` tree ([[lint-issues-command]]).
+- [x] `sisyphus lint` validates the whole `issues/` tree ([[lint-issues-command]]).
 - [x] `sisyphus graph` shows a large task's family tree in the terminal ([[graph-view-command]]).
 - [ ] `sisyphus migrate` upgrades every issue to the current schema ([[migrate-command]]).
 - [x] `sisyphus update` can change fields without a state argument ([[update-without-state-change]]).

@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.45]] - 2026-10-11
+- Add `sisyphus lint` to check every issue and every wikilink in the repo, and run it in CI.
+
 ## [[0.0.44]] - 2026-10-11
 - Add `--ready` to `sisyphus list` and `sisyphus search` for the issues that can start now.
 

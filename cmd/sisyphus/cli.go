@@ -54,6 +54,7 @@ func newRootCommand(findRoot func() (string, error)) *cobra.Command {
 		searchCommand(findRoot),
 		resolveCommand(findRoot),
 		linksCommand(findRoot),
+		lintCommand(findRoot),
 		initCommand(),
 	)
 	return root
@@ -645,6 +646,60 @@ func linksCommand(findRoot func() (string, error)) *cobra.Command {
 	cmd.Flags().BoolVar(&absolute, "absolute", false, "Show absolute paths. The default is paths from the repo root.")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print JSON instead of a table.")
 	return cmd
+}
+
+func lintCommand(findRoot func() (string, error)) *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "lint",
+		Short: "Check every issue and every wikilink in the repo, and write nothing.",
+		Long: "Check every issue and every wikilink in the repo, and write nothing.\n\n" +
+			"For each issue in issues/: the file can be read; each frontmatter line is a key: value field, " +
+			"and each value that opens a quote, [, or { closes it; state matches the state directory; " +
+			"priority, effort, and resolution are valid; the full name is in one state directory only; no " +
+			"tag has a space; the parent exists and has no cycle above it; and each depends-on issue exists, " +
+			"is not the issue itself, and makes no cycle. For each Markdown file in the repo: every wikilink " +
+			"is ok, not missing, ambiguous, or missing-heading.\n\n" +
+			"Each problem is one line, \"<file>[:<line>]: <problem>\", and the exit code is 1. With no " +
+			"problem, one summary line and exit code 0.",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			root, err := findRoot()
+			if err != nil {
+				return err
+			}
+			result := lintRepo(root)
+			out := cmd.OutOrStdout()
+			if asJSON {
+				encoder := json.NewEncoder(out)
+				encoder.SetEscapeHTML(false)
+				encoder.SetIndent("", "  ")
+				if err := encoder.Encode(result); err != nil {
+					return err
+				}
+			} else {
+				for _, problem := range result.Problems {
+					fmt.Fprintln(out, problem)
+				}
+			}
+			if n := len(result.Problems); n > 0 {
+				return fmt.Errorf("%d %s in %d issues and %d Markdown files.", n, plural(n, "problem", "problems"), result.Issues, result.Documents)
+			}
+			if !asJSON {
+				fmt.Fprintf(out, "%d issues and %d Markdown files: no problems.\n", result.Issues, result.Documents)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the result as JSON: the counts and a list of problems.")
+	return cmd
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
 }
 
 func initCommand() *cobra.Command {

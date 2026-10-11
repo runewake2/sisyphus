@@ -54,6 +54,7 @@ Check wikilinks:
 ```bash
 sisyphus resolve "[[<issue-name>]]"
 sisyphus links <file>
+sisyphus lint                      # every issue and every wikilink in the repo
 ```
 
 Run `sisyphus <command> --help` for all options on any command, and see [[commands]] (`docs/`)
@@ -97,6 +98,6 @@ claude mcp add sisyphus -- sisyphus-mcp
 
 Each tool (`sisyphus_new`, `sisyphus_update`, `sisyphus_edit`, `sisyphus_show`, `sisyphus_list`,
 `sisyphus_search`, `sisyphus_graph`, `sisyphus_parent`, `sisyphus_remote`, `sisyphus_depends_on`,
-`sisyphus_slug`, `sisyphus_resolve`, `sisyphus_links`, `sisyphus_init`) takes an optional `dir` argument (the repo to
+`sisyphus_slug`, `sisyphus_resolve`, `sisyphus_links`, `sisyphus_lint`, `sisyphus_init`) takes an optional `dir` argument (the repo to
 act on; defaults to `sisyphus-mcp`'s own working directory), plus the same arguments as the CLI
 command it wraps. See [[sisyphus-mcp]] for the full list of tools.

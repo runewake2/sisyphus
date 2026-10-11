@@ -294,5 +294,6 @@ If this prints nothing, the work is complete.
 - [ ] The issue moved to `issues/in-progress/` in the first change, and to `issues/closed/` in the change that completes the work
 - [ ] Deferred work recorded as new issues
 - [ ] Markdown files link with `[[wikilinks]]`, and `sisyphus links` reports only `ok` links
+- [ ] `sisyphus lint` reports no problems
 - [ ] The tests of the repo pass
 - [ ] SHAME version bumped, with a new `changelog/<version>.md`, a `CHANGELOG.md` entry, and `VERSION` updated

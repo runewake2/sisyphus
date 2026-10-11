@@ -141,38 +141,57 @@ func resolveLink(root, link string, all, absolute bool) ([]string, error) {
 }
 
 func listLinks(root, document string, absolute bool) (string, []linkRow, error) {
-	candidates := repoCandidates(root)
-	file, err := findDocument(candidates, document)
+	checker := newLinkChecker(root)
+	file, err := findDocument(checker.candidates, document)
 	if err != nil {
 		return "", nil, err
 	}
-	fileRelative := relative(root, file)
+	rows, err := checker.rows(file, absolute)
+	return relative(root, file), rows, err
+}
+
+// linkChecker resolves the wikilinks of documents against one walk of the repo, and reads the
+// headings of each target file once, so that sisyphus lint can check every document cheaply.
+type linkChecker struct {
+	root       string
+	candidates []candidate
+	headingsOf map[string][]string
+}
+
+func newLinkChecker(root string) *linkChecker {
+	return &linkChecker{root: root, candidates: repoCandidates(root), headingsOf: map[string][]string{}}
+}
+
+func (c *linkChecker) hasHeading(file, heading string) bool {
+	if _, ok := c.headingsOf[file]; !ok {
+		c.headingsOf[file] = headings(file)
+	}
+	return slices.ContainsFunc(c.headingsOf[file], func(h string) bool { return strings.EqualFold(h, heading) })
+}
+
+// rows returns one row for each wikilink in file, with its status: ok, missing, ambiguous, or
+// missing-heading.
+func (c *linkChecker) rows(file string, absolute bool) ([]linkRow, error) {
+	fileRelative := relative(c.root, file)
 	content, err := os.ReadFile(file)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 	lines := splitLines(string(content))
-
-	headingsOf := map[string][]string{file: headingsIn(lines)}
-	hasHeading := func(file, heading string) bool {
-		if _, ok := headingsOf[file]; !ok {
-			headingsOf[file] = headings(file)
-		}
-		return slices.ContainsFunc(headingsOf[file], func(h string) bool { return strings.EqualFold(h, heading) })
-	}
+	c.headingsOf[file] = headingsIn(lines)
 
 	rows := []linkRow{}
 	for _, found := range wikilinks(lines) {
 		link := parseLink(found.link)
 		var matches []candidate
 		if link.target == "" && link.sameFile {
-			for _, c := range candidates {
-				if c.relative == fileRelative {
-					matches = append(matches, c)
+			for _, candidate := range c.candidates {
+				if candidate.relative == fileRelative {
+					matches = append(matches, candidate)
 				}
 			}
 		} else {
-			matches = matchTarget(candidates, link.target, false)
+			matches = matchTarget(c.candidates, link.target, false)
 		}
 		status := "ambiguous"
 		switch len(matches) {
@@ -185,7 +204,7 @@ func listLinks(root, document string, absolute bool) (string, []linkRow, error) 
 			link.heading != "" &&
 			!strings.HasPrefix(link.heading, "^") &&
 			hasSuffixFold(matches[0].relative, ".md") &&
-			!hasHeading(matches[0].file, link.heading) {
+			!c.hasHeading(matches[0].file, link.heading) {
 			status = "missing-heading"
 		}
 		rows = append(rows, linkRow{
@@ -195,7 +214,7 @@ func listLinks(root, document string, absolute bool) (string, []linkRow, error) 
 			Resolved: strings.Join(paths(matches, absolute), ", "),
 		})
 	}
-	return fileRelative, rows, nil
+	return rows, nil
 }
 
 func findDocument(candidates []candidate, document string) (string, error) {

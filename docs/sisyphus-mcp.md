@@ -32,6 +32,7 @@ commands. If `sisyphus` is missing, every tool returns an error that says how to
 | `sisyphus_slug` | [[sisyphus-slug]] | text |
 | `sisyphus_resolve` | [[sisyphus-resolve]] | text |
 | `sisyphus_links` | [[sisyphus-links]] | JSON |
+| `sisyphus_lint` | [[sisyphus-lint]] | JSON (problems are a result, not an error) |
 
 Each tool's arguments mirror the command's flags, in camelCase (for example `dependsOn`,
 `deferredFrom`, `blockingIssue`), and `metadata` is a JSON object. Every tool also takes an optional
