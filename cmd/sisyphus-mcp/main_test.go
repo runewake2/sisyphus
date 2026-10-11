@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -484,5 +485,36 @@ func TestCloseToolsNeedAMessage(t *testing.T) {
 		if !strings.Contains(text, "Give message") {
 			t.Errorf("%s: got %q", tool, text)
 		}
+	}
+}
+
+// TestAnOtherVersionOfSisyphusIsReportedInErrors runs the tools against a fake sisyphus that has
+// another version and fails every command, as an old binary fails on a flag it does not know.
+func TestAnOtherVersionOfSisyphusIsReportedInErrors(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake sisyphus is a shell script")
+	}
+	session := connectedSession(t)
+	bin := t.TempDir()
+	script := "#!/bin/sh\nif [ \"$1\" = --version ]; then echo 0.0.1; exit 0; fi\necho \"Error: unknown flag: --take\" >&2\nexit 1\n"
+	if err := os.WriteFile(filepath.Join(bin, "sisyphus"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	text := callToolExpectingError(t, session, "sisyphus_list", map[string]any{"dir": t.TempDir()})
+
+	if !strings.Contains(text, "unknown flag: --take") || !strings.Contains(text, "runs sisyphus 0.0.1 from "+filepath.Join(bin, "sisyphus")) {
+		t.Errorf("want the error and the version difference, got: %s", text)
+	}
+}
+
+func TestTheSameVersionAddsNothingToErrors(t *testing.T) {
+	session := connectedSession(t)
+
+	text := callToolExpectingError(t, session, "sisyphus_show", map[string]any{"dir": t.TempDir(), "name": "missing-issue"})
+
+	if strings.Contains(text, "Install the same version") {
+		t.Errorf("the test binary has the version of sisyphus-mcp, got: %s", text)
 	}
 }

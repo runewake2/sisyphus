@@ -12,6 +12,8 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/runewake2/sisyphus"
@@ -37,6 +39,7 @@ func execSisyphus(dir string, args ...string) (stdout, stderr string, err error)
 	if err != nil {
 		return "", "", errNotInstalled
 	}
+	mismatch := versionMismatch(path)
 	cmd := exec.Command(path, args...)
 	cmd.Dir = dir
 	var out, errOut bytes.Buffer
@@ -50,8 +53,44 @@ func execSisyphus(dir string, args ...string) (stdout, stderr string, err error)
 		} else {
 			err = fmt.Errorf("sisyphus %s: %w", strings.Join(args, " "), err)
 		}
+		if mismatch != "" {
+			// A flag that the other version does not know is the most likely cause.
+			err = fmt.Errorf("%w\n%s", err, mismatch)
+		}
 	}
 	return stdout, stderr, err
+}
+
+var (
+	versionsMu sync.Mutex
+	// versions holds the result of versionMismatch for each sisyphus binary, so that each binary
+	// runs --version once.
+	versions = map[string]string{}
+)
+
+// versionMismatch returns a message when the sisyphus binary at path has another version than
+// sisyphus-mcp, and "" when the versions are the same or the version cannot be read. The two
+// binaries are installed separately, so one of them can be old. The message is also written to the
+// log of the server once.
+func versionMismatch(path string) string {
+	versionsMu.Lock()
+	defer versionsMu.Unlock()
+	if message, ok := versions[path]; ok {
+		return message
+	}
+	message := ""
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if out, err := exec.CommandContext(ctx, path, "--version").Output(); err == nil {
+		if theirs, ours := strings.TrimSpace(string(out)), sisyphus.Version(); theirs != ours {
+			message = fmt.Sprintf("sisyphus-mcp %s runs sisyphus %s from %s. Install the same version of both, for "+
+				"example the latest: go install github.com/runewake2/sisyphus/cmd/sisyphus@latest and "+
+				"go install github.com/runewake2/sisyphus/cmd/sisyphus-mcp@latest", ours, theirs, path)
+			log.Print(message)
+		}
+	}
+	versions[path] = message
+	return message
 }
 
 // runSisyphus runs sisyphus and returns its stdout, followed by any warnings it wrote to stderr.

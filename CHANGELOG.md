@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.91]] - 2026-10-11
+- Tell the agent in MCP errors when sisyphus and sisyphus-mcp have different versions.
+
 ## [[0.0.90]] - 2026-10-11
 - Add the MCP tools sisyphus_start, sisyphus_close, and sisyphus_abandon.
 

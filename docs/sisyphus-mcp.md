@@ -11,7 +11,8 @@ go install github.com/runewake2/sisyphus/cmd/sisyphus-mcp@latest
 
 `sisyphus-mcp` is a thin wrapper: each tool runs the `sisyphus` binary and returns its output. So
 `sisyphus` must be installed and on the `PATH` of the MCP client too, and the tools always behave
-exactly like the commands. `sisyphus-mcp` reports the same version as `sisyphus --version`.
+exactly like the commands. `sisyphus-mcp` reports the same version as `sisyphus --version`. When the `sisyphus` that it finds has
+another version, every error result tells it (see [[#Troubleshooting]]).
 
 ## Set up a client
 
@@ -169,4 +170,5 @@ closed yet.
 | `Error: Cannot find the repo root.` | `sisyphus-mcp` runs outside the repo. Give a `dir` in the repo, start the client in the repo, or set up the repo with `sisyphus_init`. |
 | The issues of another repo | The server started in another repo. Give a `dir`. |
 | `validating "arguments": ...` | An argument has the wrong type. Lists are comma-separated strings. |
+| `sisyphus-mcp X runs sisyphus Y from <path>` after an error | The two binaries have different versions, so a tool can pass a flag that the binary does not know. Install the same version of both, and restart the server. The server also writes this line to its log. |
 | Old behavior after an update | The client still runs the old `sisyphus-mcp`. Restart the client, or the server in the client. |
