@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"slices"
@@ -10,12 +11,14 @@ import (
 
 // issueGraph is "sisyphus graph": the focus issue, every issue below it, and the path above it, or
 // with full, every issue connected to it through parent or depends-on in either direction. Edges are the
-// links between the drawn issues. Hidden counts the connected issues that are not drawn.
+// links between the drawn issues. Hidden counts the connected issues that are not drawn. Filtered
+// counts the issues that the graph would draw, but that a state filter leaves out.
 type issueGraph struct {
-	Focus  string      `json:"focus"`
-	Nodes  []graphNode `json:"nodes"`
-	Edges  []graphEdge `json:"edges"`
-	Hidden int         `json:"hidden"`
+	Focus    string      `json:"focus"`
+	Nodes    []graphNode `json:"nodes"`
+	Edges    []graphEdge `json:"edges"`
+	Hidden   int         `json:"hidden"`
+	Filtered int         `json:"filtered,omitempty"`
 }
 
 // graphNode is one issue in the graph. Available is true for an issue that is not closed and has
@@ -32,10 +35,24 @@ type graphNode struct {
 
 // graphEdge points from the issue that comes first to the one that comes after: kind "parent" from
 // a parent to its sub-issue, and kind "depends-on" from a dependency to the issue that depends on it.
+// through names the issues that a state filter leaves out between the two, in order and separated by
+// spaces, when the edge stands for a chain of links through them. It is a string, so that an edge can
+// be a map key; the JSON has it as the array "through".
 type graphEdge struct {
-	From string `json:"from"`
-	To   string `json:"to"`
-	Kind string `json:"kind"`
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Kind    string `json:"kind"`
+	through string
+}
+
+func (e graphEdge) MarshalJSON() ([]byte, error) {
+	type plain struct {
+		From    string   `json:"from"`
+		To      string   `json:"to"`
+		Kind    string   `json:"kind"`
+		Through []string `json:"through,omitempty"`
+	}
+	return json.Marshal(plain{From: e.From, To: e.To, Kind: e.Kind, Through: strings.Fields(e.through)})
 }
 
 const (
@@ -46,8 +63,9 @@ const (
 // buildGraph finds every issue reachable from name by following parent and depends-on links both
 // ways. A link to an issue that does not exist becomes a node with state "?" and is not followed.
 // Unless full is set, only name, everything below it, and the path above it are kept, and the
-// rest are counted as hidden.
-func buildGraph(x *issueIndex, name string, full bool) issueGraph {
+// rest are counted as hidden. With shown, only the issues in those states are drawn, and name; see
+// filterStates.
+func buildGraph(x *issueIndex, name string, full bool, shown []string) issueGraph {
 	all := map[string]graphNode{}
 	var edges []graphEdge
 	for _, m := range matchingIssues(x, listOptions{states: states}) {
@@ -113,11 +131,26 @@ func buildGraph(x *issueIndex, name string, full bool) issueGraph {
 	}
 
 	graph := issueGraph{Focus: name, Hidden: len(connected) - len(drawn)}
+	var drawnEdges []graphEdge
 	for _, edge := range edges {
 		if drawn[edge.From] && drawn[edge.To] {
-			graph.Edges = append(graph.Edges, edge)
+			drawnEdges = append(drawnEdges, edge)
 		}
 	}
+	kept := drawn
+	if len(shown) > 0 {
+		kept = map[string]bool{}
+		for issue := range drawn {
+			// A missing issue ("?") stays, so that a broken link is never hidden.
+			if node := nodeFor(all, issue); issue == name || node.State == "?" || slices.Contains(shown, node.State) {
+				kept[issue] = true
+			}
+		}
+		graph.Filtered = len(drawn) - len(kept)
+		drawnEdges = joinThroughFiltered(drawnEdges, kept, all)
+	}
+	drawn = kept
+	graph.Edges = drawnEdges
 	slices.SortFunc(graph.Edges, func(a, b graphEdge) int {
 		return cmp.Or(strings.Compare(a.From, b.From), strings.Compare(a.To, b.To), strings.Compare(a.Kind, b.Kind))
 	})
@@ -159,6 +192,58 @@ func buildGraph(x *issueIndex, name string, full bool) issueGraph {
 		graph.Nodes[i].Indirect = !direct[node.Name]
 	}
 	return graph
+}
+
+// joinThroughFiltered returns the edges between kept issues. A chain of edges through issues that a
+// state filter leaves out becomes one edge, with those issues in Through, when the chain still means
+// the same: all parent edges (the last issue is below the first), or all depends-on edges through
+// issues that are not closed (the last issue still waits on the first). A closed issue ends a wait,
+// and a chain of mixed kinds means neither, so such chains are not drawn.
+func joinThroughFiltered(edges []graphEdge, kept map[string]bool, all map[string]graphNode) []graphEdge {
+	out := map[string][]graphEdge{}
+	for _, edge := range edges {
+		out[edge.From] = append(out[edge.From], edge)
+	}
+	seen := map[graphEdge]bool{}
+	var joined []graphEdge
+	add := func(edge graphEdge) {
+		key := graphEdge{From: edge.From, To: edge.To, Kind: edge.Kind}
+		if !seen[key] {
+			seen[key] = true
+			joined = append(joined, edge)
+		}
+	}
+	for _, edge := range edges {
+		if kept[edge.From] && kept[edge.To] {
+			add(edge)
+		}
+	}
+	var walk func(from string, edge graphEdge, through []string, visited map[string]bool)
+	walk = func(from string, edge graphEdge, through []string, visited map[string]bool) {
+		next := edge.To
+		if kept[next] {
+			if len(through) > 0 {
+				add(graphEdge{From: from, To: next, Kind: edge.Kind, through: strings.Join(through, " ")})
+			}
+			return
+		}
+		if visited[next] || edge.Kind == dependsOnEdge && nodeFor(all, next).State == "closed" {
+			return
+		}
+		visited[next] = true
+		for _, onward := range out[next] {
+			if onward.Kind == edge.Kind {
+				walk(from, onward, append(through, next), visited)
+			}
+		}
+		delete(visited, next)
+	}
+	for _, edge := range edges {
+		if kept[edge.From] && !kept[edge.To] {
+			walk(edge.From, edge, nil, map[string]bool{})
+		}
+	}
+	return joined
 }
 
 // nodeFor is issue's node, or a "?" node if the issue does not exist.
@@ -269,4 +354,15 @@ func hiddenNote(graph issueGraph) string {
 		return "1 more linked issue is not drawn. Use --full to draw it."
 	}
 	return fmt.Sprintf("%d more linked issues are not drawn. Use --full to draw them.", graph.Hidden)
+}
+
+// filteredNote tells how many issues the state filter leaves out, if any.
+func filteredNote(graph issueGraph) string {
+	switch graph.Filtered {
+	case 0:
+		return ""
+	case 1:
+		return "1 issue in another state is not drawn."
+	}
+	return fmt.Sprintf("%d issues in other states are not drawn.", graph.Filtered)
 }

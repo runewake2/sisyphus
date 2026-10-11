@@ -76,6 +76,7 @@ var commandExamples = map[string][]string{
 	"graph": {
 		`sisyphus graph auth-overhaul               # the whole epic`,
 		`sisyphus graph split-login-form --full     # everything linked to it`,
+		`sisyphus graph auth-overhaul --state open,in-progress   # only the work that remains`,
 		`sisyphus graph auth-overhaul --mermaid > auth-overhaul-graph.txt`,
 	},
 	"claims": {

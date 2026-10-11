@@ -424,6 +424,7 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 
 func graphCommand(findRoot func() (string, error)) *cobra.Command {
 	var asJSON, asMermaid, full bool
+	var state string
 	maxIssues := defaultMaxDrawnIssues
 	color := "auto"
 	cmd := &cobra.Command{
@@ -440,19 +441,31 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 			"sub-issue, so work on it can start now. With --full, an issue that is not below <name> " +
 			"or on its path above has a dashed box (┌╌┐, or ┏╍┓ if it is available). Heavy arrows (━━►) " +
 			"trace the work path: what <name> waits on, down to the available issues to start now, " +
-			"which the legend names.",
+			"which the legend names.\n\n" +
+			"--state draws only the issues in the given states, for example --state open,in-progress for the " +
+			"work that remains; <name> is always drawn. A chain of sub-issues through issues that are left out " +
+			"becomes one arrow, and so does a chain of dependencies through issues that are not closed. A " +
+			"closed dependency no longer blocks, so a chain through one is not drawn. Which issues are " +
+			"available does not change.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root, err := findRoot()
 			if err != nil {
 				return err
 			}
+			var shown []string
+			if state != "" {
+				shown = stateFilter(state)
+				if err := validateEach("state", shown, filterStates); err != nil {
+					return err
+				}
+			}
 			x := loadIndex(root)
 			issue, err := x.find(issueName(args[0]))
 			if err != nil {
 				return err
 			}
-			graph := buildGraph(x, issue.name, full)
+			graph := buildGraph(x, issue.name, full, shown)
 			switch {
 			case asJSON:
 				encoder := json.NewEncoder(cmd.OutOrStdout())
@@ -461,8 +474,10 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 				return encoder.Encode(graph)
 			case asMermaid:
 				source := mermaidSource(graph)
-				if note := hiddenNote(graph); note != "" {
-					source += "    %% " + note + "\n"
+				for _, note := range []string{hiddenNote(graph), filteredNote(graph)} {
+					if note != "" {
+						source += "    %% " + note + "\n"
+					}
 				}
 				_, err := io.WriteString(cmd.OutOrStdout(), source)
 				return err
@@ -482,6 +497,7 @@ func graphCommand(findRoot func() (string, error)) *cobra.Command {
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the nodes and edges as JSON instead of a drawing.")
 	cmd.Flags().BoolVar(&asMermaid, "mermaid", false, "Print Mermaid flowchart source instead of a drawing, for example to paste into a Markdown file.")
 	cmd.Flags().BoolVar(&full, "full", false, "Draw every issue linked to <name> by parent or depends-on, not only what is below it and the path above it.")
+	cmd.Flags().StringVarP(&state, "state", "s", "", "Draw only the issues in these states, comma-separated: "+strings.Join(states, ", ")+", or all (the default). The issue <name> is always drawn.")
 	cmd.Flags().StringVar(&color, "color", color, "Color the drawing: auto (on a terminal, unless NO_COLOR is set), always, or never.")
 	cmd.Flags().IntVar(&maxIssues, "max-issues", maxIssues, "Do not draw more issues than this; use --json or --mermaid for a larger graph. 0 means no limit.")
 	cmd.MarkFlagsMutuallyExclusive("json", "mermaid")

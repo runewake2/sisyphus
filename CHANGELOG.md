@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.106]] - 2026-10-11
+- Draw only the issues in selected states with sisyphus graph --state.
+
 ## [[0.0.105]] - 2026-10-11
 - Add sisyphus rename, which renames an issue or moves it to a directory and updates every link to it.
 

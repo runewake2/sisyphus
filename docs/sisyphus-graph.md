@@ -16,7 +16,8 @@ sisyphus graph <name> [--full] [--color auto|always|never] [--json | --mermaid]
 | Flag | Meaning |
 | --- | --- |
 | `--full` | Draw every issue linked to `<name>`, not only what is below it and the path above it. |
-| `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, `available`, which is `true` for an available issue and left out otherwise, and `indirect`, which is `true` for an issue that only `--full` draws and left out otherwise, and `resolution` for a closed issue that has one), `edges` (each with `from`, `to`, and `kind`), and `hidden` (how many linked issues are not drawn). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
+| `-s`, `--state` | Draw only the issues in these states, comma-separated, for example `open,in-progress`, or `all` (the default). `<name>` is always drawn. See [[#Only some states]]. |
+| `--json` | Print `focus` (the issue name), `nodes` (each with `name`, `title`, `state`, `available`, which is `true` for an available issue and left out otherwise, and `indirect`, which is `true` for an issue that only `--full` draws and left out otherwise, and `resolution` for a closed issue that has one), `edges` (each with `from`, `to`, and `kind`), `hidden` (how many linked issues are not drawn), and with `--state`, `filtered` (how many issues in other states are not drawn) and `through` on an edge that stands for a chain (see [[#Only some states]]). An edge goes from the issue that comes first to the one that comes after: for kind `parent`, from the parent to the sub-issue; for kind `depends-on`, from the dependency to the issue that depends on it. |
 | `--mermaid` | Print the Mermaid flowchart source instead of drawing it. Paste it into a ` ```mermaid ` block in a Markdown file, and Obsidian or GitHub renders it. The note about issues not drawn becomes a `%%` comment. |
 | `--color` | `auto` (the default), `always`, or `never`. With `auto`, the drawing has color only on a terminal, and not when `NO_COLOR` is set or `TERM` is `dumb`. `--json` and `--mermaid` output never has color. |
 | `--max-issues` | Do not draw more than this many issues (default 200; `0` means no limit). A larger graph is an error that tells how many issues it has: use `--json` or `--mermaid`, which have no limit, or draw a narrower issue. A drawing of thousands of boxes is megabytes of text that nobody can read. |
@@ -49,6 +50,25 @@ issue's part of it.
 
 Issues with no path of links to `<name>` are never drawn or counted. A `parent` or `depends-on` link
 to an issue that does not exist is drawn as a box with the state `?`.
+
+### Only some states
+
+`--state` draws only the issues in the given states, so that a large graph shows only what remains,
+for example `--state open,in-progress`. `<name>` is always drawn, and so is a missing issue (`?`),
+so that a broken link is never hidden. The legend tells how many issues are left out.
+
+An arrow through an issue that is left out is drawn only when it still tells the truth:
+
+- A chain of sub-issues becomes one solid arrow: an epic still points to an open task below a
+  closed sub-epic.
+- A chain of dependencies through issues that are not closed becomes one dotted arrow: the last
+  issue still waits on the first.
+- A chain through a closed dependency is not drawn: a closed issue no longer blocks. A chain of
+  sub-issues and dependencies together is not drawn either.
+
+Which issues are available, and the work path, do not change: they come from every issue, also the
+ones that are left out. With `--json`, a joined edge has `through`, the issues left out between its
+ends, in order. See [[0028-join-graph-links-through-filtered-issues]].
 
 Each available issue is in a heavy box. An available issue is one that is not closed, whose
 dependencies are all closed, and whose sub-issues are all closed: nothing is left that it waits
@@ -228,6 +248,7 @@ graph LR
 sisyphus graph auth-overhaul               # the whole epic
 sisyphus graph split-login-form            # its part of the epic
 sisyphus graph split-login-form --full     # everything linked to it
+sisyphus graph auth-overhaul --state open,in-progress   # only the work that remains
 sisyphus graph auth-overhaul --json
 sisyphus graph auth-overhaul --mermaid > auth-overhaul-graph.txt
 ```

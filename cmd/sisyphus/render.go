@@ -442,6 +442,9 @@ func drawGraph(graph issueGraph, color bool) string {
 	if note := hiddenNote(graph); note != "" {
 		legend += "\n" + note
 	}
+	if note := filteredNote(graph); note != "" {
+		legend += "\n" + note
+	}
 	return drawing + "\n\n" + legend + "\n"
 }
 

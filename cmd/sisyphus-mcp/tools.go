@@ -440,6 +440,7 @@ type graphArgs struct {
 	JSON      bool   `json:"json,omitempty" jsonschema:"Return the nodes and edges as JSON instead of a drawing."`
 	Mermaid   bool   `json:"mermaid,omitempty" jsonschema:"Return Mermaid flowchart source instead of a drawing."`
 	Full      bool   `json:"full,omitempty" jsonschema:"Draw every linked issue, not only what is below this issue and the path above it."`
+	State     string `json:"state,omitempty" jsonschema:"Draw only the issues in these states, comma-separated, for example open,in-progress for the work that remains. The issue itself is always drawn."`
 	MaxIssues int    `json:"maxIssues,omitempty" jsonschema:"Do not draw more issues than this (default 200); use json or mermaid for a larger graph."`
 }
 
@@ -448,6 +449,7 @@ func graphHandler(ctx context.Context, _ *mcp.CallToolRequest, in graphArgs) (*m
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--mermaid", in.Mermaid)
 	args = appendBoolFlag(args, "--full", in.Full)
+	args = appendFlag(args, "--state", in.State)
 	if in.MaxIssues > 0 {
 		args = appendFlag(args, "--max-issues", strconv.Itoa(in.MaxIssues))
 	}

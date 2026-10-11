@@ -91,8 +91,9 @@ JSON array, and a map is a JSON object.
 |---|---|
 | `focus` | The full name of the issue that the graph is drawn for. |
 | `nodes` | An array of issues, each with `name`, `title`, `state`, and when it applies `resolution`, `available` (true: work can start now), and `indirect` (true: only with `--full`, not below the focus or on the path above it). |
-| `edges` | An array, each with `from`, `to`, and `kind`: `parent` (from a parent to a sub-issue) or `depends-on` (from a dependency to the issue that depends on it). |
+| `edges` | An array, each with `from`, `to`, and `kind`: `parent` (from a parent to a sub-issue) or `depends-on` (from a dependency to the issue that depends on it). With `--state`, an edge that stands for a chain has `through`: the issues left out between its ends, in order. |
 | `hidden` | The number of linked issues that are not drawn. |
+| `filtered` | With `--state`: the number of issues in other states that are not drawn. |
 
 ### A link
 

@@ -754,3 +754,117 @@ func TestGraphRefusesToDrawMoreIssuesThanTheLimit(t *testing.T) {
 	equal(t, 0, r.run("graph", "big-epic-test", "--max-issues", "0").exit)
 	equal(t, 0, r.run("graph", "big-epic-test").exit)
 }
+
+// setUpStateGraph makes an epic with a closed sub-issue that has an open sub-issue, an open sub-issue,
+// a chain of dependents of the open sub-issue through an issue in progress, and a dependent through a
+// closed issue.
+func setUpStateGraph(t *testing.T) *testRepo {
+	t.Helper()
+	r := newTestRepo(t)
+	r.mustRun("new", "epic-issue-test")
+	r.mustRun("new", "done-sub-test", "--parent", "epic-issue-test", "--state", "closed")
+	r.mustRun("new", "late-sub-test", "--parent", "done-sub-test")
+	r.mustRun("new", "open-sub-test", "--parent", "epic-issue-test")
+	r.mustRun("new", "middle-step-test", "--depends-on", "open-sub-test", "--state", "in-progress", "--owner", "alice")
+	r.mustRun("new", "last-step-test", "--depends-on", "middle-step-test")
+	r.mustRun("new", "old-step-test", "--depends-on", "open-sub-test", "--state", "closed")
+	r.mustRun("new", "after-old-test", "--depends-on", "old-step-test")
+	return r
+}
+
+type stateGraphJSON struct {
+	Nodes []struct {
+		Name      string `json:"name"`
+		Available bool   `json:"available"`
+	} `json:"nodes"`
+	Edges []struct {
+		From    string   `json:"from"`
+		To      string   `json:"to"`
+		Kind    string   `json:"kind"`
+		Through []string `json:"through"`
+	} `json:"edges"`
+	Filtered int `json:"filtered"`
+}
+
+func stateGraph(t *testing.T, r *testRepo, args ...string) stateGraphJSON {
+	t.Helper()
+	var graph stateGraphJSON
+	res := r.mustRun(append([]string{"graph", "--json"}, args...)...)
+	if err := json.Unmarshal([]byte(res.output), &graph); err != nil {
+		t.Fatalf("%v\n%s", err, res.output)
+	}
+	return graph
+}
+
+func TestGraphStateLeavesOutIssuesInOtherStates(t *testing.T) {
+	r := setUpStateGraph(t)
+
+	graph := stateGraph(t, r, "epic-issue-test", "--state", "open")
+
+	var names []string
+	for _, node := range graph.Nodes {
+		names = append(names, node.Name)
+	}
+	slices.Sort(names)
+	equalSlices(t, []string{"after-old-test", "epic-issue-test", "last-step-test", "late-sub-test", "open-sub-test"}, names)
+	equal(t, 3, graph.Filtered)
+}
+
+func TestGraphStateJoinsChainsThatKeepTheirMeaning(t *testing.T) {
+	r := setUpStateGraph(t)
+
+	graph := stateGraph(t, r, "epic-issue-test", "--state", "open")
+
+	edges := map[string]string{}
+	for _, edge := range graph.Edges {
+		edges[edge.From+" -> "+edge.To] = edge.Kind + " through " + strings.Join(edge.Through, ",")
+	}
+	// The closed sub-issue is left out, and its open sub-issue is still below the epic.
+	equal(t, "parent through done-sub-test", edges["epic-issue-test -> late-sub-test"])
+	// The issue in progress still waits, so the last step still waits on the open sub-issue.
+	equal(t, "depends-on through middle-step-test", edges["open-sub-test -> last-step-test"])
+	// A closed dependency does not block, so no arrow goes through it.
+	_, through := edges["open-sub-test -> after-old-test"]
+	isTrue(t, !through, "an arrow through a closed dependency")
+	equal(t, "parent through ", edges["epic-issue-test -> open-sub-test"])
+	equal(t, 3, len(edges))
+}
+
+func TestGraphStateKeepsTheFocusAndTheAvailability(t *testing.T) {
+	r := setUpStateGraph(t)
+
+	graph := stateGraph(t, r, "done-sub-test", "--state", "open,in-progress")
+
+	isTrue(t, slices.ContainsFunc(graph.Nodes, func(n struct {
+		Name      string `json:"name"`
+		Available bool   `json:"available"`
+	}) bool {
+		return n.Name == "done-sub-test"
+	}), "the closed focus is drawn")
+	for _, node := range graph.Nodes {
+		if node.Name == "late-sub-test" {
+			isTrue(t, node.Available, "late-sub-test is still available")
+		}
+	}
+}
+
+func TestGraphStateDrawingTellsHowManyAreLeftOut(t *testing.T) {
+	r := setUpStateGraph(t)
+
+	drawing := r.mustRun("graph", "epic-issue-test", "--state", "open,in-progress", "--color", "never").output
+	all := r.mustRun("graph", "epic-issue-test", "--state", "all", "--color", "never").output
+
+	contains(t, drawing, "2 issues in other states are not drawn.")
+	notContains(t, drawing, "done-sub-test")
+	contains(t, all, "done-sub-test")
+	notContains(t, all, "other states")
+}
+
+func TestGraphRejectsAnInvalidState(t *testing.T) {
+	r := setUpStateGraph(t)
+
+	res := r.run("graph", "epic-issue-test", "--state", "done")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "Invalid state 'done'")
+}
