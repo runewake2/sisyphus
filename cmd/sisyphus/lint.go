@@ -44,8 +44,8 @@ func lintRepo(root string) lintResult {
 	files := map[string]string{}
 	parents := map[string]string{}
 	dependencies := map[string][]string{}
-	x.preload(x.issues, false)
-	for _, issue := range x.issues {
+	x.preload(x.all(), false)
+	for _, issue := range x.all() {
 		file := relative(root, issue.path)
 		doc, err := x.header(issue)
 		if err != nil {
@@ -55,7 +55,7 @@ func lintRepo(root string) lintResult {
 		for _, problem := range issueProblems(issue, doc) {
 			add(file, 0, "%s", problem)
 		}
-		if copies := x.exact[issue.name]; len(copies) > 1 && copies[0].path == issue.path {
+		if copies := x.exactOf(issue.name); len(copies) > 1 && copies[0].path == issue.path {
 			var paths []string
 			for _, c := range copies {
 				paths = append(paths, relative(root, c.path))
@@ -114,7 +114,7 @@ func lintRepo(root string) lintResult {
 	if problems == nil {
 		problems = []lintProblem{}
 	}
-	return lintResult{Issues: len(x.issues), Documents: documents, Problems: problems}
+	return lintResult{Issues: len(x.all()), Documents: documents, Problems: problems}
 }
 
 // lintParent reports a parent that does not name one existing issue, and returns the full name of the

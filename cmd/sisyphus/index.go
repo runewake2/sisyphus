@@ -20,6 +20,7 @@ type issueIndex struct {
 	exact map[string][]issueFile
 	// shorter maps each shorter end of a full name, such as the bare file name, to its issues.
 	shorter map[string][]issueFile
+	walked  bool
 	docs    map[string]loadedDocument
 	// headers holds documents that were read only up to the end of their frontmatter.
 	headers map[string]loadedDocument
@@ -93,15 +94,24 @@ func (x *issueIndex) preload(issues []issueFile, withBody bool) {
 
 // loadIndex reads the state directories and their subdirectories once. Issues are sorted by full name.
 func loadIndex(root string) *issueIndex {
-	x := &issueIndex{
+	return &issueIndex{
 		root:    root,
 		exact:   map[string][]issueFile{},
 		shorter: map[string][]issueFile{},
 		docs:    map[string]loadedDocument{},
 		headers: map[string]loadedDocument{},
 	}
+}
+
+// walk reads the state directories and their subdirectories, once, on the first call. A command that
+// only looks up issues by full name never needs it (see exactOf). Issues are sorted by full name.
+func (x *issueIndex) walk() {
+	if x.walked {
+		return
+	}
+	x.walked = true
 	for _, state := range states {
-		directory := filepath.Join(root, "issues", state)
+		directory := filepath.Join(x.root, "issues", state)
 		trace(directory)
 		_ = filepath.WalkDir(directory, func(path string, entry fs.DirEntry, err error) error {
 			if err != nil || entry.IsDir() || !hasSuffixFold(entry.Name(), ".md") {
@@ -121,7 +131,30 @@ func loadIndex(root string) *issueIndex {
 			}
 		}
 	}
-	return x
+}
+
+// all returns every issue, sorted by full name.
+func (x *issueIndex) all() []issueFile {
+	x.walk()
+	return x.issues
+}
+
+// exactOf returns the files of the issue with the full name name, one for each state directory that
+// has it. Before the walk, it looks at issues/<state>/<name>.md directly for a valid (lowercase) name,
+// so that a command that gets a full name does not read every state directory.
+func (x *issueIndex) exactOf(name string) []issueFile {
+	if x.walked || !validName(name) {
+		x.walk()
+		return x.exact[name]
+	}
+	var found []issueFile
+	for _, state := range states {
+		path := issuePath(x.root, state, name)
+		if fileExists(path) {
+			found = append(found, issueFile{state: state, path: path, name: name})
+		}
+	}
+	return found
 }
 
 // matches returns the issue files that name gives. A full name gives its own issue, even when it is
@@ -129,9 +162,10 @@ func loadIndex(root string) *issueIndex {
 // that a bare file name gives the issue in any subdirectory. A name that matches nothing is tried
 // again in lowercase: valid issue names are lowercase, and wikilinks ignore case, as in Obsidian.
 func (x *issueIndex) matches(name string) []issueFile {
-	if exact := x.exact[name]; len(exact) > 0 {
+	if exact := x.exactOf(name); len(exact) > 0 {
 		return exact
 	}
+	x.walk()
 	if shorter := x.shorter[name]; len(shorter) > 0 {
 		return shorter
 	}

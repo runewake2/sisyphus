@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.64]] - 2026-10-11
+- Find an issue by its full name without reading every state directory.
+
 ## [[0.0.63]] - 2026-10-11
 - Read the files of many issues on a bounded pool of goroutines.
 

@@ -130,7 +130,7 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 		return "", err
 	}
 
-	if existing := x.exact[o.name]; len(existing) > 0 {
+	if existing := x.exactOf(o.name); len(existing) > 0 {
 		return "", fmt.Errorf("Issue '%s' already exists: %s.", o.name, relative(root, existing[0].path))
 	}
 	if clashes := nameClashes(root, baseName(o.name)); len(clashes) > 0 {
@@ -579,8 +579,8 @@ type subIssue struct {
 
 func subIssues(x *issueIndex, name string) []subIssue {
 	var result []subIssue
-	x.preload(x.issues, false)
-	for _, issue := range x.issues {
+	x.preload(x.all(), false)
+	for _, issue := range x.all() {
 		doc, err := x.header(issue)
 		if err != nil || x.canonical(doc.get("parent")) != name {
 			continue
@@ -763,8 +763,8 @@ func dependsOnReaches(x *issueIndex, start, target string, seen map[string]bool)
 // dependents returns every issue whose depends-on list includes name.
 func dependents(x *issueIndex, name string) []subIssue {
 	var result []subIssue
-	x.preload(x.issues, false)
-	for _, issue := range x.issues {
+	x.preload(x.all(), false)
+	for _, issue := range x.all() {
 		doc, err := x.header(issue)
 		if err != nil {
 			continue
