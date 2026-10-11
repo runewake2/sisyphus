@@ -13,7 +13,7 @@ var commandGroups = []struct {
 	commands  []string
 }{
 	{"change", "Create and change issues:", []string{"new", "start", "update", "close", "abandon", "edit"}},
-	{"find", "Read and find issues:", []string{"show", "list", "search", "graph"}},
+	{"find", "Read and find issues:", []string{"show", "list", "search", "graph", "claims"}},
 	{"relate", "Relate issues:", []string{"parent", "depends-on", "remote"}},
 	{"check", "Check names and links:", []string{"slug", "resolve", "links", "lint"}},
 	{"setup", "Set up:", []string{"init", "completion", "help"}},
@@ -71,6 +71,11 @@ var commandExamples = map[string][]string{
 		`sisyphus graph auth-overhaul               # the whole epic`,
 		`sisyphus graph split-login-form --full     # everything linked to it`,
 		`sisyphus graph auth-overhaul --mermaid > auth-overhaul-graph.txt`,
+	},
+	"claims": {
+		`sisyphus claims`,
+		`sisyphus claims --json | jq -r '.[] | select(.status == "active") | .name'`,
+		`sisyphus claims --prune                    # remove the claims of removed workspaces`,
 	},
 	"parent": {
 		`sisyphus parent split-login-form auth-overhaul`,

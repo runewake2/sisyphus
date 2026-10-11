@@ -34,6 +34,9 @@ $ sisyphus start fix-login-bug --owner a2
 Error: Issue 'fix-login-bug' is in progress, owned by a1. Select another issue, or to take it from a1, add --take.
 ```
 
+Another workspace of the repo that has started the issue also refuses it, before its work merges:
+see [[sisyphus-claims]].
+
 A start by the same owner changes nothing and succeeds, so an agent can repeat it. `--take` takes
 the issue; use it only when the old owner has stopped the work. See
 [[0022-refuse-to-take-a-claimed-issue]].

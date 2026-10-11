@@ -417,3 +417,24 @@ func TestUpdateToolRefusesAClaimedIssueWithoutTake(t *testing.T) {
 		t.Errorf("want a warning with the old owner, got: %s", taken)
 	}
 }
+
+func TestClaimsToolListsTheClaims(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+	callTool(t, session, "sisyphus_update", map[string]any{"dir": dir, "name": "fix-login-bug", "state": "in-progress", "owner": "a1"})
+
+	out := callTool(t, session, "sisyphus_claims", map[string]any{"dir": dir})
+
+	var claims []map[string]any
+	if err := json.Unmarshal([]byte(out), &claims); err != nil {
+		t.Fatalf("claims did not return JSON: %v\n%s", err, out)
+	}
+	if len(claims) != 1 || claims[0]["name"] != "fix-login-bug" || claims[0]["status"] != "here" {
+		t.Errorf("want one claim of this workspace, got %s", out)
+	}
+}

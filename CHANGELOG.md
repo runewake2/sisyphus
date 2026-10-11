@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.89]] - 2026-10-11
+- Share claims between jj workspaces and git worktrees, and add sisyphus claims.
+
 ## [[0.0.88]] - 2026-10-11
 - Write issue files atomically, and lock the repo while a command changes issues.
 

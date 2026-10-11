@@ -62,16 +62,20 @@ Base a workspace on another unmerged bookmark only when the new work needs that 
 
 ### 4. Take an issue only if no other agent has it
 
-```bash
-sisyphus list --state in-progress
-```
-
-If `<issue-name>` appears in the output, another agent already has the issue. Select a different
-issue. Otherwise, start it:
+Find the issues that you can take, and the issues that other workspaces have started:
 
 ```bash
-sisyphus update <issue-name> in-progress --bookmark samw/ai/<workspace-name> --owner <you> --workspace <workspace-name>
+sisyphus list --ready --state open
+sisyphus claims
 ```
+
+Then start the issue from your workspace:
+
+```bash
+sisyphus start <issue-name> --owner <you> --bookmark samw/ai/<workspace-name> --workspace <workspace-name>
+```
+
+`start` fails if another agent has the issue, in this workspace or in another one (see [[sisyphus-claims]]). Then select a different issue. Do not use `--take` unless a human tells you to.
 
 ### 5. Remove your workspace when the work is complete
 

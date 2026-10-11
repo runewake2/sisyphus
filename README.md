@@ -69,6 +69,7 @@ the file, and moves the file when the state changes.
 | Edit an issue | `sisyphus edit <name>` in your editor, or `sisyphus edit <name> notes "<text>" --append` |
 | See one issue | `sisyphus show <name>` |
 | Find issues | `sisyphus list --ready`, `sisyphus search timeout` |
+| See what each workspace works on | `sisyphus claims` |
 | Relate issues | `sisyphus parent <name> <epic>`, `sisyphus depends-on <name> <other>` |
 | Draw an issue and its relatives | `sisyphus graph <name>` |
 | Check the repo | `sisyphus lint` |

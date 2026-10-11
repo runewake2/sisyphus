@@ -29,6 +29,7 @@ The groups are the same as in `sisyphus --help`.
 | [[sisyphus-list]] | List and filter issues. |
 | [[sisyphus-search]] | Search issues by content and filters. |
 | [[sisyphus-graph]] | Draw an issue, everything below it, and the path above it. |
+| [[sisyphus-claims]] | List the issues that each workspace has in progress. |
 
 ### Relate issues
 

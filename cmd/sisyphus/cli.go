@@ -78,6 +78,7 @@ func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
 		showCommand(findRoot),
 		graphCommand(findRoot),
 		listCommand(findRoot),
+		claimsCommand(findRoot),
 		searchCommand(findRoot),
 		resolveCommand(findRoot),
 		linksCommand(findRoot),

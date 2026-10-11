@@ -79,6 +79,7 @@ in the repo.
 | `sisyphus_list` | [[sisyphus-list]] | JSON (`text: true` for the table) |
 | `sisyphus_search` | [[sisyphus-search]] | JSON (`text: true` for text) |
 | `sisyphus_graph` | [[sisyphus-graph]] | the drawing (`full: true` for every linked issue, `json: true` for JSON, `mermaid: true` for Mermaid source) |
+| `sisyphus_claims` | [[sisyphus-claims]] | JSON |
 | `sisyphus_parent` | [[sisyphus-parent]] | the path (`json: true` for the issue as JSON) |
 | `sisyphus_depends_on` | [[sisyphus-depends-on]] | the path (`json: true` for the issue as JSON) |
 | `sisyphus_remote` | [[sisyphus-remote]] | the path (`json: true` for the issue as JSON) |

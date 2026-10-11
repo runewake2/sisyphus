@@ -34,7 +34,8 @@ longer exists does not block.
 `--ready` gives the issues that [[sisyphus-graph]] calls available, with the same rule: an epic
 waits on its open sub-issues, so it is not ready until they close. With the default state filter,
 ready in-progress issues are listed too; use `--state open --ready` for only the issues that nobody
-has started. See [[0014-ready-means-available]].
+has started. `--ready` also leaves out an open issue that another workspace has started, before its
+work merges ([[sisyphus-claims]]). See [[0014-ready-means-available]].
 
 ## Output
 

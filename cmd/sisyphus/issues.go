@@ -260,9 +260,20 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 		doc.body = replaced
 	}
 
+	claims := openClaims(root)
+	if o.state == "in-progress" {
+		if err := checkClaims(claims, o.name, false, warnings); err != nil {
+			return "", err
+		}
+	}
 	destination := issuePath(root, o.state, o.name)
 	if err := saveIssue(root, doc, destination, destination); err != nil {
 		return "", err
+	}
+	if o.state == "in-progress" {
+		if err := recordClaim(claims, o.name, doc.get("owner"), doc.get("bookmark")); err != nil {
+			return "", err
+		}
 	}
 	if o.state == "in-progress" && o.bookmark == nil && usesJJ(root) {
 		warn(warnings, noBookmarkWarning)
@@ -332,6 +343,14 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	}
 	if err := checkClaim(name, current.state, state, doc.get("owner"), o, warnings); err != nil {
 		return "", err
+	}
+	// A claim also tells the other workspaces of the repo (see claimStore).
+	claims := openClaims(root)
+	claiming := state == "in-progress" && (starts || o.start || o.owner != nil)
+	if claiming {
+		if err := checkClaims(claims, name, o.take, warnings); err != nil {
+			return "", err
+		}
 	}
 	if recorded := doc.get("state"); recorded != current.state {
 		warn(warnings, fmt.Sprintf("The issue was in issues/%s/ but its state field was '%s'. The update corrects both.", current.state, recorded))
@@ -449,6 +468,14 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	destination := issuePath(root, state, name)
 	if err := saveIssue(root, doc, current.path, destination); err != nil {
 		return "", err
+	}
+	if claiming {
+		if err := recordClaim(claims, name, doc.get("owner"), doc.get("bookmark")); err != nil {
+			return "", err
+		}
+	}
+	if state != "in-progress" && current.state == "in-progress" {
+		releaseIssue(claims, name, warnings)
 	}
 	return relative(root, destination), nil
 }

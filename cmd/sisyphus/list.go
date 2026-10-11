@@ -20,7 +20,8 @@ type listRow struct {
 // states and priorities narrow to one of the given values; tags narrows to any of the given tags. owner and
 // parent narrow to an exact match. blockedOnly narrows to issues with a dependency that is not yet closed.
 // readyOnly narrows to the issues that sisyphus graph calls available: not closed, and with no
-// dependency and no sub-issue that is not closed, so work on them can start now.
+// dependency and no sub-issue that is not closed, so work on them can start now. It also leaves out
+// an issue that another workspace has claimed (see claimStore).
 // Every given filter applies together (AND).
 // warnings, when not nil, gets one warning for each issue in the state filter that has an invalid
 // file (see issueProblems), so that bad data is not shown as if it were good.
@@ -86,8 +87,10 @@ func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 		parentFilter = x.canonical(o.parent)
 	}
 	var waitsOnSubIssues map[string]bool
+	var claims claimStore
 	if o.readyOnly {
 		waitsOnSubIssues = parentsWithOpenSubIssues(x)
+		claims = openClaims(x.root)
 	}
 
 	var inStates []issueFile
@@ -125,6 +128,12 @@ func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 		}
 		if o.readyOnly && (issue.state == "closed" || isBlocked(x, doc) || waitsOnSubIssues[issue.name]) {
 			continue
+		}
+		if o.readyOnly && issue.state != "in-progress" {
+			// Another workspace started the issue, and its work has not merged yet.
+			if _, claimed := claims.claimedElsewhere(issue.name); claimed {
+				continue
+			}
 		}
 		matches = append(matches, matchedIssue{name: issue.name, doc: doc})
 	}

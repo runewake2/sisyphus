@@ -14,17 +14,24 @@ import (
 // workspace and every git worktree of one repo finds the same directory. ok is false when root is in
 // no jj or git repo; then nothing is shared.
 func sharedStateDir(root string) (dir string, ok bool) {
+	dir, _, ok = findSharedState(root)
+	return dir, ok
+}
+
+// findSharedState is sharedStateDir that also returns the root of the working copy: the directory
+// that holds .jj or .git.
+func findSharedState(root string) (dir, workingCopy string, ok bool) {
 	for d := root; ; d = filepath.Dir(d) {
 		if info, err := os.Stat(filepath.Join(d, ".jj")); err == nil && info.IsDir() {
 			if repo, ok := jjRepoDir(filepath.Join(d, ".jj")); ok {
-				return filepath.Join(repo, "sisyphus"), true
+				return filepath.Join(repo, "sisyphus"), d, true
 			}
 		}
 		if common, ok := gitCommonDir(filepath.Join(d, ".git")); ok {
-			return filepath.Join(common, "sisyphus"), true
+			return filepath.Join(common, "sisyphus"), d, true
 		}
 		if filepath.Dir(d) == d {
-			return "", false
+			return "", "", false
 		}
 	}
 }
