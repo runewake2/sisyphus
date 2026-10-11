@@ -82,7 +82,7 @@ func registerTools(server *mcp.Server) {
 	}, listHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_search",
-		Description: "Search sisyphus issues by frontmatter filters and a free-text query over title and body, optionally scoped to one section (for example only the Summary).",
+		Description: "Search sisyphus issues by frontmatter filters and a free-text query over title and body, optionally scoped to one section (for example only the Summary). Each match has the lines that match the query, with their sections; use sisyphus_show to read a whole issue.",
 	}, searchHandler)
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_graph",
@@ -297,11 +297,13 @@ type showArgs struct {
 	Dir  string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
 	Name string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	Text bool   `json:"text,omitempty" jsonschema:"Return the human-readable text form instead of JSON."`
+	All  bool   `json:"all,omitempty" jsonschema:"Keep the sections that hold only template text in the body, as the file has them."`
 }
 
 func showHandler(_ context.Context, _ *mcp.CallToolRequest, in showArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"show"}
 	args = appendBoolFlag(args, "--json", !in.Text)
+	args = appendBoolFlag(args, "--all", in.All)
 	args = appendPositionals(args, in.Name)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
@@ -321,6 +323,7 @@ type listArgs struct {
 	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
 	Ready    bool   `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
 	Text     bool   `json:"text,omitempty" jsonschema:"Return the human-readable table instead of JSON."`
+	Limit    int    `json:"limit,omitempty" jsonschema:"Return at most this many issues. A warning tells how many were left out."`
 }
 
 func listHandler(_ context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp.CallToolResult, any, error) {
@@ -333,6 +336,9 @@ func listHandler(_ context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp.C
 	args = appendFlag(args, "--parent", in.Parent)
 	args = appendBoolFlag(args, "--blocked", in.Blocked)
 	args = appendBoolFlag(args, "--ready", in.Ready)
+	if in.Limit > 0 {
+		args = appendFlag(args, "--limit", strconv.Itoa(in.Limit))
+	}
 	args = appendBoolFlag(args, "--json", !in.Text)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
@@ -353,6 +359,8 @@ type searchArgs struct {
 	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
 	Ready    bool   `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
 	Section  string `json:"section,omitempty" jsonschema:"Restrict the query and the returned content to one section, for example summary."`
+	Content  bool   `json:"content,omitempty" jsonschema:"Return the whole body of each match instead of only the matched lines."`
+	Limit    int    `json:"limit,omitempty" jsonschema:"Return at most this many issues. A warning tells how many were left out."`
 	Text     bool   `json:"text,omitempty" jsonschema:"Return human-readable text instead of JSON."`
 }
 
@@ -367,6 +375,10 @@ func searchHandler(_ context.Context, _ *mcp.CallToolRequest, in searchArgs) (*m
 	args = appendBoolFlag(args, "--blocked", in.Blocked)
 	args = appendBoolFlag(args, "--ready", in.Ready)
 	args = appendFlag(args, "--section", in.Section)
+	args = appendBoolFlag(args, "--content", in.Content)
+	if in.Limit > 0 {
+		args = appendFlag(args, "--limit", strconv.Itoa(in.Limit))
+	}
 	args = appendBoolFlag(args, "--json", !in.Text)
 	args = appendPositionals(args, in.Query)
 	out, err := runSisyphus(in.Dir, args...)

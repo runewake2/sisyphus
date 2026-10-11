@@ -77,7 +77,26 @@ func TestShowPrintsJSON(t *testing.T) {
 	equalSlices(t, []string{"plan", "repo"}, view.Tags)
 	equal(t, "https://github.com/acme/widgets/issues/42", view.Remote)
 	equalSlices(t, []string{"blocking-issue-test"}, view.DependsOn)
-	isTrue(t, strings.Contains(view.Body, "## Summary"), "the body is included")
+	isTrue(t, strings.Contains(view.Body, "# Add retry backoff"), "the body is included")
+}
+
+func TestShowJSONLeavesOutTemplateTextUnlessAll(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "retry-backoff", "--context", "The client retries at once.")
+
+	var compact, all issueView
+	if err := json.Unmarshal([]byte(r.mustRun("show", "--json", "retry-backoff").output), &compact); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(r.mustRun("show", "--json", "--all", "retry-backoff").output), &all); err != nil {
+		t.Fatal(err)
+	}
+
+	contains(t, compact.Body, "The client retries at once.")
+	notContains(t, compact.Body, "## Summary")
+	notContains(t, compact.Body, "<")
+	contains(t, all.Body, "## Summary")
+	contains(t, all.Body, "<One or two sentences")
 }
 
 func TestShowReportsAMissingIssue(t *testing.T) {

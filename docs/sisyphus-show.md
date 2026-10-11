@@ -14,7 +14,7 @@ sisyphus show <name> [--all] [--json]
 
 | Flag | Meaning |
 |---|---|
-| `--all` | Print every field and every section, also the empty ones and the ones that hold only template text. |
+| `--all` | Print every field and every section, also the empty ones and the ones that hold only template text. With `--json`, keep the body as it is in the file. |
 | `--json` | Print one JSON object with every frontmatter field and the body. |
 
 ## Behavior
@@ -24,6 +24,8 @@ sisyphus show <name> [--all] [--json]
   `priority`, `effort`, and `created` always show. `resolution` and `closed` have a value only when
   the issue is closed, so they show whether a close or an abandon worked.
 - `--all` prints every field and every section.
+- `--json` leaves the same sections out of `body`, so that an agent does not read the template
+  text. `--json --all` gives the body as it is in the file.
 - A missing issue, or an issue in more than one state directory, is an error.
 - `show` checks the issue that it prints, and warns on stderr about each problem (see Output).
 
@@ -51,7 +53,8 @@ metadata:   {session-id: "abc123"}
 ...
 ```
 
-With `--json`, one object with every frontmatter field plus the body. Lists and maps are real JSON
+With `--json`, one object with every frontmatter field plus the body, without the sections that
+hold only template text unless `--all` is given. Lists and maps are real JSON
 arrays and objects, `depends-on` holds plain issue names, and empty optional fields are left out:
 
 ```json

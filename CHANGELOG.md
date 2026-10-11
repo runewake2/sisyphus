@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.94]] - 2026-10-11
+- Return matched lines from search, leave template text out of show and search, and add --limit.
+
 ## [[0.0.93]] - 2026-10-11
 - Add a guide with instructions to paste for repos that let AI agents use sisyphus.
 

@@ -16,13 +16,15 @@ sisyphus search [<query>] [flags]
 | Flag | Meaning |
 |---|---|
 | `--section` | Search, and print, only one section of each issue, for example `summary`. |
+| `--content` | Print the whole body of each match, instead of the matched lines. |
+| `--limit` | Print at most this many issues, and tell on stderr how many were left out. `0` (the default): all. |
 | `--json` | Print JSON instead of text. |
 
 ## Behavior
 
 - `<query>` is a plain substring, matched without regard to case. Without `--section`, it is
-  matched against the title and the whole body. Without a query, every issue that passes the
-  filters matches.
+  matched against the title and the body. Sections that hold only template text (the `<...>`
+  placeholders) are not searched. Without a query, every issue that passes the filters matches.
 - `--section <heading>` matches a heading by name at any level, ignoring case, the same way a
   wikilink's `#heading` does. The section runs until the next heading of the same or a higher
   level. With `--section`, the query is matched against that section only (not the title), and an
@@ -33,17 +35,32 @@ sisyphus search [<query>] [flags]
 
 ## Output
 
-Sorted the same way as `list`. For each match, a line with the name and title, then the content:
-the whole body, or only the section with `--section`. A blank line separates matches. No match
-prints nothing and is not an error.
+Sorted the same way as `list`. For each match, a line with the name and title, then:
+
+- with a query, each line that matches, with the heading of its section (`title` for the title).
+  At most 5 lines for each issue, then a count of the others. A line longer than 200 characters is
+  cut around the match, with `…`. If the query spans two lines of the body, the lines that contain
+  any word of the query are shown.
+- with `--section`, the section.
+- with `--content`, the body without the sections that hold only template text.
+
+A blank line separates matches. No match prints nothing and is not an error.
 
 ```
 fix-login-bug: Fix login bug
-The login form rejects a valid password after a session times out.
+  Summary: The login form rejects a valid password after a session times out.
+  Notes: 2026-10-09: the timeout is in the session cache.
 ```
 
-With `--json`, an array of objects with `name`, `title`, `state`, `priority`, `owner`, `tags`,
-`section`, and `content`.
+Read a whole issue with [[sisyphus-show]]. With `--json`, an array of objects with `name`, `title`,
+`state`, `priority`, `owner`, `tags`, and:
+
+- `matches`: the matched lines, each with `section` and `text`, and `more-matches`, the number of
+  lines after the first 5. Left out when there are none.
+- `section` and `content`: with `--section`, or `content` with `--content`.
+
+With `--limit`, stderr tells how many issues were left out:
+`Showing 20 of 57 issues. Narrow the filters, or raise --limit.`
 
 Warnings, on stderr: one for each issue file that sisyphus cannot read, or whose frontmatter has a
 line that is not a `key: value` field, a value that opens `[`, `{`, or a quote and does not close
@@ -56,6 +73,7 @@ not valid. `search` checks every issue in the `--state` filter, also the ones th
 ```bash
 sisyphus search timeout
 sisyphus search timeout --section summary
+sisyphus search timeout --content --limit 3
 sisyphus search --section "acceptance criteria" --tags bug --json
 sisyphus search cache --state open,in-progress,closed --priority critical,high
 ```

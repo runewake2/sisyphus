@@ -1204,7 +1204,14 @@ type issueView struct {
 	Body         string            `json:"body"`
 }
 
-func newIssueView(name string, doc *document) issueView {
+// newIssueView returns the JSON form of an issue. Without all, the body leaves out the sections that
+// hold only template text, as show does, because they tell an author what to write, not a reader what
+// the issue is.
+func newIssueView(name string, doc *document, all bool) issueView {
+	body := doc.body
+	if !all {
+		body = withoutTemplateSections(body)
+	}
 	return issueView{
 		Name:         name,
 		Title:        doc.get("title"),
@@ -1224,6 +1231,6 @@ func newIssueView(name string, doc *document) issueView {
 		DependsOn:    parseDependsOn(doc.get("depends-on")),
 		Remote:       doc.get("remote"),
 		Metadata:     parseMetadata(doc.get("metadata")),
-		Body:         strings.Join(doc.body, "\n"),
+		Body:         strings.Join(body, "\n"),
 	}
 }

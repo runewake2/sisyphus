@@ -21,6 +21,7 @@ sisyphus list [flags]
 | `--blocked` | Only issues that depend on an issue that is not closed yet. |
 | `--ready` | Only issues that can start now: not closed, with no dependency and no sub-issue that is not closed. Not with `--blocked`. |
 | `--wide` | Do not shorten titles to fit the terminal. |
+| `--limit` | Print at most this many issues, and tell on stderr how many were left out. `0` (the default): all. |
 | `--json` | Print JSON instead of a table. |
 
 ## Behavior

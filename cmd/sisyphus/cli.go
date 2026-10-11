@@ -409,14 +409,14 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 				encoder := json.NewEncoder(cmd.OutOrStdout())
 				encoder.SetEscapeHTML(false)
 				encoder.SetIndent("", "  ")
-				return encoder.Encode(newIssueView(name, doc))
+				return encoder.Encode(newIssueView(name, doc, all))
 			}
 			writeIssueText(cmd.OutOrStdout(), doc, all)
 			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the issue as JSON instead of readable text.")
-	cmd.Flags().BoolVar(&all, "all", false, "Print every field and section, also the empty fields and the sections that hold only the template text.")
+	cmd.Flags().BoolVar(&all, "all", false, "Print every field and section, also the empty fields and the sections that hold only the template text. With --json, keep the body as it is in the file.")
 	return cmd
 }
 
@@ -518,6 +518,7 @@ const readyHelp = "Only issues that can start now: not closed, with no depends-o
 func listCommand(findRoot func() (string, error)) *cobra.Command {
 	var state, priority, tags, owner, parent string
 	var asJSON, blocked, ready, wide, mine bool
+	var limit int
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List and filter issues.",
@@ -556,6 +557,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			rows = limitRows(rows, limit, cmd.ErrOrStderr())
 			if asJSON {
 				encoder := json.NewEncoder(cmd.OutOrStdout())
 				encoder.SetEscapeHTML(false)
@@ -584,6 +586,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
 	flags.BoolVar(&ready, "ready", false, readyHelp)
 	flags.BoolVar(&wide, "wide", false, "Do not shorten titles to fit the terminal.")
+	flags.IntVar(&limit, "limit", 0, limitHelp)
 	flags.BoolVar(&asJSON, "json", false, "Print JSON instead of a table.")
 	cmd.MarkFlagsMutuallyExclusive("blocked", "ready")
 	cmd.MarkFlagsMutuallyExclusive("owner", "mine")
@@ -592,7 +595,8 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 
 func searchCommand(findRoot func() (string, error)) *cobra.Command {
 	var state, priority, tags, owner, parent, section string
-	var asJSON, blocked, ready, mine bool
+	var asJSON, blocked, ready, mine, content bool
+	var limit int
 	cmd := &cobra.Command{
 		Use:   "search [<query>]",
 		Short: "Search issues by frontmatter filters and content.",
@@ -636,10 +640,12 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 				},
 				query:   query,
 				section: section,
+				content: content,
 			})
 			if err != nil {
 				return err
 			}
+			rows = limitRows(rows, limit, cmd.ErrOrStderr())
 			if asJSON {
 				encoder := json.NewEncoder(cmd.OutOrStdout())
 				encoder.SetEscapeHTML(false)
@@ -651,7 +657,15 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 					fmt.Fprintln(cmd.OutOrStdout())
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", row.Name, row.Title)
-				fmt.Fprintln(cmd.OutOrStdout(), row.Content)
+				if row.Content != "" {
+					fmt.Fprintln(cmd.OutOrStdout(), row.Content)
+				}
+				for _, match := range row.Matches {
+					fmt.Fprintf(cmd.OutOrStdout(), "  %s: %s\n", match.Section, match.Text)
+				}
+				if row.MoreMatches > 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "  (%d more matching %s)\n", row.MoreMatches, plural(row.MoreMatches, "line", "lines"))
+				}
 			}
 			return nil
 		},
@@ -664,12 +678,27 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
 	flags.BoolVar(&mine, "mine", false, "Only issues whose owner is the value of "+ownerVariable+".")
 	flags.StringVar(&section, "section", "", `Restrict the query and the returned content to one section, for example "summary".`)
+	flags.BoolVar(&content, "content", false, "Return the whole body of each match, without the sections that hold only template text, instead of the matched lines.")
+	flags.IntVar(&limit, "limit", 0, limitHelp)
 	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
 	flags.BoolVar(&ready, "ready", false, readyHelp)
 	flags.BoolVar(&asJSON, "json", false, "Print JSON instead of readable text.")
 	cmd.MarkFlagsMutuallyExclusive("blocked", "ready")
 	cmd.MarkFlagsMutuallyExclusive("owner", "mine")
 	return cmd
+}
+
+// limitHelp is the help of --limit of list and search.
+const limitHelp = "Print at most this many issues, and tell on stderr how many were left out. 0: all."
+
+// limitRows returns the first limit rows, and warns how many it left out. A limit of 0 or less keeps
+// every row.
+func limitRows[T any](rows []T, limit int, warnings io.Writer) []T {
+	if limit <= 0 || len(rows) <= limit {
+		return rows
+	}
+	fmt.Fprintf(warnings, "Showing %d of %d issues. Narrow the filters, or raise --limit.\n", limit, len(rows))
+	return rows[:limit]
 }
 
 // takeHelp is the help of --take of start and update.
@@ -874,7 +903,7 @@ func printPath(cmd *cobra.Command, findRoot func() (string, error), operation fu
 	if err != nil {
 		return err
 	}
-	result := writeResult{issueView: newIssueView(issueName(path), doc), Path: path, Warnings: []string{}}
+	result := writeResult{issueView: newIssueView(issueName(path), doc, false), Path: path, Warnings: []string{}}
 	for _, line := range splitLines(collected.String()) {
 		result.Warnings = append(result.Warnings, strings.TrimPrefix(line, "Warning: "))
 	}
