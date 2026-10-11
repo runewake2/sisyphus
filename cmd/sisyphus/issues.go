@@ -266,7 +266,9 @@ type updateOptions struct {
 	priority, effort, tags, title        *string
 	addTags, removeTags                  string
 	reopen                               bool
-	metadata                             map[string]string
+	// message is the text for the Resolution section, for an issue that closes.
+	message  *string
+	metadata map[string]string
 }
 
 // updateIssue changes the issue that reference gives. An empty state keeps the current state.
@@ -374,6 +376,14 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	if state == "in-progress" {
 		warnOpenDependencies(x, name, doc, warnings)
 	}
+	if o.message != nil {
+		if state != "closed" {
+			return "", errors.New("--message is the text of the Resolution section, so it needs the state closed.")
+		}
+		if err := setSection(doc, name, "Resolution", *o.message, false); err != nil {
+			return "", err
+		}
+	}
 	if state == "closed" && current.state != "closed" {
 		var open []string
 		for _, sub := range subIssues(x, name) {
@@ -452,20 +462,33 @@ func editSection(root, reference, heading, text string, appendText bool) (string
 	if err != nil {
 		return "", err
 	}
+	if err := setSection(doc, name, heading, text, appendText); err != nil {
+		return "", err
+	}
+	if err := doc.save(issue.path); err != nil {
+		return "", err
+	}
+	return relative(root, issue.path), nil
+}
+
+// setSection replaces the text of the section named heading in the body of doc, or with appendText
+// adds it at the end. It checks the text the way sisyphus edit does: not empty, and no heading that
+// would split the section.
+func setSection(doc *document, name, heading, text string, appendText bool) error {
 	lines := splitLines(strings.TrimSpace(text))
 	if len(lines) == 0 {
-		return "", errors.New("The text is empty. Give the text for the section.")
+		return errors.New("The text is empty. Give the text for the section.")
 	}
 	start, _, ok := sectionBounds(doc.body, heading)
 	if !ok || headingLevel(doc.body[start]) < 2 {
-		return "", fmt.Errorf("Issue '%s' has no section '%s'. Its sections are: %s.", name, heading, strings.Join(sectionNames(doc.body), ", "))
+		return fmt.Errorf("Issue '%s' has no section '%s'. Its sections are: %s.", name, heading, strings.Join(sectionNames(doc.body), ", "))
 	}
 	// A heading at the level of the section or above would end the section inside the text, and make
 	// a second section that a later edit could change instead of the real one.
 	level := headingLevel(doc.body[start])
 	for _, index := range outsideCodeFences(lines) {
 		if headingPattern.MatchString(lines[index]) && headingLevel(lines[index]) <= level {
-			return "", fmt.Errorf("The text has the heading %q, which would split the section '%s'. Use a heading with more than %d '#', or no heading.", lines[index], heading, level)
+			return fmt.Errorf("The text has the heading %q, which would split the section '%s'. Use a heading with more than %d '#', or no heading.", lines[index], heading, level)
 		}
 	}
 	if appendText {
@@ -474,10 +497,7 @@ func editSection(root, reference, heading, text string, appendText bool) (string
 		}
 	}
 	doc.body, _ = replaceSection(doc.body, heading, lines)
-	if err := doc.save(issue.path); err != nil {
-		return "", err
-	}
-	return relative(root, issue.path), nil
+	return nil
 }
 
 // appendToSection adds text at the end of the section named heading, after a blank line, or replaces

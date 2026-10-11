@@ -27,6 +27,7 @@ resolution and its closed date. The warnings about closing an issue come only wh
 | `--effort` | A new effort: `small`, `medium`, `large`, or `x-large`. |
 | `-t`, `--title` | A new title. It changes the `title` field and the first `#` heading of the body. The same rules as for `sisyphus new --title` apply. |
 | `--tags` | New tags, comma-separated. They replace the old tags. A tag cannot contain a space. |
+| `-m`, `--message` | With the state `closed`: the text of the Resolution section, with the rules of [[sisyphus-edit]]. [[sisyphus-close]] and [[sisyphus-abandon]] are shortcuts. |
 | `--reopen` | Reopen an issue whose close was a mistake. Only for a closed issue, with the state `open` or `in-progress`. |
 | `--add-tags` | Tags to add, comma-separated, in lowercase. A tag that is there in another case is not added again. The other tags stay, in their order. Not with `--tags`. |
 | `--remove-tags` | Tags to remove, comma-separated. A tag that is not there is not an error. Not with `--tags`. |

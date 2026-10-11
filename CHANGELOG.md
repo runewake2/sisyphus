@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.73]] - 2026-10-11
+- Add `start`, `close`, and `abandon`, and `update -m` for the Resolution section.
+
 ## [[0.0.72]] - 2026-10-11
 - Add `--json` to the commands that change an issue.
 

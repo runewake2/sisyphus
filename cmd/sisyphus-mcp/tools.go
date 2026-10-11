@@ -182,6 +182,7 @@ type updateArgs struct {
 	AddTags    string            `json:"addTags,omitempty" jsonschema:"Add tags, comma-separated, and keep the others. Cannot be used with tags."`
 	RemoveTags string            `json:"removeTags,omitempty" jsonschema:"Remove tags, comma-separated, and keep the others. Cannot be used with tags."`
 	Title      string            `json:"title,omitempty" jsonschema:"Change the title. sisyphus changes the title field and the first # heading of the body."`
+	Message    string            `json:"message,omitempty" jsonschema:"With state closed: the text of the Resolution section, what was done or why the work stopped."`
 	Metadata   map[string]string `json:"metadata,omitempty" jsonschema:"Arbitrary key-value notes to add or update, for example a session id. Merged into the existing notes; never cleared automatically."`
 	JSON       bool              `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
@@ -201,6 +202,7 @@ func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*m
 	args = appendFlag(args, "--add-tags", in.AddTags)
 	args = appendFlag(args, "--remove-tags", in.RemoveTags)
 	args = appendFlag(args, "--title", in.Title)
+	args = appendFlag(args, "--message", in.Message)
 	args = appendMetadataFlags(args, in.Metadata)
 	args = appendPositionals(args, in.Name, in.State)
 	out, err := runSisyphus(in.Dir, args...)
