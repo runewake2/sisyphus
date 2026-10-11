@@ -139,9 +139,30 @@ issues/
   closed/           Work that is complete or abandoned
 ```
 
+### Issue directories
+
+Each state directory has the same subdirectories, one for each area. Put a new issue in the
+directory of its area, for example `sisyphus new mcp/<name>`. Put a sub-issue in the directory of
+its epic, also when its own area is another one. The directory stays with the issue when its state
+changes.
+
+| Directory | Issues about |
+|---|---|
+| `agents/` | AI agents that work in a repo with sisyphus: claims, owners, agent guides, and model evaluations. |
+| `mcp/` | `sisyphus-mcp` and its tools, and the work to make them work with small models. |
+| `commands/` | The commands of the CLI and their behavior. |
+| `graph/` | `sisyphus graph` and its drawings. |
+| `issue-files/` | The issue file: its format, its fields, and how sisyphus reads, writes, and moves it. |
+| `performance/` | Speed in repos with many issues. |
+| `integrations/` | Plugins, GitHub, and other trackers. |
+| `ux/` | How easy the CLI and the documentation are to learn and use. |
+
+If no directory fits, add one: a kebab-case name for an area, with a row in this table. A directory
+is not the parent of an issue: set `parent` for that.
+
 ### Issue names
 
-- The file name without `.md` is the **issue name**, for example `issues/open/faster-startup.md` has the name `faster-startup`.
+- The file name without `.md` is the **issue name**, for example `issues/open/performance/faster-startup.md` has the name `faster-startup`. Its full name, with the directory, is `performance/faster-startup`.
 - Use 2–6 words in kebab-case. The name must be unique across all Markdown files in the repo. Do not use the name `cleanup`.
 - Keep the file name of an issue: commit messages refer to it. To move an issue into a directory, use `sisyphus rename <name> <directory>/<name>`, which changes every link to it. Do not move or rename issue files by hand.
 - Refer to an issue by its name, not by its path: `[[<issue-name>]]` in Markdown files, and `#<issue-name>` in change descriptions and code comments.
@@ -204,7 +225,7 @@ sisyphus itself must not know about any particular repo or issue, including this
 
 ### Issue lifecycle
 
-1. **Create** an issue in `issues/open/` when you find work that you will not do now. Create it in the same change that defers the work. Do not leave untracked `TODO` comments: write `TODO(#<issue-name>)`.
+1. **Create** an issue in `issues/open/<area>/` (see [[#Issue directories]]) when you find work that you will not do now. Create it in the same change that defers the work. Do not leave untracked `TODO` comments: write `TODO(#<issue-name>)`.
 2. **Start** the issue in the first change of the work: move it to `issues/in-progress/`, and set `bookmark`, `owner`, and `workspace`. Add `metadata` (for example a session id) if it would help resume the work later. Make sure first that nobody else has started it.
 3. **Work**: add the trailer `Updates #<issue-name>` to each change, and record progress in `Notes`.
 4. **Close** the issue in the change that completes the work: move it to `issues/closed/` with `resolution: completed`, complete `Resolution`, and add the trailer `Fixes #<issue-name>`.
