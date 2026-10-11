@@ -40,7 +40,7 @@ The proposal is to start with Claude Code subagents that a human starts, made fr
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-11, from the human: the proposal for Q5 of [[agent-delegation]] is right for now: the merge queue starts on a human request (later on a schedule), the technical docs agent on each close, and the other roles on a human request. Q4 is still open.
 
 ## Resolution
 
