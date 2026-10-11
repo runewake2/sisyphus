@@ -59,7 +59,7 @@ fix-login-bug: Fix login bug
 ```
 
 Read a whole issue with [[sisyphus-show]]. With `--json`, an array of objects with `name`, `title`,
-`state`, `priority`, `owner`, `tags`, and:
+`state`, `priority`, `owner`, `bookmark`, `tags` (the empty ones are left out), and:
 
 - `matches`: the matched lines, each with `section` and `text`, and `more-matches`, the number of
   lines after the first 5. Left out when there are none.

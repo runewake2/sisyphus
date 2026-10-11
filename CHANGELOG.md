@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.101]] - 2026-10-11
+- Add the bookmark to the JSON rows of list and search.
+
 ## [[0.0.100]] - 2026-10-11
 - Remove the nested name example from the MCP tools, and say that slug only names new issues.
 

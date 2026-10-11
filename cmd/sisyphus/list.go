@@ -13,6 +13,7 @@ type listRow struct {
 	State    string   `json:"state"`
 	Priority string   `json:"priority"`
 	Owner    string   `json:"owner,omitempty"`
+	Bookmark string   `json:"bookmark,omitempty"`
 	Tags     []string `json:"tags,omitempty"`
 }
 
@@ -165,6 +166,7 @@ func listIssues(root string, o listOptions) ([]listRow, error) {
 			State:    m.doc.get("state"),
 			Priority: m.doc.get("priority"),
 			Owner:    m.doc.get("owner"),
+			Bookmark: m.doc.get("bookmark"),
 			Tags:     parseList(m.doc.get("tags")),
 		})
 	}

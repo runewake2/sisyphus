@@ -53,7 +53,9 @@ fix-login-bug  Fix login bug  open         high             bug
 add-dark-mode  Add dark mode  in-progress  medium    alice  feature, ui
 ```
 
-With `--json`, an array of objects with `name`, `title`, `state`, `priority`, `owner`, and `tags`.
+With `--json`, an array of objects with `name`, `title`, `state`, `priority`, `owner`, `bookmark`,
+and `tags`. `owner`, `bookmark`, and `tags` are left out when they are empty. The table has no
+`bookmark` column, so that it stays narrow.
 An empty result is an empty table, or `[]`.
 
 Warnings, on stderr: one for each issue file that sisyphus cannot read, or whose frontmatter has a

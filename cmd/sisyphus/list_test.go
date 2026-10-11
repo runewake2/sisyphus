@@ -301,3 +301,25 @@ func TestListDoesNotShortenTitlesWhenNotATerminal(t *testing.T) {
 
 	contains(t, r.mustRun("list").output, long)
 }
+
+func TestListAndSearchRowsHaveTheBookmark(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--state", "in-progress", "--owner", "alice", "--bookmark", "ai/fix-login")
+	r.mustRun("new", "add-dark-mode")
+
+	var listed []listRow
+	if err := json.Unmarshal([]byte(r.mustRun("list", "--json").output), &listed); err != nil {
+		t.Fatal(err)
+	}
+	var searched []searchRow
+	if err := json.Unmarshal([]byte(r.mustRun("search", "login", "--json").output), &searched); err != nil {
+		t.Fatal(err)
+	}
+	table := r.mustRun("list").output
+
+	equal(t, "", listed[0].Bookmark) // add-dark-mode, open, comes first
+	equal(t, "ai/fix-login", listed[1].Bookmark)
+	equal(t, "ai/fix-login", searched[0].Bookmark)
+	notContains(t, table, "bookmark")
+	notContains(t, r.mustRun("list", "--json").output, `"bookmark": ""`)
+}

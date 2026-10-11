@@ -14,6 +14,7 @@ type searchRow struct {
 	State    string   `json:"state"`
 	Priority string   `json:"priority"`
 	Owner    string   `json:"owner,omitempty"`
+	Bookmark string   `json:"bookmark,omitempty"`
 	Tags     []string `json:"tags,omitempty"`
 	Section  string   `json:"section,omitempty"`
 	// Content is the section of --section, or the body with --content. Otherwise it is left out, and
@@ -87,6 +88,7 @@ func searchIssues(root string, o searchOptions) ([]searchRow, error) {
 			State:    m.doc.get("state"),
 			Priority: m.doc.get("priority"),
 			Owner:    m.doc.get("owner"),
+			Bookmark: m.doc.get("bookmark"),
 			Tags:     parseList(m.doc.get("tags")),
 			Section:  o.section,
 		}
