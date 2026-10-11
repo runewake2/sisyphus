@@ -1,12 +1,12 @@
 ---
 title: "Make sisyphus safe and easy for AI agents that work together"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: high         # critical | high | medium | low
 effort: large          # small | medium | large | x-large
 tags: [llm, sisyphus-mcp, cli] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-11
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-11     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -38,8 +38,8 @@ The sub-issues are in three groups:
 
 ## Acceptance criteria
 
-- [ ] All sub-issues are closed.
-- [ ] Two agents that run `sisyphus start` on the same issue cannot both think that they have it.
+- [x] All sub-issues are closed.
+- [x] Two agents that run `sisyphus start` on the same issue cannot both think that they have it.
 
 ## Out of scope
 
@@ -52,6 +52,5 @@ The sub-issues are in three groups:
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed in [[0.0.85]] to [[0.0.102]]. All 13 sub-issues are closed: claims are refused across owners and workspaces ([[0022-refuse-to-take-a-claimed-issue]], [[0024-share-claims-between-workspaces]]), writes are atomic and locked ([[0023-lock-and-write-issues-atomically]]), the MCP server has lifecycle tools, instructions, annotations, time limits, and a version check, and [[agents]] tells repos how to set up agents. Claims do not cross machines; that is future work.
+

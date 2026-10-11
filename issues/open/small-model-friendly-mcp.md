@@ -49,6 +49,8 @@ The harness in `design/ollama-local-models/harness/` can measure each change. Ru
 
 ## Notes
 
+2026-10-11: all sub-issues are closed ([[0.0.94]] to [[0.0.101]]). The rerun of the spike harness on qwen3:8b and qwen3:4b is the remaining criterion. It loads the CPU heavily, so run it when the workstation is free.
+
 ## Resolution
 
 <Complete this section when you close the issue.

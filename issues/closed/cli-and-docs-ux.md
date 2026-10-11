@@ -1,12 +1,12 @@
 ---
 title: "Make the sisyphus CLI and its documentation easier to learn and use"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: large          # small | medium | large | x-large
 tags: [ux, cli, docs]  # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-11
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-11     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -49,7 +49,7 @@ tool descriptions), and [[ollama-task-manager-guide]] (a guide for local models)
 
 ## Acceptance criteria
 
-- [ ] All sub-issues are closed or deferred with a reason.
+- [x] All sub-issues are closed or deferred with a reason.
 
 ## Out of scope
 
@@ -61,6 +61,5 @@ tool descriptions), and [[ollama-task-manager-guide]] (a guide for local models)
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed in [[0.0.68]] to [[0.0.84]] and [[0.0.103]]. All 18 sub-issues are closed: the CLI has workflow shortcuts, completion for five shells, JSON for write commands, grouped help with examples, readable show and list output, an editor form of edit, a global -C flag, and consistent command pages, and the docs have a user README, an issue format guide, MCP setup, and the output conventions.
+
