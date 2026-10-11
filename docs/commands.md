@@ -40,7 +40,7 @@ path is taken from the current directory. `init` writes into `-C` too.
 When there is no repo root, a command fails with:
 
 ```
-Error: Cannot find the repo root. Run sisyphus in a directory below the one that contains issues/TEMPLATE.md.
+Error: Cannot find the repo root. Run sisyphus in a directory below the one that contains issues/TEMPLATE.md. To set up issue tracking here, run: sisyphus init
 ```
 
 ## Naming an issue

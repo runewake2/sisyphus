@@ -49,6 +49,9 @@ The path of each file written, one per line. For each file skipped:
 Warning: issues/TEMPLATE.md exists, so init did not change it. Use --force to replace it.
 ```
 
+After the list of files, `init` writes the next step to stderr:
+`Next: create an issue with: sisyphus new <name> --title "<title>"`.
+
 ## Examples
 
 ```bash

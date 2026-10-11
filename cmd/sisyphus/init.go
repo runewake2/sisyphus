@@ -24,7 +24,7 @@ func initRepo(dir string, force, nested bool, out, warnings io.Writer) error {
 	if above := trackerAbove(dir); above != "" && !nested {
 		return fmt.Errorf("%s already has an issue tracker (issues/TEMPLATE.md). A tracker in %s would hide it from every command that runs there. Run sisyphus below %s, or use --nested to make a second tracker on purpose.", above, dir, above)
 	}
-	return fs.WalkDir(kit, "kit", func(name string, entry fs.DirEntry, err error) error {
+	err := fs.WalkDir(kit, "kit", func(name string, entry fs.DirEntry, err error) error {
 		if err != nil || entry.IsDir() {
 			return err
 		}
@@ -47,6 +47,12 @@ func initRepo(dir string, force, nested bool, out, warnings io.Writer) error {
 		fmt.Fprintln(out, relative)
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	// The next step goes to stderr, so that stdout stays the list of written files.
+	fmt.Fprintln(warnings, "Next: create an issue with: sisyphus new <name> --title \"<title>\"")
+	return nil
 }
 
 // trackerAbove returns the nearest directory above dir that has issues/TEMPLATE.md, or "" when there

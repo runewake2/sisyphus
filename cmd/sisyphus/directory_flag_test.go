@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,9 +10,9 @@ import (
 
 // runElsewhere runs a command with a findRoot that fails, so that only -C can find the repo.
 func runElsewhere(args ...string) result {
-	var output, errors bytes.Buffer
-	exit := run(args, func() (string, error) { return "", os.ErrNotExist }, &output, &errors)
-	return result{exit: exit, output: output.String(), error: errors.String()}
+	var output, stderr bytes.Buffer
+	exit := run(args, func() (string, error) { return "", errors.New(rootNotFound) }, &output, &stderr)
+	return result{exit: exit, output: output.String(), error: stderr.String()}
 }
 
 func TestDirectoryFlagFindsTheRepoFromAnAbsoluteOrRelativePath(t *testing.T) {

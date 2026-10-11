@@ -37,7 +37,7 @@ func TestInitWritesIssuesOnly(t *testing.T) {
 	res := runIn(t, dir, "init", "--dir", dir)
 
 	equal(t, 0, res.exit)
-	equal(t, "", res.error)
+	equal(t, initNextStep, res.error)
 	equalSlices(t, kitFiles, res.lines())
 	for _, file := range kitFiles {
 		content := readIn(t, dir, file)
@@ -78,7 +78,7 @@ func TestInitReplacesFilesWithForce(t *testing.T) {
 	res := runIn(t, dir, "init", "--dir", dir, "--force")
 
 	equal(t, 0, res.exit)
-	equal(t, "", res.error)
+	equal(t, initNextStep, res.error)
 	contains(t, readIn(t, dir, "issues/TEMPLATE.md"), "Copy this file to issues/open/<issue-name>.md")
 }
 
@@ -120,4 +120,13 @@ func TestInitAgainInTheSameRootIsAllowed(t *testing.T) {
 
 	equal(t, 0, res.exit)
 	contains(t, res.error, "exists, so init did not change it")
+}
+
+const initNextStep = "Next: create an issue with: sisyphus new <name> --title \"<title>\"\n"
+
+func TestCommandsOutsideARepoTellHowToSetOneUp(t *testing.T) {
+	_, err := findRootFrom(t.TempDir())
+
+	isTrue(t, err != nil, "an empty directory has no repo root")
+	contains(t, err.Error(), "To set up issue tracking here, run: sisyphus init")
 }

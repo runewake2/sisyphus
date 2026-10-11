@@ -15,6 +15,10 @@ var skippedDirectories = map[string]bool{
 	".git": true, ".jj": true, "bin": true, "obj": true, "node_modules": true,
 }
 
+// rootNotFound is the error of every command that runs outside a repo. It tells a new user how to set
+// one up.
+const rootNotFound = "Cannot find the repo root. Run sisyphus in a directory below the one that contains issues/TEMPLATE.md. To set up issue tracking here, run: sisyphus init"
+
 // findRoot searches up from the current directory first, so that each jj workspace uses its own files.
 func findRoot() (string, error) {
 	var starts []string
@@ -43,7 +47,7 @@ func findRootFrom(starts ...string) (string, error) {
 			dir = parent
 		}
 	}
-	return "", errors.New("Cannot find the repo root. Run sisyphus in a directory below the one that contains issues/TEMPLATE.md.")
+	return "", errors.New(rootNotFound)
 }
 
 // relative uses "/" on every platform, because wikilinks use "/".
