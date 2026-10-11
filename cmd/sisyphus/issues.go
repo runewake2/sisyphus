@@ -579,6 +579,7 @@ type subIssue struct {
 
 func subIssues(x *issueIndex, name string) []subIssue {
 	var result []subIssue
+	x.preload(x.issues, false)
 	for _, issue := range x.issues {
 		doc, err := x.header(issue)
 		if err != nil || x.canonical(doc.get("parent")) != name {
@@ -762,6 +763,7 @@ func dependsOnReaches(x *issueIndex, start, target string, seen map[string]bool)
 // dependents returns every issue whose depends-on list includes name.
 func dependents(x *issueIndex, name string) []subIssue {
 	var result []subIssue
+	x.preload(x.issues, false)
 	for _, issue := range x.issues {
 		doc, err := x.header(issue)
 		if err != nil {

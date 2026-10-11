@@ -54,6 +54,7 @@ func openDependencies(x *issueIndex, doc *document) []string {
 // closed. Such an issue waits on its sub-issues, so it is not ready.
 func parentsWithOpenSubIssues(x *issueIndex) map[string]bool {
 	parents := map[string]bool{}
+	x.preload(x.issues, false)
 	for _, issue := range x.issues {
 		if issue.state == "closed" {
 			continue
@@ -89,11 +90,15 @@ func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 		waitsOnSubIssues = parentsWithOpenSubIssues(x)
 	}
 
-	var matches []matchedIssue
+	var inStates []issueFile
 	for _, issue := range x.issues {
-		if !slices.Contains(stateFilter, issue.state) {
-			continue
+		if slices.Contains(stateFilter, issue.state) {
+			inStates = append(inStates, issue)
 		}
+	}
+	x.preload(inStates, o.withBody)
+	var matches []matchedIssue
+	for _, issue := range inStates {
 		load := x.header
 		if o.withBody {
 			load = x.document

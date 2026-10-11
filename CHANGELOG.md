@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.63]] - 2026-10-11
+- Read the files of many issues on a bounded pool of goroutines.
+
 ## [[0.0.62]] - 2026-10-11
 - Read only the frontmatter of an issue when a command does not use its body.
 

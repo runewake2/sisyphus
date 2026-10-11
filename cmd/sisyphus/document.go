@@ -110,9 +110,7 @@ func parseDocument(content string) (*document, error) {
 }
 
 func loadDocument(path string) (*document, error) {
-	if traceRead != nil {
-		traceRead(path)
-	}
+	trace(path)
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -163,9 +161,7 @@ func (d *document) save(path string) error {
 // loadHeader reads a file only up to the line that closes its frontmatter, for a command that does not
 // need the body. A file without frontmatter gives the same error as loadDocument.
 func loadHeader(path string) (*document, error) {
-	if traceRead != nil {
-		traceRead(path)
-	}
+	trace(path)
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

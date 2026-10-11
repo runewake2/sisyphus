@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
+	"sync"
 )
 
 // issueIndex is every issue that one command can see. A command builds it once, so that the command
@@ -31,6 +33,64 @@ type loadedDocument struct {
 // traceRead is nil except in tests, which count the reads of one command with it.
 var traceRead func(path string)
 
+// traceMu serializes the calls of traceRead, because preload reads files on several goroutines.
+var traceMu sync.Mutex
+
+func trace(path string) {
+	if traceRead != nil {
+		traceMu.Lock()
+		defer traceMu.Unlock()
+		traceRead(path)
+	}
+}
+
+// preloadMinimum is the smallest number of files that preload reads on a pool of goroutines. For fewer
+// files, starting the workers costs more than it saves.
+const preloadMinimum = 32
+
+// preload reads the files of issues that the command has not read yet, with a bounded pool of
+// goroutines, and keeps them in the same caches that document and header use, so that a command that
+// needs many issues does not wait for one file at a time. Each file is still read once. withBody
+// reads whole files; without it, only the frontmatter.
+func (x *issueIndex) preload(issues []issueFile, withBody bool) {
+	cache, load := x.headers, loadHeader
+	if withBody {
+		cache, load = x.docs, loadDocument
+	}
+	var todo []issueFile
+	for _, issue := range issues {
+		_, full := x.docs[issue.path]
+		_, cached := cache[issue.path]
+		if !full && !cached {
+			todo = append(todo, issue)
+		}
+	}
+	if len(todo) < preloadMinimum {
+		return
+	}
+	results := make([]loadedDocument, len(todo))
+	jobs := make(chan int)
+	var wg sync.WaitGroup
+	for range min(runtime.GOMAXPROCS(0), 16) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range jobs {
+				doc, err := load(todo[i].path)
+				results[i] = loadedDocument{doc: doc, err: err}
+			}
+		}()
+	}
+	for i := range todo {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+	for i, issue := range todo {
+		cache[issue.path] = results[i]
+	}
+}
+
 // loadIndex reads the state directories and their subdirectories once. Issues are sorted by full name.
 func loadIndex(root string) *issueIndex {
 	x := &issueIndex{
@@ -42,9 +102,7 @@ func loadIndex(root string) *issueIndex {
 	}
 	for _, state := range states {
 		directory := filepath.Join(root, "issues", state)
-		if traceRead != nil {
-			traceRead(directory)
-		}
+		trace(directory)
 		_ = filepath.WalkDir(directory, func(path string, entry fs.DirEntry, err error) error {
 			if err != nil || entry.IsDir() || !hasSuffixFold(entry.Name(), ".md") {
 				return nil

@@ -44,6 +44,7 @@ func lintRepo(root string) lintResult {
 	files := map[string]string{}
 	parents := map[string]string{}
 	dependencies := map[string][]string{}
+	x.preload(x.issues, false)
 	for _, issue := range x.issues {
 		file := relative(root, issue.path)
 		doc, err := x.header(issue)

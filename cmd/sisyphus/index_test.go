@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -49,4 +50,29 @@ func TestEveryCommandReadsEachStateDirectoryAndIssueFileOnce(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCommandsReadManyIssuesInParallelOnceEach(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "big-epic-test")
+	for i := 0; i < 60; i++ {
+		name := fmt.Sprintf("parallel-issue-%d", i)
+		args := []string{"new", name, "--parent", "big-epic-test"}
+		if i > 0 && i%3 == 0 {
+			args = append(args, "--depends-on", fmt.Sprintf("parallel-issue-%d", i-1))
+		}
+		r.mustRun(args...)
+	}
+
+	for _, args := range [][]string{{"list", "--ready"}, {"search", "parallel"}, {"lint"}, {"update", "big-epic-test", "closed"}} {
+		reads := readsOf(r, args...)
+		for path, n := range reads {
+			if n != 1 {
+				t.Errorf("%v read %s %d times", args, path, n)
+			}
+		}
+	}
+	ready := r.mustRun("list", "--ready", "--state", "open", "--json").output
+	isTrue(t, strings.Contains(ready, "parallel-issue-1\"") && !strings.Contains(ready, "parallel-issue-3\""), "dependencies are seen")
+	contains(t, r.mustRun("search", "Parallel issue 59").output, "parallel-issue-59")
 }
