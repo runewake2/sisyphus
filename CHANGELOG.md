@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.99]] - 2026-10-11
+- Hide the dir argument of the MCP tools by default, and add --dir and --allow-dir to sisyphus-mcp.
+
 ## [[0.0.98]] - 2026-10-11
 - Match all words of a search query in any order, and exact phrases in double quotes.
 

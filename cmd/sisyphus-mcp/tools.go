@@ -7,8 +7,24 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
+
+// addTool adds a tool to server. Without o.allowDir, its input schema has no dir argument: small
+// models fill an optional dir with words of its description, and the call fails
+// ([[mcp-hide-dir-argument]]). The tools then act on the directory of the server.
+func addTool[In any](server *mcp.Server, o serverOptions, tool *mcp.Tool, handler mcp.ToolHandlerFor[In, any]) {
+	if !o.allowDir {
+		schema, err := jsonschema.For[In](nil)
+		if err != nil {
+			panic(fmt.Sprintf("the input schema of %s: %v", tool.Name, err))
+		}
+		delete(schema.Properties, "dir")
+		tool.InputSchema = schema
+	}
+	mcp.AddTool(server, tool, handler)
+}
 
 // appendFlag appends flag and value to args as one "--flag=value" argument, unless value is empty.
 // One argument keeps a value that starts with "-" from being read as another flag.
@@ -48,88 +64,88 @@ func appendMetadataFlags(args []string, metadata map[string]string) []string {
 	return args
 }
 
-func registerTools(server *mcp.Server) {
-	mcp.AddTool(server, &mcp.Tool{
+func registerTools(server *mcp.Server, o serverOptions) {
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_new",
 		Description: "Create a sisyphus issue from issues/TEMPLATE.md.",
 	}, newHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_update",
 		Description: "Change a sisyphus issue's state (and move it between issues/open, issues/in-progress, and issues/closed), or edit its title, priority, effort, tags, owner, approver, bookmark, workspace, or metadata. Leave out state to keep it.",
 	}, updateHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name: "sisyphus_start",
 		Description: "Start work on a sisyphus issue: move it to issues/in-progress and claim it, with you as the owner. " +
 			"An issue that another owner or another workspace has in progress is refused; select another issue. " +
 			"A repeated start by the same owner changes nothing.",
 	}, startHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name: "sisyphus_close",
 		Description: "Close a sisyphus issue as completed, and move it to issues/closed. Give message: what was done. " +
 			"It fills the Resolution section.",
 	}, closeHandler("close"))
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name: "sisyphus_abandon",
 		Description: "Close a sisyphus issue as abandoned: the work will not happen. Give message: why the work " +
 			"stopped, and what replaces it. It fills the Resolution section.",
 	}, closeHandler("abandon"))
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_show",
 		Description: "Show one sisyphus issue: its frontmatter fields and body.",
 	}, showHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_list",
 		Description: "List and filter sisyphus issues by state, priority, tags, owner, parent, or whether they are blocked by an open dependency. Use ready to find the issues that can start now.",
 	}, listHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_search",
 		Description: "Search sisyphus issues by frontmatter filters and query words, which can be in any order, over title and body, optionally scoped to one section (for example only the Summary). Each match has the lines that match the query, with their sections; use sisyphus_show to read a whole issue.",
 	}, searchHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_graph",
 		Description: "Draw a sisyphus issue, everything below it (sub-issues and dependents, all the way down), and the path above it (parents and dependencies, all the way up), with their states, and say how many other linked issues are not drawn. Each directory is a rounded box around its issues, and each issue box shows only the file name, with the state on the line below. The issue itself has a double box. Available issues (not closed, with no open dependency or sub-issue, so ready to start) have a heavy box and available: true in JSON. With full, an issue that is not below the issue or on its path above has a dashed box and indirect: true in JSON. Heavy arrows trace the work path from what the issue waits on down to the available issues to start now, which a \"start now:\" legend line names. With full, draw every linked issue. A drawing of more than maxIssues issues (default 200) is refused: use json or mermaid for a large graph. Arrows point from the issue that comes first: solid from a parent to a sub-issue, dotted from a dependency to the issue that depends on it.",
 	}, graphHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name: "sisyphus_claims",
 		Description: "List the issues that each jj workspace or git worktree of the repo has in progress, before " +
 			"the work merges. Returns JSON: name, owner, workspace, bookmark, since, and status (here: this " +
 			"workspace; active: another workspace; stale: the workspace no longer has the issue in progress). " +
 			"A start of an issue that another workspace has claimed fails.",
 	}, claimsHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_parent",
 		Description: "Set or clear a sisyphus issue's parent (making it a sub-issue of another issue).",
 	}, parentHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_remote",
 		Description: "Set or clear a sisyphus issue's remote reference: the URL of a GitHub issue or Jira ticket it corresponds to.",
 	}, remoteHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_depends_on",
 		Description: "Add or remove an issue that a sisyphus issue depends on (must close before it can start).",
 	}, dependsOnHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name: "sisyphus_edit",
 		Description: "Replace the text of one section of a sisyphus issue's body, for example Summary or Resolution, " +
 			"or append to it, for example a dated line in Notes. Use it to complete the Resolution section when " +
 			"an issue closes. An append to a section that holds only the template placeholder replaces the placeholder.",
 	}, editHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name: "sisyphus_slug",
 		Description: "Turn text, for example a title, into a valid ASCII sisyphus issue name that no file in the repo has. " +
 			"Letters are spelled in ASCII (é becomes e), other characters separate words, filler words such as " +
 			"'the' and 'of' are dropped, the first 6 words stay, and -2, -3, and so on is added if the name is " +
 			"taken. Fewer than 2 words is an error.",
 	}, slugHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_resolve",
 		Description: "Find the file a wikilink points to, anywhere in the repo.",
 	}, resolveHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_links",
 		Description: "List every wikilink in a document and whether each one resolves.",
 	}, linksHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name: "sisyphus_lint",
 		Description: "Check every sisyphus issue and every wikilink in the repo, and change nothing. Returns JSON: " +
 			"the number of issues and Markdown files checked, and a list of problems, each with a file, a line " +
@@ -137,14 +153,14 @@ func registerTools(server *mcp.Server) {
 			"and values, state matches the directory, one state directory per issue, tags without spaces, " +
 			"parent and depends-on issues exist with no cycles, and every wikilink resolves.",
 	}, lintHandler)
-	mcp.AddTool(server, &mcp.Tool{
+	addTool(server, o, &mcp.Tool{
 		Name:        "sisyphus_init",
 		Description: "Set up issue tracking (issues/TEMPLATE.md and the open/in-progress/closed directories) in a repo.",
 	}, initHandler)
 }
 
 type newArgs struct {
-	Dir          string            `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir          string            `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name         string            `json:"name,omitempty" jsonschema:"The issue name: 2-6 lowercase kebab-case words, optionally below kebab-case directories, for example fix-login-bug or web/auth/fix-login-bug. No other issue can have the same full name. Leave it out to make the name from the title."`
 	Title        string            `json:"title,omitempty" jsonschema:"The issue title. Defaults to a title made from the name."`
 	State        string            `json:"state,omitempty" jsonschema:"open, in-progress, or closed. Defaults to open."`
@@ -193,7 +209,7 @@ func newHandler(ctx context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.C
 }
 
 type updateArgs struct {
-	Dir        string            `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir        string            `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name       string            `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	State      string            `json:"state,omitempty" jsonschema:"The new state: open, in-progress, or closed. Leave it out to keep the current state and change only the other fields."`
 	Resolution string            `json:"resolution,omitempty" jsonschema:"completed or abandoned. Only valid when state is closed; defaults to completed."`
@@ -241,7 +257,7 @@ func updateHandler(ctx context.Context, _ *mcp.CallToolRequest, in updateArgs) (
 }
 
 type startArgs struct {
-	Dir       string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir       string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name      string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	Owner     string `json:"owner,omitempty" jsonschema:"Your name as the owner of the issue. Defaults to SISYPHUS_OWNER in the environment of the server."`
 	Bookmark  string `json:"bookmark,omitempty" jsonschema:"The jj bookmark or git branch of the work."`
@@ -266,7 +282,7 @@ func startHandler(ctx context.Context, _ *mcp.CallToolRequest, in startArgs) (*m
 }
 
 type closeArgs struct {
-	Dir     string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir     string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name    string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	Message string `json:"message" jsonschema:"The text of the Resolution section, as Markdown. For a close: what was done. For an abandon: why the work stopped, and what replaces it."`
 	JSON    bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
@@ -295,7 +311,7 @@ func closeHandler(command string) func(context.Context, *mcp.CallToolRequest, cl
 }
 
 type showArgs struct {
-	Dir  string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir  string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	Text bool   `json:"text,omitempty" jsonschema:"Return the human-readable text form instead of JSON."`
 	All  bool   `json:"all,omitempty" jsonschema:"Keep the sections that hold only template text in the body, as the file has them."`
@@ -314,7 +330,7 @@ func showHandler(ctx context.Context, _ *mcp.CallToolRequest, in showArgs) (*mcp
 }
 
 type listArgs struct {
-	Dir      string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir      string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed, or all. Defaults to open and in-progress."`
 	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
 	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
@@ -349,7 +365,7 @@ func listHandler(ctx context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp
 }
 
 type searchArgs struct {
-	Dir      string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir      string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Query    string `json:"query,omitempty" jsonschema:"Words that the title and body must all have, in any order, without regard to case, for example docs site theme. Put words in double quotes to match an exact phrase. Optional: filters alone also work."`
 	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed, or all. Defaults to open and in-progress."`
 	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
@@ -390,7 +406,7 @@ func searchHandler(ctx context.Context, _ *mcp.CallToolRequest, in searchArgs) (
 }
 
 type graphArgs struct {
-	Dir       string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir       string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name      string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	JSON      bool   `json:"json,omitempty" jsonschema:"Return the nodes and edges as JSON instead of a drawing."`
 	Mermaid   bool   `json:"mermaid,omitempty" jsonschema:"Return Mermaid flowchart source instead of a drawing."`
@@ -415,7 +431,7 @@ func graphHandler(ctx context.Context, _ *mcp.CallToolRequest, in graphArgs) (*m
 }
 
 type claimsArgs struct {
-	Dir   string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir   string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Prune bool   `json:"prune,omitempty" jsonschema:"Remove the stale claims, and list the others."`
 }
 
@@ -430,7 +446,7 @@ func claimsHandler(ctx context.Context, _ *mcp.CallToolRequest, in claimsArgs) (
 }
 
 type parentArgs struct {
-	Dir    string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir    string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name   string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	Parent string `json:"parent,omitempty" jsonschema:"The parent issue to set. Omit and set clear to remove the current parent instead."`
 	Clear  bool   `json:"clear,omitempty" jsonschema:"Remove the issue's current parent instead of setting a new one."`
@@ -450,7 +466,7 @@ func parentHandler(ctx context.Context, _ *mcp.CallToolRequest, in parentArgs) (
 }
 
 type remoteArgs struct {
-	Dir   string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir   string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name  string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	URL   string `json:"url,omitempty" jsonschema:"The GitHub issue or Jira ticket URL to set. Omit and set clear to remove the current one instead."`
 	Clear bool   `json:"clear,omitempty" jsonschema:"Remove the issue's current remote reference instead of setting a new one."`
@@ -470,7 +486,7 @@ func remoteHandler(ctx context.Context, _ *mcp.CallToolRequest, in remoteArgs) (
 }
 
 type dependsOnArgs struct {
-	Dir           string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir           string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name          string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	BlockingIssue string `json:"blockingIssue,omitempty" jsonschema:"The issue that must close first, to add or (with clear) remove. Omit with clear to remove every dependency."`
 	Clear         bool   `json:"clear,omitempty" jsonschema:"Remove blockingIssue (if given) or every dependency (if not) instead of adding one."`
@@ -490,7 +506,7 @@ func dependsOnHandler(ctx context.Context, _ *mcp.CallToolRequest, in dependsOnA
 }
 
 type editArgs struct {
-	Dir     string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir     string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Name    string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	Section string `json:"section" jsonschema:"The heading of the section, matched case-insensitively, for example resolution, summary, or notes."`
 	Text    string `json:"text" jsonschema:"The new text of the section, as Markdown. It can have more than one line."`
@@ -517,7 +533,7 @@ func editHandler(ctx context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp
 }
 
 type slugArgs struct {
-	Dir  string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir  string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Text string `json:"text" jsonschema:"Arbitrary text, for example a title, to turn into a unique issue name."`
 }
 
@@ -530,7 +546,7 @@ func slugHandler(ctx context.Context, _ *mcp.CallToolRequest, in slugArgs) (*mcp
 }
 
 type resolveArgs struct {
-	Dir      string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir      string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Link     string `json:"link" jsonschema:"A wikilink, issue name, or path to resolve, for example [[some-doc]]."`
 	All      bool   `json:"all,omitempty" jsonschema:"Print every match. Without this, an ambiguous link is an error."`
 	Absolute bool   `json:"absolute,omitempty" jsonschema:"Print absolute paths instead of paths from the repo root."`
@@ -549,7 +565,7 @@ func resolveHandler(ctx context.Context, _ *mcp.CallToolRequest, in resolveArgs)
 }
 
 type linksArgs struct {
-	Dir      string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir      string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Document string `json:"document" jsonschema:"The path of the Markdown file to check."`
 	Absolute bool   `json:"absolute,omitempty" jsonschema:"Report absolute paths instead of paths from the repo root."`
 }
@@ -566,7 +582,7 @@ func linksHandler(ctx context.Context, _ *mcp.CallToolRequest, in linksArgs) (*m
 }
 
 type lintArgs struct {
-	Dir string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Dir string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 }
 
 func lintHandler(ctx context.Context, _ *mcp.CallToolRequest, in lintArgs) (*mcp.CallToolResult, any, error) {
@@ -578,7 +594,7 @@ func lintHandler(ctx context.Context, _ *mcp.CallToolRequest, in lintArgs) (*mcp
 }
 
 type initArgs struct {
-	Dir    string `json:"dir,omitempty" jsonschema:"The repo's root directory to set up. Defaults to sisyphus-mcp's own working directory."`
+	Dir    string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
 	Force  bool   `json:"force,omitempty" jsonschema:"Replace issues/TEMPLATE.md if it already exists."`
 	Nested bool   `json:"nested,omitempty" jsonschema:"Make a tracker below a directory that already has one. Without it, that is an error."`
 }

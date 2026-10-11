@@ -66,9 +66,21 @@ A guide to running sisyphus with a local Ollama model is planned: [[ollama-task-
 ### The repo
 
 The tools act on the repo of the directory that the client starts `sisyphus-mcp` in, as `sisyphus`
-does in a shell. Claude Code starts it in the project directory. When a client starts it somewhere
-else, or the agent works in more than one repo, give each tool call a `dir` argument: a directory
-in the repo.
+does in a shell. Claude Code starts it in the project directory. Two flags of `sisyphus-mcp` change
+this:
+
+| Flag | Use |
+|---|---|
+| `--dir <path>` | The repo of every tool call: a directory in it. For a client that starts the server somewhere else. |
+| `--allow-dir` | Give each tool a `dir` argument, so that an agent that works in more than one repo can name the repo in each call. |
+
+```json
+{ "command": "sisyphus-mcp", "args": ["--dir", "/home/alice/src/widgets"] }
+```
+
+Without `--allow-dir`, the tools have no `dir` argument. Small models filled the optional `dir`
+with words from its description, for example `"current"` or `"docs"`, and the call failed. With
+the argument gone, they cannot.
 
 ## Instructions
 
@@ -85,10 +97,11 @@ sisyphus tracks the issues of this repo as Markdown files in issues/. Work on on
 5. For work that you find but that is out of scope, create an issue with sisyphus_new and deferredFrom.
 6. When the work is complete, use sisyphus_close with a message that tells what was done, or sisyphus_abandon with a message that tells why the work stopped. Then run sisyphus_lint.
 
-Read the warnings at the end of each result. Lists, for example tags and dependsOn, are comma-separated strings. Leave dir empty unless the user names another repo.
+Read the warnings at the end of each result. Lists, for example tags and dependsOn, are comma-separated strings.
 ```
 
-When the `sisyphus` binary has another version than `sisyphus-mcp`, a warning line follows them.
+With `--allow-dir`, they end with "Leave dir out unless the user names another repo." When the
+`sisyphus` binary has another version than `sisyphus-mcp`, a warning line follows them.
 
 ## Tools
 
@@ -121,8 +134,8 @@ is an error: `edit` with only a name opens an editor, which is for people at a t
 
 Each tool's arguments mirror the command's arguments and flags, in camelCase (for example
 `dependsOn`, `deferredFrom`, `blockingIssue`). A list, such as `tags` or `dependsOn`, is one
-comma-separated string, as on the command line. `metadata` is a JSON object. Every tool also takes
-the optional `dir` (see [[#The repo]]). The client shows the description of each argument.
+comma-separated string, as on the command line. `metadata` is a JSON object. With `--allow-dir`, every tool
+also takes the optional `dir` (see [[#The repo]]). The client shows the description of each argument.
 
 ## Results
 
@@ -195,8 +208,9 @@ closed yet.
 |---|---|
 | `sisyphus is not installed or not on PATH.` on every tool | The client finds `sisyphus-mcp` but not `sisyphus`. Install `sisyphus`, and add its directory to the `PATH` of the server (see [[#Other clients]]). |
 | The client cannot start the server | The client does not find `sisyphus-mcp`. Give its full path as the `command`. |
-| `Error: Cannot find the repo root.` | `sisyphus-mcp` runs outside the repo. Give a `dir` in the repo, start the client in the repo, or set up the repo with `sisyphus_init`. |
-| The issues of another repo | The server started in another repo. Give a `dir`. |
+| `Error: Cannot find the repo root.` | `sisyphus-mcp` runs outside the repo. Start it with `--dir` in the repo, start the client in the repo, or set up the repo with `sisyphus_init`. |
+| The issues of another repo | The server started in another repo. Start it with `--dir`, or with `--allow-dir` and give a `dir` in each call. |
+| `validating "arguments": ... dir` | The server has no `dir` argument. Start it with `--allow-dir`. |
 | `validating "arguments": ...` | An argument has the wrong type. Lists are comma-separated strings. |
 | `sisyphus-mcp X runs sisyphus Y from <path>` after an error | The two binaries have different versions, so a tool can pass a flag that the binary does not know. Install the same version of both, and restart the server. The server also writes this line to its log. |
 | `sisyphus ... did not finish in 1m0s` | The command waited, for example for a lock of the git index that another process holds. Find that process, or raise `SISYPHUS_MCP_TIMEOUT`. |

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -21,10 +22,31 @@ import (
 )
 
 func main() {
-	if err := newServer().Run(context.Background(), &mcp.StdioTransport{}); err != nil {
+	var o serverOptions
+	flag.StringVar(&o.dir, "dir", "", "The repo that the tools act on: a directory in it. Default: the directory that the client starts sisyphus-mcp in.")
+	flag.BoolVar(&o.allowDir, "allow-dir", false, "Give each tool a dir argument, so that an agent can act on another repo in one call. Small models fill it with wrong values, so it is off by default.")
+	flag.Parse()
+	if o.dir != "" {
+		info, err := os.Stat(o.dir)
+		if err != nil || !info.IsDir() {
+			log.Fatalf("--dir %s is not a directory.", o.dir)
+		}
+		defaultDir = o.dir
+	}
+	if err := newServer(o).Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatal(err)
 	}
 }
+
+// serverOptions are the flags of sisyphus-mcp.
+type serverOptions struct {
+	dir      string
+	allowDir bool
+}
+
+// defaultDir is the directory of a sisyphus run when the call gives no dir: --dir, or else the
+// working directory of sisyphus-mcp.
+var defaultDir string
 
 // instructions tell the agent how to use the tools together. The client shows them to the model in
 // every session, so they are short.
@@ -37,19 +59,22 @@ const instructions = `sisyphus tracks the issues of this repo as Markdown files 
 5. For work that you find but that is out of scope, create an issue with sisyphus_new and deferredFrom.
 6. When the work is complete, use sisyphus_close with a message that tells what was done, or sisyphus_abandon with a message that tells why the work stopped. Then run sisyphus_lint.
 
-Read the warnings at the end of each result. Lists, for example tags and dependsOn, are comma-separated strings. Leave dir empty unless the user names another repo.`
+Read the warnings at the end of each result. Lists, for example tags and dependsOn, are comma-separated strings.`
 
 // newServer returns the server with every tool. Its instructions also tell about a sisyphus binary
 // with another version, so that the agent can tell the user before a tool fails.
-func newServer() *mcp.Server {
+func newServer(o serverOptions) *mcp.Server {
 	text := instructions
+	if o.allowDir {
+		text += " Leave dir out unless the user names another repo."
+	}
 	if path, err := exec.LookPath("sisyphus"); err == nil {
 		if mismatch := versionMismatch(path); mismatch != "" {
 			text += "\n\nWarning: " + mismatch
 		}
 	}
 	server := mcp.NewServer(&mcp.Implementation{Name: "sisyphus", Version: sisyphus.Version()}, &mcp.ServerOptions{Instructions: text})
-	registerTools(server)
+	registerTools(server, o)
 	return server
 }
 
@@ -70,6 +95,9 @@ func execSisyphus(ctx context.Context, dir string, args ...string) (stdout, stde
 	ctx, cancel := context.WithTimeout(ctx, limit)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, path, args...)
+	if dir == "" {
+		dir = defaultDir
+	}
 	// A child of sisyphus, for example git, can keep the pipes open after sisyphus stops.
 	cmd.WaitDelay = time.Second
 	cmd.Dir = dir

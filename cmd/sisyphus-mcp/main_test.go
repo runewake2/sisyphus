@@ -37,10 +37,16 @@ var buildSisyphusOnce = sync.OnceFunc(func() {
 // in-memory transport, and returns the client session, cleaned up when the test ends.
 func connectedSession(t *testing.T) *mcp.ClientSession {
 	t.Helper()
+	return connectedSessionWith(t, serverOptions{allowDir: true}) // the tests give each call its own repo
+}
+
+// connectedSessionWith is connectedSession for a server with the options o.
+func connectedSessionWith(t *testing.T, o serverOptions) *mcp.ClientSession {
+	t.Helper()
 	buildSisyphusOnce()
 	ctx := context.Background()
 
-	server := newServer()
+	server := newServer(o)
 	serverTransport, clientTransport := mcp.NewInMemoryTransports()
 	if _, err := server.Connect(ctx, serverTransport, nil); err != nil {
 		t.Fatal(err)
@@ -639,5 +645,50 @@ func TestAnInvalidTimeoutUsesTheDefault(t *testing.T) {
 
 	if got := timeout(); got != defaultTimeout {
 		t.Errorf("want %s, got %s", defaultTimeout, got)
+	}
+}
+
+func TestByDefaultNoToolHasADirArgument(t *testing.T) {
+	session := connectedSessionWith(t, serverOptions{})
+	tools, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tool := range tools.Tools {
+		schema, _ := json.Marshal(tool.InputSchema)
+		if strings.Contains(string(schema), `"dir"`) {
+			t.Errorf("%s has a dir argument", tool.Name)
+		}
+	}
+	if strings.Contains(session.InitializeResult().Instructions, "dir") {
+		t.Error("the instructions name dir, which the tools do not have")
+	}
+}
+
+func TestByDefaultADirArgumentIsRefused(t *testing.T) {
+	session := connectedSessionWith(t, serverOptions{})
+
+	res, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "sisyphus_list", Arguments: map[string]any{"dir": "docs"}})
+
+	if err == nil && !res.IsError {
+		t.Error("want a call with dir to fail")
+	}
+}
+
+func TestTheToolsActOnTheDirectoryOfTheServer(t *testing.T) {
+	dir := t.TempDir()
+	original := defaultDir
+	defaultDir = dir
+	t.Cleanup(func() { defaultDir = original })
+	session := connectedSessionWith(t, serverOptions{})
+
+	callTool(t, session, "sisyphus_init", map[string]any{})
+	created := callTool(t, session, "sisyphus_new", map[string]any{"title": "Fix the login bug"})
+
+	if created != "issues/open/fix-login-bug.md" {
+		t.Errorf("got %q", created)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "issues", "open", "fix-login-bug.md")); err != nil {
+		t.Errorf("the issue is not in the directory of the server: %v", err)
 	}
 }
