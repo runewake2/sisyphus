@@ -30,13 +30,13 @@ func issueProblems(issue issueFile, doc *document) []string {
 			problems = append(problems, fmt.Sprintf("the frontmatter line %q is not a \"key: value\" field", line))
 			continue
 		}
-		match := fieldPattern.FindStringSubmatch(line)
-		if match == nil {
+		f, ok := parseField(line)
+		if !ok {
 			problems = append(problems, fmt.Sprintf("the frontmatter line %q has a value that sisyphus cannot read", line))
 			continue
 		}
-		if problem := valueProblem(strings.TrimSpace(match[2])); problem != "" {
-			problems = append(problems, fmt.Sprintf("the value of '%s' %s", match[1], problem))
+		if problem := valueProblem(f.value); problem != "" {
+			problems = append(problems, fmt.Sprintf("the value of '%s' %s", f.key, problem))
 		}
 	}
 	if recorded := doc.get("state"); recorded != issue.state {

@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.61]] - 2026-10-11
+- Split frontmatter lines without a regular expression, so that `list`, `search`, and `lint` are about twice as fast in a large repo.
+
 ## [[0.0.60]] - 2026-10-11
 - Refuse to draw a graph of more than 200 issues in `sisyphus graph`, and point to `--json` or `--mermaid`.
 

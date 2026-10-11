@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"regexp"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -24,7 +23,70 @@ type document struct {
 // utf8BOM is the UTF-8 byte order mark that some editors write at the start of a file.
 const utf8BOM = "\ufeff"
 
-var fieldPattern = regexp.MustCompile(`^([A-Za-z_-]+):\s*("(?:[^"\\]|\\.)*"|'[^']*'|[^#]*?)\s*(#.*)?$`)
+// field is one frontmatter line split into its parts: "key: value  # comment".
+type field struct {
+	key, value, comment string
+}
+
+// parseField splits a frontmatter line into its key, its value, and its inline comment, without a
+// regular expression, because commands parse every line of thousands of issues. ok is false when the
+// line does not start with a key of letters, "_", and "-", and a colon. A double-quoted value (with
+// backslash escapes) or a single-quoted value counts only when nothing but spaces and a comment
+// follows it; otherwise the value is the text up to the first "#", without trailing spaces. It gives
+// the same result as the pattern ^([A-Za-z_-]+):\s*("(?:[^"\\]|\\.)*"|'[^']*'|[^#]*?)\s*(#.*)?$.
+func parseField(line string) (field, bool) {
+	colon := strings.IndexByte(line, ':')
+	if colon <= 0 {
+		return field{}, false
+	}
+	key := line[:colon]
+	for i := 0; i < len(key); i++ {
+		if c := key[i]; !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '_' || c == '-') {
+			return field{}, false
+		}
+	}
+	rest := strings.TrimLeft(line[colon+1:], asciiSpace)
+	if end := quotedEnd(rest); end > 0 {
+		after := strings.TrimLeft(rest[end:], asciiSpace)
+		if after == "" || after[0] == '#' {
+			return field{key: key, value: rest[:end], comment: after}, true
+		}
+	}
+	if hash := strings.IndexByte(rest, '#'); hash >= 0 {
+		return field{key: key, value: strings.TrimRight(rest[:hash], asciiSpace), comment: rest[hash:]}, true
+	}
+	return field{key: key, value: strings.TrimRight(rest, asciiSpace)}, true
+}
+
+// asciiSpace is the whitespace that frontmatter parsing skips, the same as \s in Go's regexp.
+const asciiSpace = " \t\n\f\r"
+
+// quotedEnd returns the length of the quoted string at the start of text, with its quotes, or 0 when
+// text does not start with a complete double-quoted or single-quoted string.
+func quotedEnd(text string) int {
+	if text == "" {
+		return 0
+	}
+	switch text[0] {
+	case '"':
+		for i := 1; i < len(text); i++ {
+			switch text[i] {
+			case '\\':
+				if i+1 >= len(text) || text[i+1] == '\n' {
+					return 0
+				}
+				i++
+			case '"':
+				return i + 1
+			}
+		}
+	case '\'':
+		if i := strings.IndexByte(text[1:], '\''); i >= 0 {
+			return i + 2
+		}
+	}
+	return 0
+}
 
 func parseDocument(content string) (*document, error) {
 	bom := strings.HasPrefix(content, utf8BOM)
@@ -95,11 +157,11 @@ func (d *document) get(key string) string {
 		if !strings.HasPrefix(line, key+":") {
 			continue
 		}
-		match := fieldPattern.FindStringSubmatch(line)
-		if match == nil {
+		f, ok := parseField(line)
+		if !ok {
 			return ""
 		}
-		return unquote(strings.TrimSpace(match[2]))
+		return unquote(f.value)
 	}
 	return ""
 }
@@ -131,8 +193,8 @@ func (d *document) set(key, value string) {
 			continue
 		}
 		comment := ""
-		if match := fieldPattern.FindStringSubmatch(line); match != nil {
-			comment = match[3]
+		if f, ok := parseField(line); ok {
+			comment = f.comment
 		}
 		if comment == "" {
 			d.front[i] = replacement
