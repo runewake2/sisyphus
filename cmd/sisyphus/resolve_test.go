@@ -112,3 +112,16 @@ func TestResolveIgnoresBuildOutput(t *testing.T) {
 
 	equalSlices(t, []string{"design/widget-scheduler.md"}, res.lines())
 }
+
+func TestResolveAllMixesExactAndSuffixMatchesInPathOrder(t *testing.T) {
+	r := newTestRepo(t)
+	r.write("notes.md", "# Root notes\n")
+	r.write("a/notes.md", "# A\n")
+	r.write("b/c/NOTES.md", "# C\n")
+
+	res := r.mustRun("resolve", "--all", "[[notes]]")
+
+	equalSlices(t, []string{"a/notes.md", "b/c/NOTES.md", "notes.md"}, res.lines())
+	equalSlices(t, []string{"notes.md"}, r.mustRun("resolve", "[[notes]]").lines())
+	equalSlices(t, []string{"b/c/NOTES.md"}, r.mustRun("resolve", "[[C/notes]]").lines())
+}

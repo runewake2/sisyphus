@@ -75,52 +75,82 @@ func issueName(reference string) string {
 	return target
 }
 
-func repoCandidates(root string) []candidate {
-	var result []candidate
+// candidateSet is every file of the repo that a wikilink can point to, sorted by path, with maps that
+// find the files for a link target without a scan of every file.
+type candidateSet struct {
+	list []candidate
+	// exact maps a lowercase key (a path from the root, with or without ".md") to the indexes of the
+	// candidates that have it.
+	exact map[string][]int
+	// suffix maps the lowercase part of a key after each "/" to the indexes of the candidates whose key
+	// ends with "/" and that part, so that a target with "/" matches the end of a path.
+	suffix map[string][]int
+	// byRelative maps a path from the root to the index of its candidate.
+	byRelative map[string]int
+}
+
+func repoCandidates(root string) *candidateSet {
+	set := &candidateSet{exact: map[string][]int{}, suffix: map[string][]int{}, byRelative: map[string]int{}}
 	for _, file := range repoFiles(root) {
 		rel := relative(root, file)
 		keys := []string{rel}
 		if hasSuffixFold(rel, ".md") {
 			keys = append(keys, trimMarkdownExtension(rel))
 		}
-		result = append(result, candidate{file: file, relative: rel, keys: keys})
+		set.list = append(set.list, candidate{file: file, relative: rel, keys: keys})
 	}
-	slices.SortFunc(result, func(a, b candidate) int { return strings.Compare(a.relative, b.relative) })
+	slices.SortFunc(set.list, func(a, b candidate) int { return strings.Compare(a.relative, b.relative) })
+	for i, c := range set.list {
+		set.byRelative[c.relative] = i
+		for _, key := range c.keys {
+			lower := strings.ToLower(key)
+			set.exact[lower] = appendIndex(set.exact[lower], i)
+			for j := 0; j < len(lower); j++ {
+				if lower[j] == '/' {
+					set.suffix[lower[j+1:]] = appendIndex(set.suffix[lower[j+1:]], i)
+				}
+			}
+		}
+	}
+	return set
+}
+
+// appendIndex appends i to indexes unless it is already the last one: the indexes of one candidate are
+// added together, so this keeps each candidate once.
+func appendIndex(indexes []int, i int) []int {
+	if n := len(indexes); n > 0 && indexes[n-1] == i {
+		return indexes
+	}
+	return append(indexes, i)
+}
+
+// pick returns the candidates at indexes, in index order (the sorted order of paths).
+func (s *candidateSet) pick(indexes []int) []candidate {
+	result := make([]candidate, len(indexes))
+	for i, index := range indexes {
+		result[i] = s.list[index]
+	}
 	return result
 }
 
 // matchTarget follows Obsidian: match by file name, with or without ".md", in any directory.
 // A target with "/" matches the end of a path. An exact path from the repo root wins.
-func matchTarget(candidates []candidate, target string, all bool) []candidate {
+func matchTarget(set *candidateSet, target string, all bool) []candidate {
 	target = strings.TrimLeft(target, "/")
 	if target == "" {
 		return nil
 	}
-	suffix := "/" + target
-	var exact, partial []candidate
-	for _, c := range candidates {
-		if slices.ContainsFunc(c.keys, func(key string) bool { return strings.EqualFold(key, target) }) {
-			exact = append(exact, c)
-		}
-		if slices.ContainsFunc(c.keys, func(key string) bool { return hasSuffixFold(key, suffix) }) {
-			partial = append(partial, c)
-		}
-	}
+	lower := strings.ToLower(target)
+	exact, partial := set.exact[lower], set.suffix[lower]
 	if all {
-		seen := map[string]bool{}
-		var result []candidate
-		for _, c := range append(exact, partial...) {
-			if !seen[c.relative] {
-				seen[c.relative] = true
-				result = append(result, c)
-			}
-		}
-		return result
+		merged := slices.Concat(exact, partial)
+		slices.Sort(merged)
+		return set.pick(slices.Compact(merged))
 	}
 	if len(exact) > 0 {
-		return exact
+		return set.pick(exact)
 	}
-	return partial
+	return set.pick(partial)
 }
 
 func resolveLink(root, link string, all, absolute bool) ([]string, error) {
@@ -154,7 +184,7 @@ func listLinks(root, document string, absolute bool) (string, []linkRow, error) 
 // headings of each target file once, so that sisyphus lint can check every document cheaply.
 type linkChecker struct {
 	root       string
-	candidates []candidate
+	candidates *candidateSet
 	headingsOf map[string][]string
 }
 
@@ -185,10 +215,8 @@ func (c *linkChecker) rows(file string, absolute bool) ([]linkRow, error) {
 		link := parseLink(found.link)
 		var matches []candidate
 		if link.target == "" && link.sameFile {
-			for _, candidate := range c.candidates {
-				if candidate.relative == fileRelative {
-					matches = append(matches, candidate)
-				}
+			if index, ok := c.candidates.byRelative[fileRelative]; ok {
+				matches = append(matches, c.candidates.list[index])
 			}
 		} else {
 			matches = matchTarget(c.candidates, link.target, false)
@@ -217,7 +245,7 @@ func (c *linkChecker) rows(file string, absolute bool) ([]linkRow, error) {
 	return rows, nil
 }
 
-func findDocument(candidates []candidate, document string) (string, error) {
+func findDocument(candidates *candidateSet, document string) (string, error) {
 	if path, err := filepath.Abs(document); err == nil && fileExists(path) {
 		return path, nil
 	}

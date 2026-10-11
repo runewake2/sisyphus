@@ -66,7 +66,7 @@ func lintRepo(root string) lintResult {
 
 	checker := newLinkChecker(root)
 	documents := 0
-	for _, c := range checker.candidates {
+	for _, c := range checker.candidates.list {
 		if !hasSuffixFold(c.relative, ".md") {
 			continue
 		}
