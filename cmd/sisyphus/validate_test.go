@@ -70,3 +70,16 @@ func TestValidIssuesGiveNoWarnings(t *testing.T) {
 
 	equal(t, "", r.run("list", "--state", "closed").error)
 }
+
+func TestAnInvalidStateFilterListsAll(t *testing.T) {
+	r := newTestRepo(t)
+
+	list := r.run("list", "--state", "bogus")
+	search := r.run("search", "--state", "al")
+	update := r.run("update", "x-issue-test", "bogus")
+
+	equal(t, 1, list.exit)
+	contains(t, list.error, "Use one of: open, in-progress, closed, all.")
+	contains(t, search.error, "Did you mean 'all'?")
+	notContains(t, update.error, "all")
+}

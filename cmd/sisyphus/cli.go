@@ -532,7 +532,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 			stateValues := stateFilter(state)
 			priorityValues := parseList(priority)
 			if err := firstError(
-				validateEach("state", stateValues, states),
+				validateEach("state", stateValues, filterStates),
 				validateEach("priority", priorityValues, priorities),
 			); err != nil {
 				return err
@@ -617,7 +617,7 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 			stateValues := stateFilter(state)
 			priorityValues := parseList(priority)
 			if err := firstError(
-				validateEach("state", stateValues, states),
+				validateEach("state", stateValues, filterStates),
 				validateEach("priority", priorityValues, priorities),
 			); err != nil {
 				return err
@@ -1191,6 +1191,9 @@ func editDistance(a, b string) int {
 	}
 	return previous[len(b)]
 }
+
+// filterStates are the values of --state of list and search: a state, or all for every state.
+var filterStates = append(slices.Clone(states), "all")
 
 // stateFilter reads a --state value of list or search: a comma-separated list of states, or "all".
 func stateFilter(value string) []string {

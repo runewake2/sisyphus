@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.104]] - 2026-10-11
+- List all among the valid values of --state of list and search.
+
 ## [[0.0.103]] - 2026-10-11
 - Document stdout, stderr, exit codes, and every JSON shape.
 
