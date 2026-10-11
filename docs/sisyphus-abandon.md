@@ -31,5 +31,6 @@ The path of the issue's file, or with `--json` the changed issue.
 ## Examples
 
 ```bash
+sisyphus abandon old-login-form
 sisyphus abandon old-login-form -m "Login moved to SSO in [[sso-login]]."
 ```

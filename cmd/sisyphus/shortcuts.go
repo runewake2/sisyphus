@@ -39,7 +39,7 @@ func closeCommand(findRoot func() (string, error), use, resolution string) *cobr
 	long := "Close an issue as completed. It is sisyphus update <name> closed, with the same rules and warnings. " +
 		"-m fills the Resolution section: what was done."
 	if resolution == "abandoned" {
-		short = "Close an issue as abandoned: update <name> closed --resolution abandoned."
+		short = "Close an issue as abandoned: the work will not happen."
 		long = "Close an issue as abandoned: the work will not happen. It is sisyphus update <name> closed " +
 			"--resolution abandoned, with the same rules and warnings. -m fills the Resolution section: why the " +
 			"work stopped, and what replaces it."

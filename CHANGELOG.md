@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.79]] - 2026-10-11
+- Add examples to the help of every command, and group the commands in the root help.
+
 ## [[0.0.78]] - 2026-10-11
 - Add sisyphus completion for bash, zsh, fish, PowerShell, and Nushell, with issue names and flag values.
 

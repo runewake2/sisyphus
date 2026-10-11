@@ -15,7 +15,7 @@ var completionShells = []string{"bash", "zsh", "fish", "powershell", "nushell"}
 func completionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "completion <shell>",
-		Short: "Print the shell completion script for bash, zsh, fish, powershell, or nushell.",
+		Short: "Print the shell completion script for a shell.",
 		Long: "Print the script that completes sisyphus commands, flags, issue names, and flag values in " +
 			"a shell: " + strings.Join(completionShells, ", ") + ". Load the script in the start-up file of " +
 			"the shell. docs/sisyphus-completion.md tells how for each shell.",

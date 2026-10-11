@@ -31,5 +31,6 @@ The path of the issue's file, or with `--json` the changed issue.
 ## Examples
 
 ```bash
+sisyphus close fix-login-bug
 sisyphus close fix-login-bug -m "Fixed in [[0.0.9]]: the session cache now expires."
 ```

@@ -85,6 +85,7 @@ Warnings:
 ## Examples
 
 ```bash
+sisyphus new --title "Fix the login bug" --tags bug --priority high
 sisyphus new fix-login-bug --tags bug --priority high
 sisyphus new web/auth/fix-session-expiry --tags bug   # issues/open/web/auth/fix-session-expiry.md
 sisyphus new add-dark-mode --title "Add a dark mode" --tags feature,ui --effort large

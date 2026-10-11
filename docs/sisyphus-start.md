@@ -32,5 +32,6 @@ The path of the issue's file, or with `--json` the changed issue.
 ## Examples
 
 ```bash
+sisyphus start fix-login-bug
 sisyphus start fix-login-bug --owner alice --bookmark ai/fix-login-bug
 ```

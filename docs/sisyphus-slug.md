@@ -46,5 +46,6 @@ fix-login-bug-2
 ## Examples
 
 ```bash
+sisyphus slug "Crash when the cache is empty"
 name="$(sisyphus slug "$TITLE")" && sisyphus new "$name" --title "$TITLE"
 ```

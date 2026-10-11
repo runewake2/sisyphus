@@ -14,7 +14,7 @@ import (
 func openCommand(findRoot func() (string, error)) *cobra.Command {
 	return &cobra.Command{
 		Use:   "open <name>",
-		Short: "Open an issue in your editor ($VISUAL or $EDITOR), and check it after.",
+		Short: "Open an issue in your editor, and check it after.",
 		Long: "Open the file of an issue in your editor: $VISUAL, or else $EDITOR. The value can have arguments, " +
 			"for example \"code --wait\". When the editor exits, sisyphus checks the file as lint does, and warns " +
 			"about problems, for example a frontmatter line that it cannot read.",

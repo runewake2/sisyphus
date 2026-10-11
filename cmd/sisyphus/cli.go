@@ -49,13 +49,18 @@ func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
 		return findRootFrom(start)
 	}
 	root := &cobra.Command{
-		Use:           "sisyphus",
-		Short:         "Manage the issues in issues/ and resolve wikilinks in the repo.",
+		Use:   "sisyphus",
+		Short: "Track issues as Markdown files in your repo.",
+		Long: "sisyphus tracks the issues of a project as Markdown files in the repo, next to the code. Each " +
+			"issue is one file with YAML frontmatter in issues/open/, issues/in-progress/, or issues/closed/, " +
+			"and the directory always matches its state. Wikilinks such as [[fix-login-bug]] link issues and " +
+			"documents.\n\n" +
+			"To start, run sisyphus init, then sisyphus new --title \"<title>\".",
 		Version:       sisyphus.Version(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.PersistentFlags().StringVarP(&directory, "directory", "C", "", "Run as if sisyphus was started in this directory, as git -C does.")
+	root.PersistentFlags().StringVarP(&directory, "directory", "C", "", "Run as if started in this directory, as git -C does.")
 	root.SetVersionTemplate("{{.Version}}\n")
 	// sisyphus completion replaces the default command of cobra, to add Nushell.
 	root.CompletionOptions.DisableDefaultCmd = true
@@ -81,6 +86,7 @@ func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
 		initCommand(&directory),
 		completionCommand(),
 	)
+	addHelp(root)
 	addCompletions(root, findRoot)
 	return root
 }
@@ -92,7 +98,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 	var metadata map[string]string
 	cmd := &cobra.Command{
 		Use:   "new [<name>]",
-		Short: "Create an issue from issues/TEMPLATE.md in the directory of its state.",
+		Short: "Create an issue from issues/TEMPLATE.md.",
 		Long: "Create an issue from issues/TEMPLATE.md in the directory of its state.\n\n" +
 			"<name> is 2-6 lowercase words in kebab-case, for example fix-login-bug, optionally below " +
 			"kebab-case directories, for example web/auth/fix-login-bug. The directories stay with the " +
@@ -163,7 +169,7 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 	var metadata map[string]string
 	cmd := &cobra.Command{
 		Use:   "update <name> [<state>]",
-		Short: "Change the state of an issue and move it to the directory of the new state, or change its fields.",
+		Short: "Change the state or the fields of an issue.",
 		Long: "Change the state of an issue and move it to the directory of the new state, or change its fields.\n\n" +
 			"<name> is an issue's full name, its file name, [[issue-name]], #issue-name, or a path to the issue. " +
 			"A file name that more than one issue has is refused. <state> is " + strings.Join(states, ", ") + ". " +
@@ -226,7 +232,8 @@ func parentCommand(findRoot func() (string, error)) *cobra.Command {
 	var clear bool
 	cmd := &cobra.Command{
 		Use:   "parent <name> [<parent>]",
-		Short: "Set or remove the parent of an issue. The parent must exist and cannot be a sub-issue of the issue.",
+		Short: "Set or remove the parent of an issue.",
+		Long:  "Set or remove the parent of an issue. The parent must exist and cannot be a sub-issue of the issue.",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if (len(args) == 2) == clear {
@@ -249,7 +256,8 @@ func remoteCommand(findRoot func() (string, error)) *cobra.Command {
 	var clear bool
 	cmd := &cobra.Command{
 		Use:   "remote <name> [<url>]",
-		Short: "Set or remove the remote reference (a GitHub issue or Jira ticket URL) of an issue.",
+		Short: "Set or remove the URL of an external ticket for an issue.",
+		Long:  "Set or remove the remote reference of an issue: the URL of the GitHub issue or Jira ticket that tracks it outside the repo.",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if (len(args) == 2) == clear {
@@ -272,7 +280,7 @@ func dependsOnCommand(findRoot func() (string, error)) *cobra.Command {
 	var clear bool
 	cmd := &cobra.Command{
 		Use:   "depends-on <name> [<blocking-issue>]",
-		Short: "Add or remove an issue that must close before <name> can start.",
+		Short: "Add or remove an issue that must close before an issue can start.",
 		Long: "Add or remove an issue that must close before <name> can start.\n\n" +
 			"With a <blocking-issue> and no --clear, adds it (the blocking issue must exist, and the " +
 			"dependency cannot be or create a cycle). With a <blocking-issue> and --clear, removes just " +
@@ -299,7 +307,7 @@ func editCommand(findRoot func() (string, error)) *cobra.Command {
 	var appendText bool
 	cmd := &cobra.Command{
 		Use:   "edit <name> <section> <text>",
-		Short: "Replace the text of one section of an issue's body, or append to it.",
+		Short: "Replace or append to one section of the body of an issue.",
 		Long: "Replace the text of one section of an issue's body, for example Summary or Resolution, " +
 			"or append to it with --append.\n\n" +
 			"<name> is an issue name, [[issue-name]], #issue-name, or a path to the issue. <section> is " +
@@ -329,7 +337,7 @@ func editCommand(findRoot func() (string, error)) *cobra.Command {
 func slugCommand(findRoot func() (string, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "slug <text>",
-		Short: "Print a valid issue name, made from text, that no file in the repo has.",
+		Short: "Print a valid issue name, made from text, that is not in use.",
 		Long: "Print a valid issue name, made from text such as a GitHub issue title, that no Markdown file " +
 			"in the repo has. It does not create anything.\n\n" +
 			"1. Lowercase the text and spell its letters in ASCII: \"é\" becomes \"e\", \"ß\" becomes \"ss\", " +
@@ -494,7 +502,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 	var asJSON, blocked, ready, wide bool
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "List and filter the issues in issues/.",
+		Short: "List and filter issues.",
 		Long: "List and filter the issues in issues/, sorted by state, then priority, then name.\n\n" +
 			"Without --state, only open and in-progress issues are listed. --state and --priority accept a " +
 			"comma-separated list and match any of the given values. --tags matches an issue that has any of " +
@@ -638,7 +646,7 @@ func resolveCommand(findRoot func() (string, error)) *cobra.Command {
 	var all, absolute bool
 	cmd := &cobra.Command{
 		Use:   "resolve <link>",
-		Short: "Find the file that a wikilink points to, in any directory of the repo.",
+		Short: "Find the file that a wikilink points to.",
 		Long: "Find the file that a wikilink points to, in any directory of the repo. A link matches a file by name, " +
 			`with or without ".md", in any directory. A link that contains "/" matches the end of the path. ` +
 			"An exact path from the repo root wins over other matches.",
@@ -667,7 +675,7 @@ func linksCommand(findRoot func() (string, error)) *cobra.Command {
 	var absolute, asJSON bool
 	cmd := &cobra.Command{
 		Use:   "links <document>",
-		Short: "List every wikilink in a document and the file that each link resolves to.",
+		Short: "Check every wikilink in a document.",
 		Long: "List every wikilink in a document and the file that each link resolves to. The status of a link is ok, " +
 			"missing, ambiguous, or missing-heading. Links in fenced code blocks and in inline code are ignored, " +
 			"because Obsidian ignores them.",
@@ -708,7 +716,7 @@ func lintCommand(findRoot func() (string, error)) *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "lint",
-		Short: "Check every issue and every wikilink in the repo, and write nothing.",
+		Short: "Check every issue and every wikilink in the repo.",
 		Long: "Check every issue and every wikilink in the repo, and write nothing.\n\n" +
 			"For each issue in issues/: the file can be read; each frontmatter line is a key: value field, " +
 			"and each value that opens a quote, [, or { closes it; state matches the state directory; " +
@@ -763,7 +771,7 @@ func initCommand(directory *string) *cobra.Command {
 	var force, nested bool
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Write issues/ into a repo: TEMPLATE.md and the open/in-progress/closed directories.",
+		Short: "Set up issues/ in a repo: the template and the state directories.",
 		Long: "Write issues/ into a repo: TEMPLATE.md and the open/in-progress/closed directories. Files that " +
 			"exist stay as they are, unless --force is given. After init, the other commands of sisyphus work " +
 			"in the repo.\n\n" +
