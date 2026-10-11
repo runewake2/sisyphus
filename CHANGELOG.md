@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.32]] - 2026-10-11
+- Pass free text that starts with `-` from sisyphus-mcp to sisyphus as text, not as a flag.
+
 ## [[0.0.31]] - 2026-10-09
 - Add `sisyphus edit` and the `sisyphus_edit` MCP tool to replace or append to one section of an
   issue's body, and warn when an issue closes with no `Resolution` text.

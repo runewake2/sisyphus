@@ -30,6 +30,8 @@ heading of the section, matched case-insensitively, for example `resolution` or
 - A section that the issue does not have is an error that lists the sections it has. The title
   (`# ...`) is not a section: change the title in the frontmatter.
 - `edit` works on an issue in any state, including a closed issue.
+- Text that starts with `-`, for example a Markdown list, needs `--` before the positional
+  arguments, or `-` to read it from standard input. Without it, the text is read as a flag.
 
 `sisyphus update <name> closed` warns when the `Resolution` section still holds the template
 placeholder (see [[sisyphus-update]]).
@@ -46,4 +48,5 @@ sisyphus edit fix-login-bug notes "2026-10-09: the bug is in the session cache."
 sisyphus update fix-login-bug closed --resolution abandoned
 sisyphus edit fix-login-bug resolution "Abandoned. Login moved to SSO in [[sso-login]]."
 git log -1 --format=%B | sisyphus edit fix-login-bug resolution -
+sisyphus edit fix-login-bug "acceptance criteria" -- "- [ ] The login works after a reset."
 ```

@@ -246,3 +246,30 @@ func TestToolReportsAMissingIssueAsAnError(t *testing.T) {
 		t.Errorf("want the missing-issue error, got %q", message)
 	}
 }
+
+// Free text that starts with "-", for example a Markdown list item, must reach sisyphus as text,
+// not as a flag.
+func TestToolsPassTextThatStartsWithADash(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug", "title": "-leading dash title"})
+
+	callTool(t, session, "sisyphus_edit", map[string]any{
+		"dir": dir, "name": "fix-login-bug", "section": "Acceptance criteria", "text": "- [ ] The login works.",
+	})
+	show := callTool(t, session, "sisyphus_show", map[string]any{"dir": dir, "name": "fix-login-bug"})
+	if !strings.Contains(show, "- [ ] The login works.") || !strings.Contains(show, "-leading dash title") {
+		t.Errorf("show does not have the dash text: %s", show)
+	}
+
+	search := callTool(t, session, "sisyphus_search", map[string]any{"dir": dir, "query": "-leading"})
+	if !strings.Contains(search, "fix-login-bug") {
+		t.Errorf("search for '-leading' did not find fix-login-bug: %s", search)
+	}
+
+	slug := callTool(t, session, "sisyphus_slug", map[string]any{"dir": dir, "text": "-dash first words"})
+	if slug != "dash-first-words" {
+		t.Errorf("want slug dash-first-words, got %q", slug)
+	}
+}

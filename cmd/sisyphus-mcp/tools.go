@@ -6,12 +6,26 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// appendFlag appends flag and value to args, unless value is empty.
+// appendFlag appends flag and value to args as one "--flag=value" argument, unless value is empty.
+// One argument keeps a value that starts with "-" from being read as another flag.
 func appendFlag(args []string, flag, value string) []string {
 	if value == "" {
 		return args
 	}
-	return append(args, flag, value)
+	return append(args, flag+"="+value)
+}
+
+// appendPositionals appends "--" and then each value that is not empty. sisyphus reads everything
+// after "--" as a positional argument, so free text that starts with "-", for example a Markdown
+// list item, is not read as a flag. Call it after every flag.
+func appendPositionals(args []string, values ...string) []string {
+	args = append(args, "--")
+	for _, value := range values {
+		if value != "" {
+			args = append(args, value)
+		}
+	}
+	return args
 }
 
 // appendBoolFlag appends flag to args if value is true.
@@ -116,7 +130,7 @@ type newArgs struct {
 }
 
 func newHandler(_ context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"new", in.Name}
+	args := []string{"new"}
 	args = appendFlag(args, "--title", in.Title)
 	args = appendFlag(args, "--state", in.State)
 	args = appendFlag(args, "--priority", in.Priority)
@@ -133,6 +147,7 @@ func newHandler(_ context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.Cal
 	args = appendFlag(args, "--depends-on", in.DependsOn)
 	args = appendFlag(args, "--context", in.Context)
 	args = appendMetadataFlags(args, in.Metadata)
+	args = appendPositionals(args, in.Name)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -156,7 +171,7 @@ type updateArgs struct {
 }
 
 func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"update", in.Name, in.State}
+	args := []string{"update"}
 	args = appendFlag(args, "--resolution", in.Resolution)
 	args = appendFlag(args, "--bookmark", in.Bookmark)
 	args = appendFlag(args, "--owner", in.Owner)
@@ -166,6 +181,7 @@ func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*m
 	args = appendFlag(args, "--effort", in.Effort)
 	args = appendFlag(args, "--tags", in.Tags)
 	args = appendMetadataFlags(args, in.Metadata)
+	args = appendPositionals(args, in.Name, in.State)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -180,8 +196,9 @@ type showArgs struct {
 }
 
 func showHandler(_ context.Context, _ *mcp.CallToolRequest, in showArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"show", in.Name}
+	args := []string{"show"}
 	args = appendBoolFlag(args, "--json", !in.Text)
+	args = appendPositionals(args, in.Name)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -239,9 +256,7 @@ func searchHandler(_ context.Context, _ *mcp.CallToolRequest, in searchArgs) (*m
 	args = appendBoolFlag(args, "--blocked", in.Blocked)
 	args = appendFlag(args, "--section", in.Section)
 	args = appendBoolFlag(args, "--json", !in.Text)
-	if in.Query != "" {
-		args = append(args, in.Query)
-	}
+	args = appendPositionals(args, in.Query)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -258,10 +273,11 @@ type graphArgs struct {
 }
 
 func graphHandler(_ context.Context, _ *mcp.CallToolRequest, in graphArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"graph", in.Name}
+	args := []string{"graph"}
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--mermaid", in.Mermaid)
 	args = appendBoolFlag(args, "--full", in.Full)
+	args = appendPositionals(args, in.Name)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -277,11 +293,9 @@ type parentArgs struct {
 }
 
 func parentHandler(_ context.Context, _ *mcp.CallToolRequest, in parentArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"parent", in.Name}
-	if in.Parent != "" {
-		args = append(args, in.Parent)
-	}
+	args := []string{"parent"}
 	args = appendBoolFlag(args, "--clear", in.Clear)
+	args = appendPositionals(args, in.Name, in.Parent)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -297,11 +311,9 @@ type remoteArgs struct {
 }
 
 func remoteHandler(_ context.Context, _ *mcp.CallToolRequest, in remoteArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"remote", in.Name}
-	if in.URL != "" {
-		args = append(args, in.URL)
-	}
+	args := []string{"remote"}
 	args = appendBoolFlag(args, "--clear", in.Clear)
+	args = appendPositionals(args, in.Name, in.URL)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -317,11 +329,9 @@ type dependsOnArgs struct {
 }
 
 func dependsOnHandler(_ context.Context, _ *mcp.CallToolRequest, in dependsOnArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"depends-on", in.Name}
-	if in.BlockingIssue != "" {
-		args = append(args, in.BlockingIssue)
-	}
+	args := []string{"depends-on"}
 	args = appendBoolFlag(args, "--clear", in.Clear)
+	args = appendPositionals(args, in.Name, in.BlockingIssue)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -338,8 +348,9 @@ type editArgs struct {
 }
 
 func editHandler(_ context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"edit", in.Name, in.Section, in.Text}
+	args := []string{"edit"}
 	args = appendBoolFlag(args, "--append", in.Append)
+	args = appendPositionals(args, in.Name, in.Section, in.Text)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -353,7 +364,7 @@ type slugArgs struct {
 }
 
 func slugHandler(_ context.Context, _ *mcp.CallToolRequest, in slugArgs) (*mcp.CallToolResult, any, error) {
-	out, err := runSisyphus(in.Dir, "slug", in.Text)
+	out, err := runSisyphus(in.Dir, appendPositionals([]string{"slug"}, in.Text)...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -368,9 +379,10 @@ type resolveArgs struct {
 }
 
 func resolveHandler(_ context.Context, _ *mcp.CallToolRequest, in resolveArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"resolve", in.Link}
+	args := []string{"resolve"}
 	args = appendBoolFlag(args, "--all", in.All)
 	args = appendBoolFlag(args, "--absolute", in.Absolute)
+	args = appendPositionals(args, in.Link)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
@@ -385,8 +397,9 @@ type linksArgs struct {
 }
 
 func linksHandler(_ context.Context, _ *mcp.CallToolRequest, in linksArgs) (*mcp.CallToolResult, any, error) {
-	args := []string{"links", in.Document, "--json"}
+	args := []string{"links", "--json"}
 	args = appendBoolFlag(args, "--absolute", in.Absolute)
+	args = appendPositionals(args, in.Document)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err
