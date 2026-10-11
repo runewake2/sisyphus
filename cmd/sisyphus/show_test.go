@@ -20,7 +20,7 @@ func TestShowPrintsFieldsAndBody(t *testing.T) {
 	contains(t, res.output, "effort:     medium")
 	contains(t, res.output, "tags:       [plan]")
 	contains(t, res.output, "# Add retry backoff")
-	contains(t, res.output, "## Summary")
+	contains(t, r.mustRun("show", "retry-backoff", "--all").output, "## Summary")
 }
 
 func TestShowPrintsTheResolutionOfAClosedIssue(t *testing.T) {
@@ -112,4 +112,28 @@ func TestCommandsFindAnIssueWithoutRegardToCase(t *testing.T) {
 
 	equal(t, "high", r.frontmatter("issues/open/first-issue-test.md").get("priority"))
 	equalSlices(t, []string{"first-issue-test"}, parseDependsOn(r.frontmatter("issues/open/web/fix-login-bug.md").get("depends-on")))
+}
+
+func TestShowHidesEmptyFieldsAndTemplateSections(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--tags", "bug")
+	r.mustRun("edit", "fix-login-bug", "Summary", "The login fails after a reset.")
+
+	short := r.mustRun("show", "fix-login-bug").output
+	full := r.mustRun("show", "fix-login-bug", "--all").output
+
+	contains(t, short, "tags:       [bug]")
+	contains(t, short, "## Summary\n\nThe login fails after a reset.")
+	for _, hidden := range []string{"owner:", "remote:", "metadata:", "## Context", "## Acceptance criteria", "<Condition>", "## Resolution"} {
+		isTrue(t, !strings.Contains(short, hidden), hidden+" is hidden")
+		contains(t, full, hidden)
+	}
+}
+
+func TestShowKeepsASectionWithRealText(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+	r.mustRun("edit", "fix-login-bug", "Acceptance criteria", "--", "- [ ] The login works after a reset.")
+
+	contains(t, r.mustRun("show", "fix-login-bug").output, "- [ ] The login works after a reset.")
 }

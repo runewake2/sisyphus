@@ -355,7 +355,7 @@ func slugCommand(findRoot func() (string, error)) *cobra.Command {
 }
 
 func showCommand(findRoot func() (string, error)) *cobra.Command {
-	var asJSON bool
+	var asJSON, all bool
 	cmd := &cobra.Command{
 		Use:   "show <name>",
 		Short: "Print one issue: its key fields and its body.",
@@ -380,11 +380,12 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 				encoder.SetIndent("", "  ")
 				return encoder.Encode(newIssueView(name, doc))
 			}
-			writeIssueText(cmd.OutOrStdout(), doc)
+			writeIssueText(cmd.OutOrStdout(), doc, all)
 			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the issue as JSON instead of readable text.")
+	cmd.Flags().BoolVar(&all, "all", false, "Print every field and section, also the empty fields and the sections that hold only the template text.")
 	return cmd
 }
 
@@ -828,8 +829,10 @@ func addJSONFlag(cmd *cobra.Command) *cobra.Command {
 	return cmd
 }
 
-// writeIssueText prints an issue's key fields, then its body.
-func writeIssueText(out io.Writer, doc *document) {
+// writeIssueText prints an issue's key fields, then its body. Without all, it leaves out the empty
+// fields and the sections that hold only the template text, which tell an author what to write, not a
+// reader what the issue is.
+func writeIssueText(out io.Writer, doc *document, all bool) {
 	fields := [][2]string{
 		{"title", doc.get("title")},
 		{"state", doc.get("state")},
@@ -847,16 +850,80 @@ func writeIssueText(out io.Writer, doc *document) {
 		{"remote", doc.get("remote")},
 		{"metadata", doc.get("metadata")},
 	}
+	// The width of every label, also the hidden ones, so that the values start in the same column in
+	// every issue.
 	width := 0
 	for _, f := range fields {
 		width = max(width, utf8.RuneCountInString(f[0]))
+	}
+	if !all {
+		alwaysShown := []string{"title", "state", "priority", "effort", "created"}
+		fields = slices.DeleteFunc(fields, func(f [2]string) bool {
+			return !slices.Contains(alwaysShown, f[0]) && (f[1] == "" || f[1] == "[]" || f[1] == "{}")
+		})
 	}
 	for _, f := range fields {
 		label, value := f[0], f[1]
 		fmt.Fprintf(out, "%s:%s %s\n", label, strings.Repeat(" ", width-utf8.RuneCountInString(label)), value)
 	}
+	body := doc.body
+	if !all {
+		body = withoutTemplateSections(body)
+	}
 	fmt.Fprintln(out)
-	fmt.Fprintln(out, strings.TrimLeft(strings.Join(doc.body, "\n"), "\n"))
+	fmt.Fprintln(out, strings.TrimLeft(strings.Join(body, "\n"), "\n"))
+}
+
+// withoutTemplateSections leaves out each "##" section that holds only template text (see
+// isTemplateText), with its heading.
+func withoutTemplateSections(body []string) []string {
+	var starts []int
+	for _, index := range outsideCodeFences(body) {
+		if headingPattern.MatchString(body[index]) && headingLevel(body[index]) <= 2 {
+			starts = append(starts, index)
+		}
+	}
+	drop := map[int]bool{}
+	for i, start := range starts {
+		end := len(body)
+		if i+1 < len(starts) {
+			end = starts[i+1]
+		}
+		if headingLevel(body[start]) == 2 && isTemplateText(body[start+1:end]) {
+			for line := start; line < end; line++ {
+				drop[line] = true
+			}
+		}
+	}
+	var keep []string
+	for index, line := range body {
+		if !drop[index] {
+			keep = append(keep, line)
+		}
+	}
+	return keep
+}
+
+// isTemplateText reports whether lines hold only the placeholders of the template: "<...>" paragraphs
+// and list items such as "- [ ] <Condition>", or nothing.
+func isTemplateText(lines []string) bool {
+	inPlaceholder := false
+	for _, line := range lines {
+		text := strings.TrimSpace(line)
+		switch {
+		case inPlaceholder:
+			inPlaceholder = !strings.HasSuffix(text, ">")
+		case text == "":
+		case strings.HasPrefix(text, "<"):
+			inPlaceholder = !strings.HasSuffix(text, ">")
+		default:
+			item := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(text, "-"), " [ ]"), " "))
+			if !(strings.HasPrefix(item, "<") && strings.HasSuffix(item, ">")) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // writeTable prints cells as a table with header, padding every column to its widest cell. Widths

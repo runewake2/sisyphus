@@ -5,30 +5,29 @@ Print one issue, without first finding which state directory holds it.
 ## Usage
 
 ```bash
-sisyphus show <name> [--json]
+sisyphus show <name> [--all] [--json]
 ```
 
 `<name>` is any form of an existing issue (see [[commands#Naming an issue]]).
 
 ## Output
 
-By default, the key fields, aligned, then the body. `resolution` and `closed` have a value only
-when the issue is closed, so they show whether a close or an abandon worked:
+By default, the fields that have a value, aligned, then the body without the sections that hold only
+the template text (the `<...>` placeholders). `title`, `state`, `priority`, `effort`, and `created`
+always show. `resolution` and `closed` have a value only when the issue is closed, so they show
+whether a close or an abandon worked. `--all` prints every field and every section:
 
 ```
 title:      Fix login bug
 state:      in-progress
-resolution:
 priority:   high
 effort:     medium
 tags:       [bug]
 created:    2026-10-08
-closed:
 owner:      alice
 approver:   bob
 bookmark:   ai/fix-login-bug
 parent:     [[auth-overhaul]]
-depends-on: []
 remote:     https://github.com/acme/widgets/issues/42
 metadata:   {session-id: "abc123"}
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.74]] - 2026-10-11
+- Hide empty fields and template-only sections in `sisyphus show`; `--all` shows everything.
+
 ## [[0.0.73]] - 2026-10-11
 - Add `start`, `close`, and `abandon`, and `update -m` for the Resolution section.
 
