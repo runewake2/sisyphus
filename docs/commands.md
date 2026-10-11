@@ -57,6 +57,9 @@ Every command that takes an existing issue accepts any of these forms:
 | A hashtag | `#web/auth/fix-login-bug` |
 | A path | `issues/open/web/auth/fix-login-bug.md` |
 
+Every form matches without regard to case, as wikilinks do in Obsidian: `[[Fix-Login-Bug]]` gives
+`fix-login-bug`. Output always uses the real, lowercase name.
+
 A full name always gives its own issue. A shorter form must give exactly one issue: if two issues
 end with it, for example `web/fix-login-bug` and `mobile/fix-login-bug`, the command fails, lists
 the full names, and changes nothing. Use the full name instead.

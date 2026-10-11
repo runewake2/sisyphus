@@ -65,12 +65,19 @@ func loadIndex(root string) *issueIndex {
 
 // matches returns the issue files that name gives. A full name gives its own issue, even when it is
 // also the end of a longer name. Otherwise name gives every issue whose full name ends with it, so
-// that a bare file name gives the issue in any subdirectory.
+// that a bare file name gives the issue in any subdirectory. A name that matches nothing is tried
+// again in lowercase: valid issue names are lowercase, and wikilinks ignore case, as in Obsidian.
 func (x *issueIndex) matches(name string) []issueFile {
 	if exact := x.exact[name]; len(exact) > 0 {
 		return exact
 	}
-	return x.shorter[name]
+	if shorter := x.shorter[name]; len(shorter) > 0 {
+		return shorter
+	}
+	if lower := strings.ToLower(name); lower != name {
+		return x.matches(lower)
+	}
+	return nil
 }
 
 // match finds the one issue that name gives. found is false when no issue matches. A name that gives

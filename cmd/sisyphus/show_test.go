@@ -99,3 +99,17 @@ func TestShowReportsAnIssueInMoreThanOneDirectory(t *testing.T) {
 	equal(t, 1, res.exit)
 	contains(t, res.error, "more than one state directory")
 }
+
+func TestCommandsFindAnIssueWithoutRegardToCase(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "first-issue-test")
+	r.mustRun("new", "web/fix-login-bug")
+
+	contains(t, r.mustRun("show", "FIRST-ISSUE-TEST").output, "First issue test")
+	contains(t, r.mustRun("show", "[[Fix-Login-Bug]]").output, "Fix login bug")
+	r.mustRun("update", "First-Issue-Test", "--priority", "high")
+	r.mustRun("depends-on", "fix-login-bug", "[[FIRST-ISSUE-TEST]]")
+
+	equal(t, "high", r.frontmatter("issues/open/first-issue-test.md").get("priority"))
+	equalSlices(t, []string{"first-issue-test"}, parseDependsOn(r.frontmatter("issues/open/web/fix-login-bug.md").get("depends-on")))
+}

@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.54]] - 2026-10-11
+- Find an issue by name without regard to case in every command.
+
 ## [[0.0.53]] - 2026-10-11
 - Warn when `sisyphus depends-on --clear` removes nothing.
 
