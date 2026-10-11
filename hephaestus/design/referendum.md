@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11
 - Issue: [[referendum-voting]]
-- Status: Draft. R1 and R6 are answered; the other open questions at the end are not.
+- Status: Draft. R1, R6, R7, and R8 are answered; the other open questions at the end are not.
 
 ## Summary
 
@@ -79,7 +79,7 @@ Any reviewer, required or not, can submit a modification. A modification goes on
 2. **The larger vote decides whether the edit is accepted at all.** When the gate accepts the
    modification, it makes a new version, and every reviewer votes on it in a new round. The edit is
    accepted only when that round passes ([[#Result]]): every required reviewer votes `yes` on the
-   modified contents. When it fails, the edit is not accepted (R7).
+   modified contents. When it fails, the edit is not accepted, and the whole referendum fails (R7).
 
 The other rules:
 
@@ -106,7 +106,9 @@ Answered by the human on 2026-10-11 (R1):
 
 - A referendum **passes** when every required reviewer votes `yes` in a round with no modification
   that the gate accepted.
-- It **fails** when at least one required reviewer votes `no` in such a round.
+- It **fails** when at least one required reviewer votes `no` in such a round. This includes the
+  larger vote on a modified version: then the whole referendum fails, and does not go back to the
+  version before the edit (R7, answered by the human on 2026-10-11).
 - A non-required reviewer cannot fail a referendum. Its `no` is recorded as a concern, and goes with
   the result to the owner of the issue.
 
@@ -164,5 +166,5 @@ A human answers a question with a reply such as "R2 yes", or another answer.
 | R4 | Who can call a referendum, and choose its required and non-required reviewers: only a human, or also a role agent, for example the merge queue before each merge? | A human, and the roles that a human allows in their role description. A role description can propose default reviewers. |
 | R5 | What is the maximum number of rounds? | 3, then a human decides. |
 | R6 | Can a reviewer abstain? | Answered with R1: a non-required reviewer can, when nothing is in its scope. A required reviewer cannot: anything but `yes` stops the pass. |
-| R7 | When the larger vote on a modified version fails, does the referendum fail, or does it go back to the version before the edit and vote on it again? | It fails, with the reasons. The required reviewers accepted the edit at the gate, so a `no` on the modified version is about the whole change, not about the edit. The owner of the issue can call a new referendum. |
-| R8 | After the gate rejects a modification of a required reviewer, must that reviewer vote again on the same version, or does its `modify` count as `no`? | It votes again on the same version, `yes` or `no`, in a new round. The rounds stay limited by R5. |
+| R7 | When the larger vote on a modified version fails, does the referendum fail, or does it go back to the version before the edit and vote on it again? | Answered by the human on 2026-10-11: the whole referendum fails, with the reasons. It does not go back to the version before the edit. The owner of the issue can call a new referendum. |
+| R8 | After the gate rejects a modification of a required reviewer, must that reviewer vote again on the same version, or does its `modify` count as `no`? | Answered by the human on 2026-10-11: required reviewers always vote again. The reviewer votes on the same version, `yes` or `no`, in a new round. The rounds stay limited by R5. |

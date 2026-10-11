@@ -47,6 +47,8 @@ Requested by a human on 2026-10-11. One agent of one role judges a change only i
 
 2026-10-11, from the human: a referendum has required reviewers, which must all vote yes to pass it, and non-required reviewers, which are only related at its edges: they can suggest modifications, but their no cannot fail it. Every modification must first be accepted unanimously by the required reviewers; then the larger vote, of all reviewers, decides whether the edit is accepted at all. This answers R1 and R6 in [[referendum]], and adds the modification gate and the open questions R7 and R8.
 
+2026-10-11, from the human: the entire referendum fails when the proposal does not pass on the edited version (R7), and required reviewers always vote again (R8). Both proposals of [[referendum]] are accepted.
+
 ## Resolution
 
 <Complete this section when you close the issue.
