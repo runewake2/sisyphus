@@ -66,7 +66,7 @@ the file, and moves the file when the state changes.
 | Create an issue | `sisyphus new --title "<title>"` |
 | Start, close, or abandon it | `sisyphus start <name>`, `sisyphus close <name>`, `sisyphus abandon <name>` |
 | Change its fields | `sisyphus update <name> --priority high --add-tags auth` |
-| Write in a section | `sisyphus edit <name> notes "<text>" --append`, or `sisyphus open <name>` for your editor |
+| Edit an issue | `sisyphus edit <name>` in your editor, or `sisyphus edit <name> notes "<text>" --append` |
 | See one issue | `sisyphus show <name>` |
 | Find issues | `sisyphus list --ready`, `sisyphus search timeout` |
 | Relate issues | `sisyphus parent <name> <epic>`, `sisyphus depends-on <name> <other>` |

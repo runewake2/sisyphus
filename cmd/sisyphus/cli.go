@@ -76,7 +76,6 @@ func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
 		addJSONFlag(closeCommand(findRoot, "abandon", "abandoned")),
 		slugCommand(findRoot),
 		showCommand(findRoot),
-		openCommand(findRoot),
 		graphCommand(findRoot),
 		listCommand(findRoot),
 		searchCommand(findRoot),
@@ -306,17 +305,33 @@ func dependsOnCommand(findRoot func() (string, error)) *cobra.Command {
 func editCommand(findRoot func() (string, error)) *cobra.Command {
 	var appendText bool
 	cmd := &cobra.Command{
-		Use:   "edit <name> <section> <text>",
-		Short: "Replace or append to one section of the body of an issue.",
-		Long: "Replace the text of one section of an issue's body, for example Summary or Resolution, " +
-			"or append to it with --append.\n\n" +
+		Use:   "edit <name> [<section> <text>]",
+		Short: "Edit an issue in your editor, or replace one section of it.",
+		Long: "With only <name>, open the file of the issue in your editor: $VISUAL, or else $EDITOR. The value " +
+			"can have arguments, for example \"code --wait\". When the editor exits, sisyphus checks the file as " +
+			"lint does, and warns about problems, for example a frontmatter line that it cannot read.\n\n" +
+			"With <section> and <text>, replace the text of one section of the issue's body, for example " +
+			"Summary or Resolution, or append to it with --append.\n\n" +
 			"<name> is an issue name, [[issue-name]], #issue-name, or a path to the issue. <section> is " +
 			"the heading of the section, matched case-insensitively, for example \"resolution\". " +
 			"<text> is the new text; \"-\" reads it from standard input. The heading line and every other " +
 			"section stay as they are. An append to a section that holds only the template placeholder " +
 			"replaces the placeholder.",
-		Args: cobra.ExactArgs(3),
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 && len(args) != 3 {
+				return fmt.Errorf("Give <name> to open the issue in your editor, or <name> <section> <text> to replace a section. Got %d arguments.", len(args))
+			}
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 1 {
+				for _, flag := range []string{"append", "json"} {
+					if cmd.Flags().Changed(flag) {
+						return fmt.Errorf("--%s needs <section> and <text>. With only <name>, edit opens your editor.", flag)
+					}
+				}
+				return editInEditor(cmd, findRoot, args[0])
+			}
 			text := args[2]
 			if text == "-" {
 				input, err := io.ReadAll(cmd.InOrStdin())

@@ -130,7 +130,7 @@ on it can start now (`sisyphus list --ready`).
 
 Text in `<...>` on its own is template text. [[sisyphus-show]] hides a section that holds only
 template text, and [[sisyphus-edit]] `--append` replaces it. Change any section with
-[[sisyphus-edit]], or open the file with [[sisyphus-open]].
+[[sisyphus-edit]], or open the file in your editor with `sisyphus edit <name>`.
 
 ## What sisyphus checks
 

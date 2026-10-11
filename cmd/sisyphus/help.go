@@ -12,7 +12,7 @@ var commandGroups = []struct {
 	id, title string
 	commands  []string
 }{
-	{"change", "Create and change issues:", []string{"new", "start", "update", "close", "abandon", "edit", "open"}},
+	{"change", "Create and change issues:", []string{"new", "start", "update", "close", "abandon", "edit"}},
 	{"find", "Read and find issues:", []string{"show", "list", "search", "graph"}},
 	{"relate", "Relate issues:", []string{"parent", "depends-on", "remote"}},
 	{"check", "Check names and links:", []string{"slug", "resolve", "links", "lint"}},
@@ -46,13 +46,10 @@ var commandExamples = map[string][]string{
 		`sisyphus abandon old-login-form -m "Login moved to SSO in [[sso-login]]."`,
 	},
 	"edit": {
+		`sisyphus edit fix-login-bug                # in $VISUAL or $EDITOR`,
 		`sisyphus edit fix-login-bug summary "Fix the login loop after a password reset."`,
 		`sisyphus edit fix-login-bug notes "2026-10-09: the bug is in the session cache." --append`,
 		`git log -1 --format=%B | sisyphus edit fix-login-bug resolution -`,
-	},
-	"open": {
-		`EDITOR=vim sisyphus open fix-login-bug`,
-		`VISUAL="code --wait" sisyphus open web/auth/fix-login-bug`,
 	},
 	"show": {
 		`sisyphus show fix-login-bug`,

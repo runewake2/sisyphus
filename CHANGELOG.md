@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.84]] - 2026-10-11
+- Replace sisyphus open with sisyphus edit <name>, which opens the issue in your editor.
+
 ## [[0.0.83]] - 2026-10-11
 - Rewrite the README for users, with a first session and links that work on GitHub.
 

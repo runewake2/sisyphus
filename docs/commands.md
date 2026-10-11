@@ -19,8 +19,7 @@ The groups are the same as in `sisyphus --help`.
 | [[sisyphus-update]] | Change an issue's state, or edit its fields. |
 | [[sisyphus-close]] | Close an issue as completed, with an optional Resolution text. |
 | [[sisyphus-abandon]] | Close an issue as abandoned, with an optional Resolution text. |
-| [[sisyphus-edit]] | Replace or append to one section of an issue's body. |
-| [[sisyphus-open]] | Open an issue in your editor, and check it after. |
+| [[sisyphus-edit]] | Edit an issue in your editor, or replace or append to one section. |
 
 ### Read and find issues
 

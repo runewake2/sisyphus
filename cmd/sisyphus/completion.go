@@ -99,7 +99,6 @@ var commandArguments = map[string][]argumentKind{
 	"remote":     {anyIssue},
 	"edit":       {anyIssue, sectionArgument},
 	"show":       {anyIssue},
-	"open":       {anyIssue},
 	"graph":      {anyIssue},
 }
 

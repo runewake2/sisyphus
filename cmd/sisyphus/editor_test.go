@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -20,35 +21,57 @@ func fakeEditor(t *testing.T, line string) string {
 	return script
 }
 
-func TestOpenRunsTheEditorOnTheIssueFile(t *testing.T) {
+func TestEditWithOnlyANameRunsTheEditorOnTheIssueFile(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "web/fix-login-bug")
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", fakeEditor(t, "Edited in the editor."))
 
-	res := r.mustRun("open", "fix-login-bug")
+	res := r.mustRun("edit", "fix-login-bug")
 
 	equal(t, "", res.error)
 	contains(t, r.read("issues/open/web/fix-login-bug.md"), "Edited in the editor.")
 }
 
-func TestOpenWarnsAboutAProblemAfterTheEdit(t *testing.T) {
+func TestEditInTheEditorWarnsAboutAProblemAfterTheEdit(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "fix-login-bug")
 	r.write("issues/open/fix-login-bug.md", r.read("issues/open/fix-login-bug.md")[4:]) // drop the first "---"
 	t.Setenv("VISUAL", fakeEditor(t, "x"))
 
-	contains(t, r.mustRun("open", "fix-login-bug").error, "cannot be read")
+	contains(t, r.mustRun("edit", "fix-login-bug").error, "cannot be read")
 }
 
-func TestOpenWithoutAnEditorFails(t *testing.T) {
+func TestEditInTheEditorWithoutAnEditorFails(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "fix-login-bug")
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", "")
 
-	res := r.run("open", "fix-login-bug")
+	res := r.run("edit", "fix-login-bug")
 
 	equal(t, 1, res.exit)
 	contains(t, res.error, "Set VISUAL or EDITOR")
+}
+
+func TestEditWithOnlyANameRejectsTheSectionFlags(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+	t.Setenv("VISUAL", fakeEditor(t, "x"))
+
+	res := r.run("edit", "fix-login-bug", "--append")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "--append needs <section> and <text>")
+	isTrue(t, !strings.Contains(r.read("issues/open/fix-login-bug.md"), "\nx\n"), "the editor does not run")
+}
+
+func TestEditWithTwoArgumentsIsAnError(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+
+	res := r.run("edit", "fix-login-bug", "summary")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "Give <name> to open the issue in your editor, or <name> <section> <text>")
 }

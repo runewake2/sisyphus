@@ -85,8 +85,8 @@ in the repo.
 
 [[sisyphus-start]], [[sisyphus-close]], and [[sisyphus-abandon]] are short forms of `update`, so
 they have no tools of their own: use `sisyphus_update` with `state` `in-progress` or `closed`,
-`resolution`, and `message`. [[sisyphus-open]] and [[sisyphus-completion]] are for people at a
-terminal, and have no tools.
+`resolution`, and `message`. `sisyphus_edit` always needs `section` and `text`: `edit` with only a
+name opens an editor, which is for people at a terminal, as is [[sisyphus-completion]].
 
 Each tool's arguments mirror the command's arguments and flags, in camelCase (for example
 `dependsOn`, `deferredFrom`, `blockingIssue`). A list, such as `tags` or `dependsOn`, is one
