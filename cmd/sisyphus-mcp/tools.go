@@ -175,6 +175,7 @@ type updateArgs struct {
 	Priority   string            `json:"priority,omitempty" jsonschema:"Change the priority: critical, high, medium, or low."`
 	Effort     string            `json:"effort,omitempty" jsonschema:"Change the effort: small, medium, large, or x-large."`
 	Tags       string            `json:"tags,omitempty" jsonschema:"Replace the tags, comma-separated, for example bug,scheduler. Built-in: bug, feature; any other tag works too."`
+	Reopen     bool              `json:"reopen,omitempty" jsonschema:"Reopen an issue whose close was a mistake: with state open or in-progress, move a closed issue back. Only for a mistake; for more work after a real close, create a new issue."`
 	AddTags    string            `json:"addTags,omitempty" jsonschema:"Add tags, comma-separated, and keep the others. Cannot be used with tags."`
 	RemoveTags string            `json:"removeTags,omitempty" jsonschema:"Remove tags, comma-separated, and keep the others. Cannot be used with tags."`
 	Title      string            `json:"title,omitempty" jsonschema:"Change the title. sisyphus changes the title field and the first # heading of the body."`
@@ -191,6 +192,7 @@ func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*m
 	args = appendFlag(args, "--priority", in.Priority)
 	args = appendFlag(args, "--effort", in.Effort)
 	args = appendFlag(args, "--tags", in.Tags)
+	args = appendBoolFlag(args, "--reopen", in.Reopen)
 	args = appendFlag(args, "--add-tags", in.AddTags)
 	args = appendFlag(args, "--remove-tags", in.RemoveTags)
 	args = appendFlag(args, "--title", in.Title)

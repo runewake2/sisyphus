@@ -303,7 +303,7 @@ func TestUpdateRefusesToReopenAClosedIssue(t *testing.T) {
 			res := r.run("update", updateTarget, state)
 
 			equal(t, 1, res.exit)
-			contains(t, res.error, "Do not reopen a closed issue")
+			contains(t, res.error, "a closed issue stays closed")
 			contains(t, res.error, "[["+updateTarget+"]]")
 			isTrue(t, r.exists("issues/closed/"+updateTarget+".md"), "the issue did not move")
 		})
@@ -514,4 +514,40 @@ func TestMetadataKeepsValuesWithCommasColonsAndQuotes(t *testing.T) {
 	equal(t, `say "hi", then go`, view.Metadata["quote"])
 	equal(t, "http://x:8080/a", view.Metadata["url"])
 	equal(t, "abc", view.Metadata["session"])
+}
+
+func TestUpdateReopenMovesAClosedIssueBack(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+	r.mustRun("update", "fix-login-bug", "closed", "--resolution", "abandoned")
+
+	r.mustRun("update", "fix-login-bug", "open", "--reopen")
+
+	doc := r.frontmatter("issues/open/fix-login-bug.md")
+	equal(t, "open", doc.get("state"))
+	equal(t, "", doc.get("resolution"))
+	equal(t, "", doc.get("closed"))
+	notes, _ := sectionIn(doc.body, "Notes")
+	contains(t, strings.Join(notes, "\n"), "reopened with sisyphus update --reopen, because the close (resolution: abandoned, closed: "+today()+") was a mistake")
+}
+
+func TestUpdateErrorForAClosedIssueMentionsReopen(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+	r.mustRun("update", "fix-login-bug", "closed")
+
+	res := r.run("update", "fix-login-bug", "in-progress")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "sisyphus update fix-login-bug in-progress --reopen")
+}
+
+func TestUpdateReopenFailsForAnIssueThatIsNotClosed(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+
+	res := r.run("update", "fix-login-bug", "in-progress", "--reopen")
+
+	equal(t, 1, res.exit)
+	contains(t, res.error, "Issue 'fix-login-bug' is open")
 }

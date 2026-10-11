@@ -253,6 +253,7 @@ type updateOptions struct {
 	bookmark, owner, approver, workspace *string
 	priority, effort, tags, title        *string
 	addTags, removeTags                  string
+	reopen                               bool
 	metadata                             map[string]string
 }
 
@@ -266,8 +267,15 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	if state == "" {
 		state = current.state
 	}
-	if current.state == "closed" && state != "closed" {
-		return "", fmt.Errorf("Issue '%s' is closed. Do not reopen a closed issue. Create a new issue and link to [[%s]].", name, name)
+	if o.reopen && (current.state != "closed" || state == "closed") {
+		return "", fmt.Errorf("--reopen moves a closed issue back to open or in-progress. Issue '%s' is %s.", name, current.state)
+	}
+	if current.state == "closed" && state != "closed" && !o.reopen {
+		return "", fmt.Errorf("Issue '%s' is closed, and a closed issue stays closed. For more work, create a new issue and link to [[%s]]. If the close was a mistake, reopen it with: sisyphus update %s %s --reopen", name, name, name, state)
+	}
+	if o.reopen {
+		note := fmt.Sprintf("%s: reopened with sisyphus update --reopen, because the close (resolution: %s, closed: %s) was a mistake.", today(), doc.get("resolution"), doc.get("closed"))
+		appendToSection(doc, "Notes", note)
 	}
 	resolution := resolveResolution(state, o.resolution)
 	if err := checkResolution(state, resolution, "Set --resolution only when the new state is closed."); err != nil {
@@ -458,6 +466,20 @@ func editSection(root, reference, heading, text string, appendText bool) (string
 		return "", err
 	}
 	return relative(root, issue.path), nil
+}
+
+// appendToSection adds text at the end of the section named heading, after a blank line, or replaces
+// the section when it holds only the template placeholder. A body without the section does not change.
+func appendToSection(doc *document, heading, text string) {
+	current, ok := sectionIn(doc.body, heading)
+	if !ok {
+		return
+	}
+	lines := []string{text}
+	if !isPlaceholder(current) {
+		lines = slices.Concat(trimBlankLines(current), []string{""}, lines)
+	}
+	doc.body, _ = replaceSection(doc.body, heading, lines)
 }
 
 // sectionNames returns the headings of the sections that editSection can change: every heading below the title.

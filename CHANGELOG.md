@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.57]] - 2026-10-11
+- Add `sisyphus update --reopen` to reopen an issue whose close was a mistake.
+
 ## [[0.0.56]] - 2026-10-11
 - Remove the empty subdirectories that a move of an issue leaves behind.
 

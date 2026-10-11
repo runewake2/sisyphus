@@ -210,7 +210,7 @@ sisyphus itself must not know about any particular repo or issue, including this
 5. **Abandon** an issue by moving it to `issues/closed/` with `resolution: abandoned`, and tell why in `Resolution`.
 6. **Stop** work without closing by moving the issue back to `issues/open/`, and record what remains in `Notes`.
 
-Do not reopen a closed issue. Create a new issue that links to it. Split a large issue into sub-issues with `parent`, and close the parent when all of its sub-issues are closed.
+Do not reopen a closed issue. Create a new issue that links to it. Only an issue whose close was a mistake, for example the wrong issue, can be reopened, with `sisyphus update <issue-name> open --reopen`. Split a large issue into sub-issues with `parent`, and close the parent when all of its sub-issues are closed.
 
 ### External trackers
 

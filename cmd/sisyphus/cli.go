@@ -127,6 +127,7 @@ func newCommand(findRoot func() (string, error)) *cobra.Command {
 
 func updateCommand(findRoot func() (string, error)) *cobra.Command {
 	var resolution, bookmark, owner, approver, workspace, priority, effort, tags, title, addTags, removeTags string
+	var reopen bool
 	var metadata map[string]string
 	cmd := &cobra.Command{
 		Use:   "update <name> [<state>]",
@@ -162,6 +163,7 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 					title:      optional(cmd, "title", title),
 					addTags:    addTags,
 					removeTags: removeTags,
+					reopen:     reopen,
 					metadata:   metadata,
 				}, warnings)
 			})
@@ -177,6 +179,7 @@ func updateCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&effort, "effort", "", "Change the effort: "+strings.Join(efforts, ", ")+".")
 	flags.StringVarP(&title, "title", "t", "", "Change the title, in the title field and in the first # heading of the body.")
 	flags.StringVar(&tags, "tags", "", `Replace the tags, comma-separated, for example "bug,scheduler". Built-in: `+strings.Join(builtinTags, ", ")+`; any other tag works too.`)
+	flags.BoolVar(&reopen, "reopen", false, "Reopen an issue whose close was a mistake: move a closed issue back to open or in-progress, clear its resolution and closed date, and note it in Notes. For work that needs more after a real close, create a new issue instead.")
 	flags.StringVar(&addTags, "add-tags", "", `Add tags, comma-separated, and keep the others, for example "bug".`)
 	flags.StringVar(&removeTags, "remove-tags", "", `Remove tags, comma-separated, and keep the others. A tag that is not there is not an error.`)
 	flags.StringToStringVar(&metadata, "metadata", nil, `Arbitrary key=value notes to add or update, for example "session-id=abc123". Repeatable, or comma-separated. Never cleared automatically.`)
