@@ -87,10 +87,16 @@ type candidateSet struct {
 	suffix map[string][]int
 	// byRelative maps a path from the root to the index of its candidate.
 	byRelative map[string]int
+	// lookups counts the calls of matchTarget. The maps exact and suffix are built only after
+	// scanLookups calls: for a few links, one scan of the list costs less than building them.
+	lookups int
 }
 
+// scanLookups is the number of link lookups that scan the candidate list before the maps are built.
+const scanLookups = 64
+
 func repoCandidates(root string) *candidateSet {
-	set := &candidateSet{exact: map[string][]int{}, suffix: map[string][]int{}, byRelative: map[string]int{}}
+	set := &candidateSet{byRelative: map[string]int{}}
 	for _, file := range repoFiles(root) {
 		rel := relative(root, file)
 		keys := []string{rel}
@@ -102,6 +108,14 @@ func repoCandidates(root string) *candidateSet {
 	slices.SortFunc(set.list, func(a, b candidate) int { return strings.Compare(a.relative, b.relative) })
 	for i, c := range set.list {
 		set.byRelative[c.relative] = i
+	}
+	return set
+}
+
+// buildMaps fills exact and suffix, for a command that looks up many links.
+func (set *candidateSet) buildMaps() {
+	set.exact, set.suffix = map[string][]int{}, map[string][]int{}
+	for i, c := range set.list {
 		for _, key := range c.keys {
 			lower := strings.ToLower(key)
 			set.exact[lower] = appendIndex(set.exact[lower], i)
@@ -112,7 +126,6 @@ func repoCandidates(root string) *candidateSet {
 			}
 		}
 	}
-	return set
 }
 
 // appendIndex appends i to indexes unless it is already the last one: the indexes of one candidate are
@@ -122,6 +135,21 @@ func appendIndex(indexes []int, i int) []int {
 		return indexes
 	}
 	return append(indexes, i)
+}
+
+// scan finds the indexes of the candidates that target matches exactly and at the end of a path, with
+// one pass over the list, for a command that looks up only a few links.
+func (set *candidateSet) scan(target string) (exact, partial []int) {
+	suffix := "/" + target
+	for i, c := range set.list {
+		if slices.ContainsFunc(c.keys, func(key string) bool { return strings.EqualFold(key, target) }) {
+			exact = append(exact, i)
+		}
+		if slices.ContainsFunc(c.keys, func(key string) bool { return hasSuffixFold(key, suffix) }) {
+			partial = append(partial, i)
+		}
+	}
+	return exact, partial
 }
 
 // pick returns the candidates at indexes, in index order (the sorted order of paths).
@@ -141,7 +169,16 @@ func matchTarget(set *candidateSet, target string, all bool) []candidate {
 		return nil
 	}
 	lower := strings.ToLower(target)
-	exact, partial := set.exact[lower], set.suffix[lower]
+	set.lookups++
+	if set.exact == nil && set.lookups > scanLookups {
+		set.buildMaps()
+	}
+	var exact, partial []int
+	if set.exact != nil {
+		exact, partial = set.exact[lower], set.suffix[lower]
+	} else {
+		exact, partial = set.scan(target)
+	}
 	if all {
 		merged := slices.Concat(exact, partial)
 		slices.Sort(merged)

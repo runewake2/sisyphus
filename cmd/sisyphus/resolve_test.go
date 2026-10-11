@@ -125,3 +125,27 @@ func TestResolveAllMixesExactAndSuffixMatchesInPathOrder(t *testing.T) {
 	equalSlices(t, []string{"notes.md"}, r.mustRun("resolve", "[[notes]]").lines())
 	equalSlices(t, []string{"b/c/NOTES.md"}, r.mustRun("resolve", "[[C/notes]]").lines())
 }
+
+func TestLinkLookupGivesTheSameResultWithAndWithoutMaps(t *testing.T) {
+	r := newTestRepo(t)
+	r.write("notes.md", "# Root\n")
+	r.write("a/notes.md", "# A\n")
+	r.write("b/c/NOTES.md", "# C\n")
+	r.write("b/data.yaml", "x: 1\n")
+	scanned, mapped := repoCandidates(r.root), repoCandidates(r.root)
+	scanned.lookups = -1 << 30 // keep the list scan for every lookup of this test
+	mapped.buildMaps()
+
+	for _, target := range []string{"notes", "NOTES", "notes.md", "a/notes", "c/notes", "B/C/notes.md", "data.yaml",
+		"b/data.yaml", "missing", "/notes", "design/widget-scheduler", "widget-scheduler", "issues/TEMPLATE"} {
+		for _, all := range []bool{false, true} {
+			want := matchTarget(scanned, target, all)
+			got := matchTarget(mapped, target, all)
+			equal(t, len(want), len(got))
+			for i := range min(len(want), len(got)) {
+				equal(t, want[i].relative, got[i].relative)
+			}
+		}
+	}
+	isTrue(t, scanned.exact == nil, "a few lookups do not build the maps")
+}

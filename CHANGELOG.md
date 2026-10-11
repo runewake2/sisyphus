@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.65]] - 2026-10-11
+- Build the link maps only when a command looks up many links, so that `resolve` and `links` are as fast as before 0.0.58.
+
 ## [[0.0.64]] - 2026-10-11
 - Find an issue by its full name without reading every state directory.
 
