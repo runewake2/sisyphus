@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.47]] - 2026-10-11
+- Read issue files that start with a UTF-8 byte order mark, and keep the mark.
+
 ## [[0.0.46]] - 2026-10-11
 - Read metadata values with commas correctly, so that a later metadata change does not corrupt them.
 

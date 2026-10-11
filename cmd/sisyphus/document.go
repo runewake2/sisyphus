@@ -12,15 +12,21 @@ import (
 )
 
 // document is a Markdown file with YAML frontmatter. Frontmatter is edited line by line, so that inline comments stay.
+// bom is true for a file that starts with a UTF-8 byte order mark; render writes it back.
 type document struct {
 	front []string
 	body  []string
+	bom   bool
 }
+
+// utf8BOM is the UTF-8 byte order mark that some editors write at the start of a file.
+const utf8BOM = "\ufeff"
 
 var fieldPattern = regexp.MustCompile(`^([A-Za-z_-]+):\s*("(?:[^"\\]|\\.)*"|'[^']*'|[^#]*?)\s*(#.*)?$`)
 
 func parseDocument(content string) (*document, error) {
-	lines := splitLines(content)
+	bom := strings.HasPrefix(content, utf8BOM)
+	lines := splitLines(strings.TrimPrefix(content, utf8BOM))
 	if len(lines) == 0 || lines[0] != "---" {
 		return nil, errors.New("The file does not start with YAML frontmatter ('---').")
 	}
@@ -29,7 +35,7 @@ func parseDocument(content string) (*document, error) {
 		return nil, errors.New("The YAML frontmatter has no closing '---'.")
 	}
 	// The capacity limit makes an append to front copy, so it cannot overwrite body.
-	return &document{front: lines[1:end:end], body: lines[end+1:]}, nil
+	return &document{front: lines[1:end:end], body: lines[end+1:], bom: bom}, nil
 }
 
 func loadDocument(path string) (*document, error) {
@@ -43,8 +49,9 @@ func loadDocument(path string) (*document, error) {
 	return parseDocument(string(content))
 }
 
+// splitLines splits content into lines, without a leading byte order mark.
 func splitLines(content string) []string {
-	lines := strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n")
+	lines := strings.Split(strings.ReplaceAll(strings.TrimPrefix(content, utf8BOM), "\r\n", "\n"), "\n")
 	if len(lines) > 0 && lines[len(lines)-1] == "" {
 		lines = lines[:len(lines)-1]
 	}
@@ -64,7 +71,11 @@ func (d *document) render() string {
 	all := append([]string{"---"}, d.front...)
 	all = append(all, "---")
 	all = append(all, d.body...)
-	return strings.Join(all, "\n") + "\n"
+	text := strings.Join(all, "\n") + "\n"
+	if d.bom {
+		text = utf8BOM + text
+	}
+	return text
 }
 
 func (d *document) save(path string) error {
