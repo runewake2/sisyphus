@@ -19,7 +19,7 @@ func TestUpdateStartsAnIssue(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r)
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
@@ -153,7 +153,7 @@ func TestUpdateMovesTheIssueWithGitMvInAGitRepo(t *testing.T) {
 	r.git("add", "-A")
 	r.git("-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "initial")
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
@@ -182,7 +182,7 @@ func TestUpdateMovesAnIssueThatGitDoesNotTrackInAGitRepo(t *testing.T) {
 	r.git("-c", "user.name=test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "initial")
 	createUpdateTarget(r)
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
@@ -194,7 +194,7 @@ func TestUpdateMovesTheIssueWithPlainRenameWithoutGit(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r)
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	equal(t, 0, res.exit)
 	isTrue(t, !r.exists("issues/open/"+updateTarget+".md"), "the open file is gone")
@@ -219,7 +219,7 @@ func TestUpdateKeepsPriorityEffortAndTagsWhenNotGiven(t *testing.T) {
 	r := newTestRepo(t)
 	createUpdateTarget(r, "--priority", "high", "--effort", "large", "--tags", "plan")
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	equal(t, 0, res.exit)
 	doc := r.frontmatter("issues/in-progress/" + updateTarget + ".md")
@@ -325,7 +325,7 @@ func TestUpdateReportsAnIssueInMoreThanOneDirectory(t *testing.T) {
 	createUpdateTarget(r)
 	r.write("issues/closed/"+updateTarget+".md", r.read("issues/open/"+updateTarget+".md"))
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	equal(t, 1, res.exit)
 	contains(t, res.error, "more than one state directory")
@@ -337,7 +337,7 @@ func TestUpdateCorrectsAStateFieldThatDoesNotMatchTheDirectory(t *testing.T) {
 	path := "issues/open/" + updateTarget + ".md"
 	r.write(path, strings.Replace(r.read(path), "state: open ", "state: closed ", 1))
 
-	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work")
+	res := r.run("update", updateTarget, "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	equal(t, 0, res.exit)
 	contains(t, res.error, "its state field was 'closed'")
@@ -397,7 +397,7 @@ func TestUpdateToInProgressWarnsAboutOpenDependencies(t *testing.T) {
 	r.mustRun("new", "second-issue-test", "--depends-on", "first-issue-test")
 	r.mustRun("depends-on", "second-issue-test", "done-issue-test")
 
-	res := r.mustRun("update", "second-issue-test", "in-progress", "--bookmark", "ai/work")
+	res := r.mustRun("update", "second-issue-test", "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	contains(t, res.error, "Issue 'second-issue-test' is in progress, but it depends on issues that are not closed: first-issue-test.")
 	isTrue(t, !strings.Contains(res.error, "done-issue-test"), "a closed dependency is not named")
@@ -409,7 +409,7 @@ func TestUpdateToInProgressGivesNoDependencyWarningWhenEveryDependencyIsClosed(t
 	r.mustRun("new", "done-issue-test", "--state", "closed")
 	r.mustRun("new", "second-issue-test", "--depends-on", "done-issue-test")
 
-	res := r.mustRun("update", "second-issue-test", "in-progress", "--bookmark", "ai/work")
+	res := r.mustRun("update", "second-issue-test", "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	equal(t, "", res.error)
 }
@@ -557,8 +557,8 @@ func TestNoBookmarkWarningInARepoWithoutJJ(t *testing.T) {
 	r := newTestRepo(t)
 	r.mustRun("new", "fix-login-bug")
 
-	equal(t, "", r.mustRun("update", "fix-login-bug", "in-progress").error)
-	equal(t, "", r.mustRun("new", "other-issue-test", "--state", "in-progress").error)
+	equal(t, "", r.mustRun("update", "fix-login-bug", "in-progress", "--owner", "alice").error)
+	equal(t, "", r.mustRun("new", "other-issue-test", "--state", "in-progress", "--owner", "alice").error)
 }
 
 func TestCommandsWorkWithATemplateWithoutTheJJFields(t *testing.T) {

@@ -20,7 +20,7 @@ resolution and its closed date. The warnings about closing an issue come only wh
 |---|---|
 | `-r`, `--resolution` | `completed` or `abandoned`. Only when the new state is closed; defaults to `completed`. |
 | `-b`, `--bookmark` | The jj bookmark of the work. Set it when work starts. |
-| `--owner` | The person or agent working on the issue. |
+| `--owner` | The person or agent working on the issue. When an issue starts (the state changes to `in-progress`), the default is the value of `SISYPHUS_OWNER`. |
 | `--approver` | The person or agent who accepts the issue when it closes. |
 | `--workspace` | A jj workspace where work on the issue happens. Added to `workspaces`. |
 | `--priority` | A new priority: `critical`, `high`, `medium`, or `low`. |

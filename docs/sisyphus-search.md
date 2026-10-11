@@ -11,7 +11,7 @@ sisyphus search [<query>] [flags]
 ## Flags
 
 `search` takes every filter of [[sisyphus-list]] (`--state`, `--priority`, `--tags`, `--owner`,
-`--parent`, `--blocked`, `--ready`), with the same defaults and meaning, plus:
+`--mine`, `--parent`, `--blocked`, `--ready`), with the same defaults and meaning, plus:
 
 | Flag | Meaning |
 |---|---|

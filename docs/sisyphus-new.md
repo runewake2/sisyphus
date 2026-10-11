@@ -27,7 +27,7 @@ error that gives the command to use instead.
 | `-e`, `--effort` | `medium` | `small`, `medium`, `large`, or `x-large`. |
 | `--tags` | none | Comma-separated tags. Built-in: `bug`, `feature`; any other tag works too. |
 | `-b`, `--bookmark` | none | The jj bookmark of the work. |
-| `--owner` | none | The person or agent working on the issue. |
+| `--owner` | none, or `SISYPHUS_OWNER` with `--state in-progress` | The person or agent working on the issue. |
 | `--approver` | none | The person or agent who accepts the issue when it closes. |
 | `--workspace` | none | A jj workspace where work on the issue happens. |
 | `--parent` | none | The parent issue, if this is a sub-issue. See [[sisyphus-parent]]. |

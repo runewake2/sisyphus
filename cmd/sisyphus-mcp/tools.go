@@ -129,7 +129,7 @@ type newArgs struct {
 	Bookmark     string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark or git branch of the work on the issue."`
 	DeferredFrom string            `json:"deferredFrom,omitempty" jsonschema:"An issue name, wikilink, or bookmark that deferred this work."`
 	Parent       string            `json:"parent,omitempty" jsonschema:"The parent issue, if this is a sub-issue. Must already exist."`
-	Owner        string            `json:"owner,omitempty" jsonschema:"The person or agent working on the issue."`
+	Owner        string            `json:"owner,omitempty" jsonschema:"The person or agent working on the issue. With state in-progress, defaults to SISYPHUS_OWNER in the environment of the server."`
 	Approver     string            `json:"approver,omitempty" jsonschema:"The person or agent who accepts the issue when it closes."`
 	Workspace    string            `json:"workspace,omitempty" jsonschema:"The jj workspace or git worktree where local work on the issue happens."`
 	Remote       string            `json:"remote,omitempty" jsonschema:"A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo."`
@@ -172,7 +172,7 @@ type updateArgs struct {
 	State      string            `json:"state,omitempty" jsonschema:"The new state: open, in-progress, or closed. Leave it out to keep the current state and change only the other fields."`
 	Resolution string            `json:"resolution,omitempty" jsonschema:"completed or abandoned. Only valid when state is closed; defaults to completed."`
 	Bookmark   string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark or git branch of the work. Set it when work starts."`
-	Owner      string            `json:"owner,omitempty" jsonschema:"The person or agent working on the issue."`
+	Owner      string            `json:"owner,omitempty" jsonschema:"The person or agent working on the issue. When the issue starts, defaults to SISYPHUS_OWNER in the environment of the server."`
 	Approver   string            `json:"approver,omitempty" jsonschema:"The person or agent who accepts the issue when it closes."`
 	Workspace  string            `json:"workspace,omitempty" jsonschema:"The jj workspace or git worktree where local work on the issue happens. Appended to the issue's workspace history."`
 	Priority   string            `json:"priority,omitempty" jsonschema:"Change the priority: critical, high, medium, or low."`
@@ -235,6 +235,7 @@ type listArgs struct {
 	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
 	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
 	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
+	Mine     bool   `json:"mine,omitempty" jsonschema:"Only issues whose owner is the value of SISYPHUS_OWNER in the environment of the server. Cannot be used with owner."`
 	Parent   string `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
 	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
 	Ready    bool   `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
@@ -247,6 +248,7 @@ func listHandler(_ context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp.C
 	args = appendFlag(args, "--priority", in.Priority)
 	args = appendFlag(args, "--tags", in.Tags)
 	args = appendFlag(args, "--owner", in.Owner)
+	args = appendBoolFlag(args, "--mine", in.Mine)
 	args = appendFlag(args, "--parent", in.Parent)
 	args = appendBoolFlag(args, "--blocked", in.Blocked)
 	args = appendBoolFlag(args, "--ready", in.Ready)
@@ -265,6 +267,7 @@ type searchArgs struct {
 	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
 	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
 	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
+	Mine     bool   `json:"mine,omitempty" jsonschema:"Only issues whose owner is the value of SISYPHUS_OWNER in the environment of the server. Cannot be used with owner."`
 	Parent   string `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
 	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
 	Ready    bool   `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
@@ -278,6 +281,7 @@ func searchHandler(_ context.Context, _ *mcp.CallToolRequest, in searchArgs) (*m
 	args = appendFlag(args, "--priority", in.Priority)
 	args = appendFlag(args, "--tags", in.Tags)
 	args = appendFlag(args, "--owner", in.Owner)
+	args = appendBoolFlag(args, "--mine", in.Mine)
 	args = appendFlag(args, "--parent", in.Parent)
 	args = appendBoolFlag(args, "--blocked", in.Blocked)
 	args = appendBoolFlag(args, "--ready", in.Ready)

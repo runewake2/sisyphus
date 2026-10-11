@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.86]] - 2026-10-11
+- Take the owner of an issue that starts from SISYPHUS_OWNER, and add list --mine and search --mine.
+
 ## [[0.0.85]] - 2026-10-11
 - Name git next to jj in the bookmark and workspace arguments of the MCP tools.
 

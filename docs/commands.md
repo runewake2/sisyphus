@@ -73,6 +73,13 @@ When there is no repo root, a command fails with:
 Error: Cannot find the repo root. Run sisyphus in a directory below the one that contains issues/TEMPLATE.md. To set up issue tracking here, run: sisyphus init
 ```
 
+## Environment variables
+
+| Variable | Use |
+|---|---|
+| `SISYPHUS_OWNER` | The owner of an issue that starts, when `--owner` is not given: [[sisyphus-start]], `update <name> in-progress`, and `new --state in-progress`. `list --mine` and `search --mine` filter on it. An agent harness can set it once for each agent, so that every claim has an owner. |
+| `VISUAL`, `EDITOR` | The editor of `sisyphus edit <name>`. |
+
 ## Invalid values
 
 A `state`, `priority`, `effort`, or `resolution` that is not valid is an error that lists the valid

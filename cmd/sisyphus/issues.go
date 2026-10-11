@@ -34,7 +34,20 @@ const (
 	openWorkFieldsError = "An open issue has no owner and no bookmark: nobody works on it yet. Leave out --owner and --bookmark, or give the state in-progress."
 	stateDirectoryList  = "issues/open, issues/in-progress, or issues/closed"
 	noBookmarkWarning   = "The issue is in-progress but has no bookmark. Set it with --bookmark."
+	// ownerVariable names the environment variable that gives the owner of an issue that starts, when
+	// --owner is not given. An agent harness sets it once for each agent.
+	ownerVariable = "SISYPHUS_OWNER"
 )
+
+// environmentOwner returns the value of SISYPHUS_OWNER, or "" when it is not set.
+func environmentOwner() string {
+	return strings.TrimSpace(os.Getenv(ownerVariable))
+}
+
+// noOwnerWarning is the warning for an issue that starts with no owner.
+func noOwnerWarning(name string) string {
+	return fmt.Sprintf("Issue '%s' is in progress with no owner, so nobody can tell who works on it. Give --owner, or set %s.", name, ownerVariable)
+}
 
 // newOptions holds the values of "sisyphus new". An empty resolution and a nil pointer mean that the option was not given.
 type newOptions struct {
@@ -140,6 +153,11 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	}
 	if err := checkOpenWorkFields(o.state, o.owner, o.bookmark); err != nil {
 		return "", err
+	}
+	if o.state == "in-progress" && o.owner == nil {
+		if owner := environmentOwner(); owner != "" {
+			o.owner = &owner
+		}
 	}
 
 	if existing := x.exactOf(o.name); len(existing) > 0 {
@@ -252,6 +270,9 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	if o.state == "in-progress" {
 		warnOpenDependencies(x, o.name, doc, warnings)
 	}
+	if o.state == "in-progress" && doc.get("owner") == "" {
+		warn(warnings, noOwnerWarning(o.name))
+	}
 	return relative(root, destination), nil
 }
 
@@ -299,6 +320,12 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	}
 	if err := checkOpenWorkFields(state, o.owner, o.bookmark); err != nil {
 		return "", err
+	}
+	starts := state == "in-progress" && current.state != "in-progress"
+	if starts && o.owner == nil {
+		if owner := environmentOwner(); owner != "" {
+			o.owner = &owner
+		}
 	}
 	if recorded := doc.get("state"); recorded != current.state {
 		warn(warnings, fmt.Sprintf("The issue was in issues/%s/ but its state field was '%s'. The update corrects both.", current.state, recorded))
@@ -377,6 +404,9 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	}
 	if state == "in-progress" {
 		warnOpenDependencies(x, name, doc, warnings)
+	}
+	if starts && doc.get("owner") == "" {
+		warn(warnings, noOwnerWarning(name))
 	}
 	if o.message != nil {
 		if state != "closed" {

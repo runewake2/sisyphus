@@ -35,6 +35,7 @@ type testRepo struct {
 func newTestRepo(t *testing.T) *testRepo {
 	t.Helper()
 	r := &testRepo{t: t, root: t.TempDir()}
+	t.Setenv(ownerVariable, "") // the owner of the person who runs the tests must not change them
 	r.write("issues/TEMPLATE.md", kitTemplate(t))
 	r.write("README.md", "# Readme\n")
 	r.write("changelog/0.0.0.md", "# 0.0.0\n")
@@ -135,6 +136,13 @@ func contains(t *testing.T, s, substring string) {
 	t.Helper()
 	if !strings.Contains(s, substring) {
 		t.Errorf("want %q to contain %q", s, substring)
+	}
+}
+
+func notContains(t *testing.T, s, substring string) {
+	t.Helper()
+	if strings.Contains(s, substring) {
+		t.Errorf("want %q not to contain %q", s, substring)
 	}
 }
 

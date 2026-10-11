@@ -14,9 +14,9 @@ sisyphus start <name> [flags]
 
 | Flag | Meaning |
 |---|---|
-| `--owner` | The person or agent working on the issue. |
-| `-b`, `--bookmark` | The jj bookmark of the work. |
-| `--workspace` | The jj workspace where the work happens. Added to the issue's workspace history. |
+| `--owner` | The person or agent working on the issue. Default: the value of `SISYPHUS_OWNER`. |
+| `-b`, `--bookmark` | The jj bookmark or git branch of the work. |
+| `--workspace` | The jj workspace or git worktree where the work happens. Added to the issue's workspace history. |
 | `--json` | Print the changed issue as JSON, with its path and the warnings. |
 
 ## Behavior
@@ -24,6 +24,9 @@ sisyphus start <name> [flags]
 The same as [[sisyphus-update]] with the state `in-progress`, with the same warnings: for example
 when an issue that this issue depends on is not closed. A closed issue cannot start; see
 `update --reopen` for a close that was a mistake.
+
+Without `--owner`, the owner is the value of the `SISYPHUS_OWNER` environment variable. When neither
+gives an owner, `start` warns: nobody can tell who works on the issue.
 
 ## Output
 

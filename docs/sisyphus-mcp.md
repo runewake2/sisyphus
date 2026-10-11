@@ -54,6 +54,10 @@ directory of `sisyphus` to the `PATH` of the server:
 }
 ```
 
+Set `SISYPHUS_OWNER` in the `env` of the server to give each agent an owner name: an issue that the
+agent starts gets it as its owner when the call has no `owner`, and `mine` of `sisyphus_list` and
+`sisyphus_search` filters on it.
+
 A guide to running sisyphus with a local Ollama model is planned: [[ollama-task-manager-guide]].
 
 ### The repo

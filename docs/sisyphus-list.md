@@ -16,6 +16,7 @@ sisyphus list [flags]
 | `-p`, `--priority` | Comma-separated priorities to include. |
 | `--tags` | Comma-separated tags. An issue matches if it has any of them. |
 | `--owner` | Only issues with exactly this owner. |
+| `--mine` | Only issues whose owner is the value of `SISYPHUS_OWNER`. Not with `--owner`. An error when `SISYPHUS_OWNER` is not set. |
 | `--parent` | Only direct sub-issues of this issue (any form of its name). A name that gives no issue is an error. |
 | `--blocked` | Only issues that depend on an issue that is not closed yet. |
 | `--ready` | Only issues that can start now: not closed, with no dependency and no sub-issue that is not closed. Not with `--blocked`. |

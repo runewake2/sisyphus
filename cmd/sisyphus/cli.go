@@ -514,7 +514,7 @@ const readyHelp = "Only issues that can start now: not closed, with no depends-o
 
 func listCommand(findRoot func() (string, error)) *cobra.Command {
 	var state, priority, tags, owner, parent string
-	var asJSON, blocked, ready, wide bool
+	var asJSON, blocked, ready, wide, mine bool
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List and filter issues.",
@@ -530,6 +530,10 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 				validateEach("state", stateValues, states),
 				validateEach("priority", priorityValues, priorities),
 			); err != nil {
+				return err
+			}
+			owner, err := ownerFilter(owner, mine)
+			if err != nil {
 				return err
 			}
 			root, err := findRoot()
@@ -573,17 +577,19 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&tags, "tags", "", "Comma-separated tags, for example \"bug\"; matches an issue with any of them. Built-in: "+strings.Join(builtinTags, ", ")+".")
 	flags.StringVar(&owner, "owner", "", "Only issues with exactly this owner.")
 	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
+	flags.BoolVar(&mine, "mine", false, "Only issues whose owner is the value of "+ownerVariable+".")
 	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
 	flags.BoolVar(&ready, "ready", false, readyHelp)
 	flags.BoolVar(&wide, "wide", false, "Do not shorten titles to fit the terminal.")
 	flags.BoolVar(&asJSON, "json", false, "Print JSON instead of a table.")
 	cmd.MarkFlagsMutuallyExclusive("blocked", "ready")
+	cmd.MarkFlagsMutuallyExclusive("owner", "mine")
 	return cmd
 }
 
 func searchCommand(findRoot func() (string, error)) *cobra.Command {
 	var state, priority, tags, owner, parent, section string
-	var asJSON, blocked, ready bool
+	var asJSON, blocked, ready, mine bool
 	cmd := &cobra.Command{
 		Use:   "search [<query>]",
 		Short: "Search issues by frontmatter filters and content.",
@@ -604,6 +610,10 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 				validateEach("state", stateValues, states),
 				validateEach("priority", priorityValues, priorities),
 			); err != nil {
+				return err
+			}
+			owner, err := ownerFilter(owner, mine)
+			if err != nil {
 				return err
 			}
 			root, err := findRoot()
@@ -649,12 +659,26 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&tags, "tags", "", "Comma-separated tags, for example \"bug\"; matches an issue with any of them. Built-in: "+strings.Join(builtinTags, ", ")+".")
 	flags.StringVar(&owner, "owner", "", "Only issues with exactly this owner.")
 	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
+	flags.BoolVar(&mine, "mine", false, "Only issues whose owner is the value of "+ownerVariable+".")
 	flags.StringVar(&section, "section", "", `Restrict the query and the returned content to one section, for example "summary".`)
 	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
 	flags.BoolVar(&ready, "ready", false, readyHelp)
 	flags.BoolVar(&asJSON, "json", false, "Print JSON instead of readable text.")
 	cmd.MarkFlagsMutuallyExclusive("blocked", "ready")
+	cmd.MarkFlagsMutuallyExclusive("owner", "mine")
 	return cmd
+}
+
+// ownerFilter returns the owner that list and search filter on: owner, or with mine the value of
+// SISYPHUS_OWNER.
+func ownerFilter(owner string, mine bool) (string, error) {
+	if !mine {
+		return owner, nil
+	}
+	if owner = environmentOwner(); owner == "" {
+		return "", fmt.Errorf("--mine lists the issues of the owner in %s, but %s is not set. Set it, or use --owner.", ownerVariable, ownerVariable)
+	}
+	return owner, nil
 }
 
 func resolveCommand(findRoot func() (string, error)) *cobra.Command {

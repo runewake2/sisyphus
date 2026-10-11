@@ -214,7 +214,7 @@ func TestNewWarnsWhenAnInProgressIssueHasNoBookmark(t *testing.T) {
 func TestNewDoesNotWarnWhenAnInProgressIssueHasABookmark(t *testing.T) {
 	r := newTestRepo(t)
 
-	res := r.run("new", "started-issue-test", "--state", "in-progress", "--bookmark", "ai/work")
+	res := r.run("new", "started-issue-test", "--state", "in-progress", "--bookmark", "ai/work", "--owner", "alice")
 
 	equal(t, 0, res.exit)
 	equal(t, "", res.error)
