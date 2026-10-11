@@ -50,7 +50,7 @@ Sub-issues:
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-11, from the human: the referendum ([[referendum-voting]]) is how hephaestus coordinates many concurrent agents.
 
 ## Resolution
 

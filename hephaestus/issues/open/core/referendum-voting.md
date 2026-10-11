@@ -51,6 +51,8 @@ Requested by a human on 2026-10-11. One agent of one role judges a change only i
 
 2026-10-11, from the human: modifications occur one by one, and each is reviewed individually (R2 in [[referendum]]).
 
+2026-10-11, from the human: humans or allowed agents may call referendums (R4 in [[referendum]]). The referendum is the solution for coordinating many concurrent agents: [[agent-delegation]] and [[referendum]] now say so, and the engineer role puts its proposals to the agents of the workstreams as a referendum.
+
 ## Resolution
 
 <Complete this section when you close the issue.

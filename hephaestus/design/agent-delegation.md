@@ -127,7 +127,7 @@ human checks the report and moves `main`.
 
 ## Votes of several roles
 
-One role judges a change only in its own scope. A **referendum** lets several role agents vote on
+The referendum is how hephaestus coordinates many concurrent agents. One role judges a change only in its own scope. A **referendum** lets several role agents vote on
 one implementation. Required reviewers must all vote `yes` to pass it; non-required reviewers can
 only suggest modifications and raise concerns. A modification goes on only when every required
 reviewer accepts it, and then every reviewer votes again on the modified version. [[referendum]] describes it, and [[referendum-voting]]
@@ -144,7 +144,9 @@ Each of these is a separate issue, with its own design before the work.
 - **Engineer** ([[engineer-agent]]): takes two or more concurrent workstreams (bookmarks,
   workspaces, or epics), finds where they overlap or disagree (the same files, the same feature,
   decisions that contradict), and proposes one direction: a decision record, changes to the scope
-  of the issues, and an order. It does not merge; the merge queue does.
+  of the issues, and an order. It puts the proposal to the agents of the workstreams as a
+  referendum ([[referendum]]), when a human allows it to call one. It does not merge; the merge
+  queue does.
 - **UX researcher** ([[ux-researcher-agent]]): uses what is being built as a new person and as an
   agent would (a first session, every `--help`, the docs, the MCP tools, and small models), and
   files one issue for each problem, with what it saw. The sisyphus reviews that filed the epics

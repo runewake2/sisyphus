@@ -2,9 +2,14 @@
 
 - Date: 2026-10-11
 - Issue: [[referendum-voting]]
-- Status: Draft. R1, R2, R6, R7, and R8 are answered; R3, R4, and R5 are not.
+- Status: Draft. R1, R2, R4, R6, R7, and R8 are answered; R3 and R5 are not.
 
 ## Summary
+
+The referendum is how hephaestus coordinates many concurrent agents (from the human, 2026-10-11).
+When the work of several agents must agree, a human or an allowed agent calls a referendum, with
+the agents whose scope the work touches as its reviewers. The agents then agree, or the referendum
+fails, through one recorded procedure, not through talks between agents.
 
 A **referendum** lets a series of delegated agents vote on an implementation before it goes on.
 The agents are **reviewers** of two kinds:
@@ -40,7 +45,8 @@ implementation. A referendum is hephaestus work. sisyphus only stores the issue 
 
 ## How a referendum runs
 
-1. **Call.** A human, or an agent that may call one (R4), calls a referendum on an issue: the
+1. **Call.** A human, or an agent that a human allows to call one (R4), calls a referendum on an
+   issue: the
    question (for example "Merge `samw/ai/fix-login` as the fix of `fix-login-bug`?"), the
    implementation, the required reviewers, and the non-required reviewers. hephaestus records the
    call (see [[#Record]]).
@@ -164,7 +170,7 @@ A human answers a question with a reply such as "R2 yes", or another answer.
 | R1 | What passes a referendum? | Answered by the human on 2026-10-11: every required reviewer votes `yes`; a non-required reviewer cannot fail it. |
 | R2 | When several reviewers modify in one round, gate and apply one at a time, or combine all that do not conflict? | Answered by the human on 2026-10-11: one by one, each reviewed alone, never combined. The order is the order of the reviewers, required reviewers first. Each version then has one change that every reviewer saw. |
 | R3 | Where is the full record of a referendum: a section of the issue, a document beside the issue, or a file of hephaestus? | A document beside the issue, for example `referendums/<issue-name>.md` in the repo of the issue, linked from its Notes. The issue stays readable. |
-| R4 | Who can call a referendum, and choose its required and non-required reviewers: only a human, or also a role agent, for example the merge queue before each merge? | A human, and the roles that a human allows in their role description. A role description can propose default reviewers. |
+| R4 | Who can call a referendum, and choose its required and non-required reviewers: only a human, or also a role agent, for example the merge queue before each merge? | Answered by the human on 2026-10-11: humans, and the agents that a human allows. The allowance is in the role description of the agent, which can also propose default reviewers. |
 | R5 | What is the maximum number of rounds? | 3, then a human decides. |
 | R6 | Can a reviewer abstain? | Answered with R1: a non-required reviewer can, when nothing is in its scope. A required reviewer cannot: anything but `yes` stops the pass. |
 | R7 | When the larger vote on a modified version fails, does the referendum fail, or does it go back to the version before the edit and vote on it again? | Answered by the human on 2026-10-11: the whole referendum fails, with the reasons. It does not go back to the version before the edit. The owner of the issue can call a new referendum. |
