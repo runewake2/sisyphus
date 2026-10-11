@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -54,6 +56,22 @@ func registerTools(server *mcp.Server) {
 		Name:        "sisyphus_update",
 		Description: "Change a sisyphus issue's state (and move it between issues/open, issues/in-progress, and issues/closed), or edit its title, priority, effort, tags, owner, approver, bookmark, workspace, or metadata. Leave out state to keep it.",
 	}, updateHandler)
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "sisyphus_start",
+		Description: "Start work on a sisyphus issue: move it to issues/in-progress and claim it, with you as the owner. " +
+			"An issue that another owner or another workspace has in progress is refused; select another issue. " +
+			"A repeated start by the same owner changes nothing.",
+	}, startHandler)
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "sisyphus_close",
+		Description: "Close a sisyphus issue as completed, and move it to issues/closed. Give message: what was done. " +
+			"It fills the Resolution section.",
+	}, closeHandler("close"))
+	mcp.AddTool(server, &mcp.Tool{
+		Name: "sisyphus_abandon",
+		Description: "Close a sisyphus issue as abandoned: the work will not happen. Give message: why the work " +
+			"stopped, and what replaces it. It fills the Resolution section.",
+	}, closeHandler("abandon"))
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "sisyphus_show",
 		Description: "Show one sisyphus issue: its frontmatter fields and body.",
@@ -219,6 +237,60 @@ func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*m
 		return nil, nil, err
 	}
 	return textResult(out)
+}
+
+type startArgs struct {
+	Dir       string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Name      string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Owner     string `json:"owner,omitempty" jsonschema:"Your name as the owner of the issue. Defaults to SISYPHUS_OWNER in the environment of the server."`
+	Bookmark  string `json:"bookmark,omitempty" jsonschema:"The jj bookmark or git branch of the work."`
+	Workspace string `json:"workspace,omitempty" jsonschema:"The jj workspace or git worktree where the work happens. Appended to the issue's workspace history."`
+	Take      bool   `json:"take,omitempty" jsonschema:"Take the issue from the owner or workspace that has it in progress. Only when a human tells you that the old owner has stopped the work."`
+	JSON      bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
+}
+
+func startHandler(_ context.Context, _ *mcp.CallToolRequest, in startArgs) (*mcp.CallToolResult, any, error) {
+	args := []string{"start"}
+	args = appendBoolFlag(args, "--json", in.JSON)
+	args = appendFlag(args, "--owner", in.Owner)
+	args = appendFlag(args, "--bookmark", in.Bookmark)
+	args = appendFlag(args, "--workspace", in.Workspace)
+	args = appendBoolFlag(args, "--take", in.Take)
+	args = appendPositionals(args, in.Name)
+	out, err := runSisyphus(in.Dir, args...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return textResult(out)
+}
+
+type closeArgs struct {
+	Dir     string `json:"dir,omitempty" jsonschema:"The repo's root directory, or a directory below it. Defaults to sisyphus-mcp's own working directory."`
+	Name    string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
+	Message string `json:"message" jsonschema:"The text of the Resolution section, as Markdown. For a close: what was done. For an abandon: why the work stopped, and what replaces it."`
+	JSON    bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
+}
+
+// closeHandler returns the handler of sisyphus_close or sisyphus_abandon, which run the command of
+// the same name. Both need a message, so that the Resolution section tells what happened.
+func closeHandler(command string) func(context.Context, *mcp.CallToolRequest, closeArgs) (*mcp.CallToolResult, any, error) {
+	return func(_ context.Context, _ *mcp.CallToolRequest, in closeArgs) (*mcp.CallToolResult, any, error) {
+		if strings.TrimSpace(in.Message) == "" {
+			return nil, nil, fmt.Errorf("Give message: the text of the Resolution section. For sisyphus_%s, tell %s.", command, map[string]string{
+				"close":   "what was done",
+				"abandon": "why the work stopped, and what replaces it",
+			}[command])
+		}
+		args := []string{command}
+		args = appendBoolFlag(args, "--json", in.JSON)
+		args = appendFlag(args, "--message", in.Message)
+		args = appendPositionals(args, in.Name)
+		out, err := runSisyphus(in.Dir, args...)
+		if err != nil {
+			return nil, nil, err
+		}
+		return textResult(out)
+	}
 }
 
 type showArgs struct {

@@ -73,6 +73,9 @@ in the repo.
 |---|---|---|
 | `sisyphus_init` | [[sisyphus-init]] | text |
 | `sisyphus_new` | [[sisyphus-new]] | the path (`json: true` for the issue as JSON) |
+| `sisyphus_start` | [[sisyphus-start]] | the path (`json: true` for the issue as JSON) |
+| `sisyphus_close` | [[sisyphus-close]] | the path (`json: true` for the issue as JSON) |
+| `sisyphus_abandon` | [[sisyphus-abandon]] | the path (`json: true` for the issue as JSON) |
 | `sisyphus_update` | [[sisyphus-update]] | the path (`json: true` for the issue as JSON) |
 | `sisyphus_edit` | [[sisyphus-edit]] | the path (`json: true` for the issue as JSON) |
 | `sisyphus_show` | [[sisyphus-show]] | JSON (`text: true` for text) |
@@ -88,9 +91,8 @@ in the repo.
 | `sisyphus_links` | [[sisyphus-links]] | JSON |
 | `sisyphus_lint` | [[sisyphus-lint]] | JSON (problems are a result, not an error) |
 
-[[sisyphus-start]], [[sisyphus-close]], and [[sisyphus-abandon]] are short forms of `update`, so
-they have no tools of their own: use `sisyphus_update` with `state` `in-progress` or `closed`,
-`resolution`, and `message`. `sisyphus_edit` always needs `section` and `text`: `edit` with only a
+`sisyphus_close` and `sisyphus_abandon` need `message`, the text of the Resolution section, so that
+the issue tells what happened. `sisyphus_edit` always needs `section` and `text`: `edit` with only a
 name opens an editor, which is for people at a terminal, as is [[sisyphus-completion]].
 
 Each tool's arguments mirror the command's arguments and flags, in camelCase (for example
@@ -141,10 +143,13 @@ sisyphus_list {"ready": true}
     }
   ]
 
-sisyphus_update {"name": "fix-login-bug", "state": "in-progress", "owner": "agent"}
+sisyphus_start {"name": "fix-login-bug", "owner": "agent"}
 → issues/in-progress/fix-login-bug.md
 
-sisyphus_update {"name": "fix-login-bug", "state": "closed", "message": "Fixed: the session cache now expires."}
+sisyphus_start {"name": "fix-login-bug", "owner": "other-agent"}
+→ (isError) Error: Issue 'fix-login-bug' is in progress, owned by agent. Select another issue, or to take it from agent, add --take.
+
+sisyphus_close {"name": "fix-login-bug", "message": "Fixed: the session cache now expires."}
 → issues/closed/fix-login-bug.md
   Warning: Issue 'fix-login-bug' is closing, but these issues still depend on it: split-login-form.
 

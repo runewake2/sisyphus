@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.90]] - 2026-10-11
+- Add the MCP tools sisyphus_start, sisyphus_close, and sisyphus_abandon.
+
 ## [[0.0.89]] - 2026-10-11
 - Share claims between jj workspaces and git worktrees, and add sisyphus claims.
 

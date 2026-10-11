@@ -438,3 +438,51 @@ func TestClaimsToolListsTheClaims(t *testing.T) {
 		t.Errorf("want one claim of this workspace, got %s", out)
 	}
 }
+
+func TestLifecycleToolsStartCloseAndAbandon(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "old-login-form"})
+
+	started := callTool(t, session, "sisyphus_start", map[string]any{"dir": dir, "name": "fix-login-bug", "owner": "a1", "bookmark": "ai/fix"})
+	refused := callToolExpectingError(t, session, "sisyphus_start", map[string]any{"dir": dir, "name": "fix-login-bug", "owner": "a2"})
+	closed := callTool(t, session, "sisyphus_close", map[string]any{"dir": dir, "name": "fix-login-bug", "message": "- Fixed the redirect.", "json": true})
+	abandoned := callTool(t, session, "sisyphus_abandon", map[string]any{"dir": dir, "name": "old-login-form", "message": "Replaced by SSO."})
+
+	if started != "issues/in-progress/fix-login-bug.md" {
+		t.Errorf("start: got %q", started)
+	}
+	if !strings.Contains(refused, "owned by a1") {
+		t.Errorf("a second start: got %q", refused)
+	}
+	var issue map[string]any
+	if err := json.Unmarshal([]byte(closed), &issue); err != nil {
+		t.Fatalf("close --json: %v\n%s", err, closed)
+	}
+	if issue["state"] != "closed" || issue["resolution"] != "completed" || !strings.Contains(issue["body"].(string), "- Fixed the redirect.") {
+		t.Errorf("close: got %s", closed)
+	}
+	if abandoned != "issues/closed/old-login-form.md" {
+		t.Errorf("abandon: got %q", abandoned)
+	}
+	shown := callTool(t, session, "sisyphus_show", map[string]any{"dir": dir, "name": "old-login-form"})
+	if !strings.Contains(shown, `"resolution": "abandoned"`) {
+		t.Errorf("abandon: want resolution abandoned, got %s", shown)
+	}
+}
+
+func TestCloseToolsNeedAMessage(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+
+	for _, tool := range []string{"sisyphus_close", "sisyphus_abandon"} {
+		text := callToolExpectingError(t, session, tool, map[string]any{"dir": dir, "name": "fix-login-bug", "message": " "})
+		if !strings.Contains(text, "Give message") {
+			t.Errorf("%s: got %q", tool, text)
+		}
+	}
+}
