@@ -64,6 +64,8 @@ The path of the issue's file after the update.
 Warnings:
 
 - The issue is in-progress but has no bookmark.
+- The issue is in-progress, but some of its `depends-on` issues are not closed. The warning names
+  them. The issue still starts.
 - The issue was in one state directory but its `state` field said another; both are corrected.
 - Closing an issue that has sub-issues that are not closed.
 - Closing an issue that open or in-progress issues still depend on.

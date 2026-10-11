@@ -290,3 +290,12 @@ func TestNewOpenIssueFailsForAnOwnerOrABookmark(t *testing.T) {
 	contains(t, res.error, "An open issue has no owner and no bookmark")
 	isTrue(t, !r.exists("issues/open/fix-login-bug.md"), "no issue is created")
 }
+
+func TestNewInProgressWarnsAboutAnOpenDependency(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "first-issue-test")
+
+	res := r.mustRun("new", "second-issue-test", "--state", "in-progress", "--bookmark", "ai/work", "--depends-on", "first-issue-test")
+
+	contains(t, res.error, "depends on issues that are not closed: first-issue-test.")
+}

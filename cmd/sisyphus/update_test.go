@@ -387,3 +387,27 @@ func TestUpdateToOpenStillAcceptsAnEmptyOwner(t *testing.T) {
 
 	equal(t, "", r.frontmatter("issues/open/fix-login-bug.md").get("owner"))
 }
+
+func TestUpdateToInProgressWarnsAboutOpenDependencies(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "first-issue-test")
+	r.mustRun("new", "done-issue-test", "--state", "closed")
+	r.mustRun("new", "second-issue-test", "--depends-on", "first-issue-test")
+	r.mustRun("depends-on", "second-issue-test", "done-issue-test")
+
+	res := r.mustRun("update", "second-issue-test", "in-progress", "--bookmark", "ai/work")
+
+	contains(t, res.error, "Issue 'second-issue-test' is in progress, but it depends on issues that are not closed: first-issue-test.")
+	isTrue(t, !strings.Contains(res.error, "done-issue-test"), "a closed dependency is not named")
+	isTrue(t, r.exists("issues/in-progress/second-issue-test.md"), "the issue still starts")
+}
+
+func TestUpdateToInProgressGivesNoDependencyWarningWhenEveryDependencyIsClosed(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "done-issue-test", "--state", "closed")
+	r.mustRun("new", "second-issue-test", "--depends-on", "done-issue-test")
+
+	res := r.mustRun("update", "second-issue-test", "in-progress", "--bookmark", "ai/work")
+
+	equal(t, "", res.error)
+}

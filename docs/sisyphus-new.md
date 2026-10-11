@@ -68,6 +68,8 @@ The path of the new file, for example `issues/open/fix-login-bug.md`.
 Warnings:
 
 - The issue is in-progress but has no bookmark.
+- The issue is in-progress, but some of its `depends-on` issues are not closed. The warning names
+  them. The issue still starts.
 - The parent issue, or an issue in `--depends-on`, is closed.
 - Another Markdown file has the same file name, so a link to the bare file name is ambiguous.
 

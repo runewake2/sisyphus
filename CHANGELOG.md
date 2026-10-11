@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.38]] - 2026-10-11
+- Warn when an issue is in progress while some of its `depends-on` issues are not closed.
+
 ## [[0.0.37]] - 2026-10-11
 - Fail `sisyphus new` and `sisyphus update` when an open issue would get an owner or a bookmark.
 

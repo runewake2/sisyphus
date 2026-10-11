@@ -65,6 +65,15 @@ func validName(name string) bool {
 	return namePattern.MatchString(parts[len(parts)-1])
 }
 
+// warnOpenDependencies warns when an issue is in progress while some of its depends-on issues are
+// not closed. depends-on means "must close before this one can start". It is a warning, not an
+// error, because a person may start blocked work on purpose.
+func warnOpenDependencies(x *issueIndex, name string, doc *document, warnings io.Writer) {
+	if open := openDependencies(x, doc); len(open) > 0 {
+		warn(warnings, fmt.Sprintf("Issue '%s' is in progress, but it depends on issues that are not closed: %s.", name, strings.Join(open, ", ")))
+	}
+}
+
 // checkOpenWorkFields fails when an open issue would get an owner or a bookmark. Those fields
 // describe active work, so sisyphus clears them for an open issue; a value that the user gave must
 // not be dropped without a message.
@@ -209,6 +218,9 @@ func newIssue(root string, o newOptions, warnings io.Writer) (string, error) {
 	if o.state == "in-progress" && o.bookmark == nil {
 		warn(warnings, noBookmarkWarning)
 	}
+	if o.state == "in-progress" {
+		warnOpenDependencies(x, o.name, doc, warnings)
+	}
 	return relative(root, destination), nil
 }
 
@@ -291,6 +303,9 @@ func updateIssue(root, reference, state string, o updateOptions, warnings io.Wri
 	}
 	if state == "in-progress" && doc.get("bookmark") == "" {
 		warn(warnings, noBookmarkWarning)
+	}
+	if state == "in-progress" {
+		warnOpenDependencies(x, name, doc, warnings)
 	}
 	if state == "closed" {
 		var open []string

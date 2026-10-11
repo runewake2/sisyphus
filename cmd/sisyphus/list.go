@@ -27,13 +27,19 @@ type listOptions struct {
 
 // isBlocked reports whether doc depends on any issue that is not closed.
 func isBlocked(x *issueIndex, doc *document) bool {
+	return len(openDependencies(x, doc)) > 0
+}
+
+// openDependencies returns the full names of the depends-on issues of doc that are not closed.
+func openDependencies(x *issueIndex, doc *document) []string {
+	var open []string
 	for _, dep := range parseDependsOn(doc.get("depends-on")) {
 		match, found, err := x.match(dep)
 		if err == nil && found && match.state != "closed" {
-			return true
+			open = append(open, match.name)
 		}
 	}
-	return false
+	return open
 }
 
 // matchedIssue is one issue that matched a set of frontmatter filters, before formatting as a row.
