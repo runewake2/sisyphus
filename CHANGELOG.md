@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.72]] - 2026-10-11
+- Add `--json` to the commands that change an issue.
+
 ## [[0.0.71]] - 2026-10-11
 - Let `sisyphus new --title` make the issue name from the title.
 

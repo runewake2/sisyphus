@@ -136,10 +136,12 @@ type newArgs struct {
 	DependsOn    string            `json:"dependsOn,omitempty" jsonschema:"Issues that must close before this one can start, comma-separated, for example fix-login-bug,migrate-database. Each must already exist."`
 	Context      string            `json:"context,omitempty" jsonschema:"Replaces the Context section's placeholder text with this text."`
 	Metadata     map[string]string `json:"metadata,omitempty" jsonschema:"Arbitrary key-value notes, for example a session id so work can be resumed with context later."`
+	JSON         bool              `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
 func newHandler(_ context.Context, _ *mcp.CallToolRequest, in newArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"new"}
+	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendFlag(args, "--title", in.Title)
 	args = appendFlag(args, "--state", in.State)
 	args = appendFlag(args, "--priority", in.Priority)
@@ -181,10 +183,12 @@ type updateArgs struct {
 	RemoveTags string            `json:"removeTags,omitempty" jsonschema:"Remove tags, comma-separated, and keep the others. Cannot be used with tags."`
 	Title      string            `json:"title,omitempty" jsonschema:"Change the title. sisyphus changes the title field and the first # heading of the body."`
 	Metadata   map[string]string `json:"metadata,omitempty" jsonschema:"Arbitrary key-value notes to add or update, for example a session id. Merged into the existing notes; never cleared automatically."`
+	JSON       bool              `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
 func updateHandler(_ context.Context, _ *mcp.CallToolRequest, in updateArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"update"}
+	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendFlag(args, "--resolution", in.Resolution)
 	args = appendFlag(args, "--bookmark", in.Bookmark)
 	args = appendFlag(args, "--owner", in.Owner)
@@ -315,10 +319,12 @@ type parentArgs struct {
 	Name   string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	Parent string `json:"parent,omitempty" jsonschema:"The parent issue to set. Omit and set clear to remove the current parent instead."`
 	Clear  bool   `json:"clear,omitempty" jsonschema:"Remove the issue's current parent instead of setting a new one."`
+	JSON   bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
 func parentHandler(_ context.Context, _ *mcp.CallToolRequest, in parentArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"parent"}
+	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--clear", in.Clear)
 	args = appendPositionals(args, in.Name, in.Parent)
 	out, err := runSisyphus(in.Dir, args...)
@@ -333,10 +339,12 @@ type remoteArgs struct {
 	Name  string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	URL   string `json:"url,omitempty" jsonschema:"The GitHub issue or Jira ticket URL to set. Omit and set clear to remove the current one instead."`
 	Clear bool   `json:"clear,omitempty" jsonschema:"Remove the issue's current remote reference instead of setting a new one."`
+	JSON  bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
 func remoteHandler(_ context.Context, _ *mcp.CallToolRequest, in remoteArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"remote"}
+	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--clear", in.Clear)
 	args = appendPositionals(args, in.Name, in.URL)
 	out, err := runSisyphus(in.Dir, args...)
@@ -351,10 +359,12 @@ type dependsOnArgs struct {
 	Name          string `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	BlockingIssue string `json:"blockingIssue,omitempty" jsonschema:"The issue that must close first, to add or (with clear) remove. Omit with clear to remove every dependency."`
 	Clear         bool   `json:"clear,omitempty" jsonschema:"Remove blockingIssue (if given) or every dependency (if not) instead of adding one."`
+	JSON          bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
 func dependsOnHandler(_ context.Context, _ *mcp.CallToolRequest, in dependsOnArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"depends-on"}
+	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--clear", in.Clear)
 	args = appendPositionals(args, in.Name, in.BlockingIssue)
 	out, err := runSisyphus(in.Dir, args...)
@@ -370,10 +380,12 @@ type editArgs struct {
 	Section string `json:"section" jsonschema:"The heading of the section, matched case-insensitively, for example resolution, summary, or notes."`
 	Text    string `json:"text" jsonschema:"The new text of the section, as Markdown. It can have more than one line."`
 	Append  bool   `json:"append,omitempty" jsonschema:"Add the text at the end of the section, after a blank line, instead of replacing the section."`
+	JSON    bool   `json:"json,omitempty" jsonschema:"Return the changed issue as JSON (as sisyphus_show returns it) with its path and the warnings, instead of the path."`
 }
 
 func editHandler(_ context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp.CallToolResult, any, error) {
 	args := []string{"edit"}
+	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--append", in.Append)
 	args = appendPositionals(args, in.Name, in.Section, in.Text)
 	out, err := runSisyphus(in.Dir, args...)

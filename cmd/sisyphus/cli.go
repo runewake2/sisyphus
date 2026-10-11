@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,12 +58,12 @@ func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
 	root.SetVersionTemplate("{{.Version}}\n")
 	root.CompletionOptions.DisableDefaultCmd = true
 	root.AddCommand(
-		newCommand(findRoot),
-		updateCommand(findRoot),
-		parentCommand(findRoot),
-		remoteCommand(findRoot),
-		dependsOnCommand(findRoot),
-		editCommand(findRoot),
+		addJSONFlag(newCommand(findRoot)),
+		addJSONFlag(updateCommand(findRoot)),
+		addJSONFlag(parentCommand(findRoot)),
+		addJSONFlag(remoteCommand(findRoot)),
+		addJSONFlag(dependsOnCommand(findRoot)),
+		addJSONFlag(editCommand(findRoot)),
 		slugCommand(findRoot),
 		showCommand(findRoot),
 		graphCommand(findRoot),
@@ -772,18 +773,54 @@ func initCommand(directory *string) *cobra.Command {
 	return cmd
 }
 
-// printPath finds the repo root, runs the operation, and prints the path of the file that the operation wrote.
+// printPath finds the repo root, runs the operation, and prints the path of the file that the operation
+// wrote. With --json (see addJSONFlag), it prints the changed issue as show --json does, with its path
+// and the warnings, instead of the path and warnings on stderr.
 func printPath(cmd *cobra.Command, findRoot func() (string, error), operation func(root string, warnings io.Writer) (string, error)) error {
 	root, err := findRoot()
 	if err != nil {
 		return err
 	}
-	path, err := operation(root, cmd.ErrOrStderr())
+	asJSON, _ := cmd.Flags().GetBool("json")
+	warnings := cmd.ErrOrStderr()
+	var collected bytes.Buffer
+	if asJSON {
+		warnings = &collected
+	}
+	path, err := operation(root, warnings)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(cmd.OutOrStdout(), path)
-	return nil
+	if !asJSON {
+		fmt.Fprintln(cmd.OutOrStdout(), path)
+		return nil
+	}
+	doc, err := loadDocument(filepath.Join(root, filepath.FromSlash(path)))
+	if err != nil {
+		return err
+	}
+	result := writeResult{issueView: newIssueView(issueName(path), doc), Path: path, Warnings: []string{}}
+	for _, line := range splitLines(collected.String()) {
+		result.Warnings = append(result.Warnings, strings.TrimPrefix(line, "Warning: "))
+	}
+	encoder := json.NewEncoder(cmd.OutOrStdout())
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(result)
+}
+
+// writeResult is the --json output of a command that changes an issue: the issue as show --json
+// prints it, the path of its file, and the warnings of the command.
+type writeResult struct {
+	issueView
+	Path     string   `json:"path"`
+	Warnings []string `json:"warnings"`
+}
+
+// addJSONFlag gives a command that changes an issue the --json flag that printPath reads.
+func addJSONFlag(cmd *cobra.Command) *cobra.Command {
+	cmd.Flags().Bool("json", false, "Print the changed issue as JSON, as show --json does, with its path and the warnings.")
+	return cmd
 }
 
 // writeIssueText prints an issue's key fields, then its body.

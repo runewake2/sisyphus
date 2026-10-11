@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"slices"
 	"strings"
 	"testing"
@@ -364,4 +365,38 @@ func TestNewWithoutANameOrATitleFails(t *testing.T) {
 
 	equal(t, 1, res.exit)
 	contains(t, res.error, "Give a name, or a --title")
+}
+
+func TestWriteCommandsPrintTheChangedIssueAsJSON(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "auth-epic-test")
+	r.mustRun("new", "first-issue-test")
+
+	for _, args := range [][]string{
+		{"new", "fix-login-bug", "--priority", "high", "--json"},
+		{"update", "fix-login-bug", "in-progress", "--json"},
+		{"edit", "fix-login-bug", "Summary", "Fix it.", "--json"},
+		{"parent", "fix-login-bug", "auth-epic-test", "--json"},
+		{"depends-on", "fix-login-bug", "first-issue-test", "--json"},
+		{"remote", "fix-login-bug", "https://example.com/issues/1", "--json"},
+	} {
+		res := r.mustRun(args...)
+		var got writeResult
+		if err := json.Unmarshal([]byte(res.output), &got); err != nil {
+			t.Fatalf("%v: not JSON: %v\n%s", args, err, res.output)
+		}
+		equal(t, "fix-login-bug", got.Name)
+		contains(t, got.Path, "fix-login-bug.md")
+		equal(t, "", res.error)
+	}
+	var last writeResult
+	_ = json.Unmarshal([]byte(r.mustRun("update", "fix-login-bug", "--priority", "low", "--json").output), &last)
+	equal(t, "in-progress", last.State)
+	equal(t, "low", last.Priority)
+	equal(t, "[[auth-epic-test]]", last.Parent)
+	equalSlices(t, []string{"first-issue-test"}, last.DependsOn)
+	equalSlices(t, []string{
+		"The issue is in-progress but has no bookmark. Set it with --bookmark.",
+		"Issue 'fix-login-bug' is in progress, but it depends on issues that are not closed: first-issue-test.",
+	}, last.Warnings)
 }

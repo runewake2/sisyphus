@@ -353,3 +353,19 @@ func TestNewToolMakesTheNameFromTheTitle(t *testing.T) {
 		t.Errorf("want the name made from the title: %s", out)
 	}
 }
+
+func TestWriteToolsReturnJSONWhenAsked(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+
+	out := callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug", "json": true})
+
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("not JSON: %v\n%s", err, out)
+	}
+	if got["name"] != "fix-login-bug" || got["path"] != "issues/open/fix-login-bug.md" {
+		t.Errorf("want the issue and its path: %s", out)
+	}
+}

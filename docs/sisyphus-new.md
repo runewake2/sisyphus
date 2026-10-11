@@ -69,6 +69,9 @@ Value details:
 
 ## Output
 
+With `--json`, the changed issue as [[sisyphus-show]] prints it with `--json`, plus `path` (the file)
+and `warnings` (a list; the warnings do not go to stderr then). See [[0.0.72]].
+
 The path of the new file, for example `issues/open/fix-login-bug.md`.
 
 Warnings:
