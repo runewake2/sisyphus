@@ -46,6 +46,11 @@ hand. The sub-issues below each cover one missing piece:
   sub-issues, with state and depends-on edges) at a glance; only one issue at a time via `show`.
 - [[migrate-command]]: a schema change means hand-editing every issue file; nothing upgrades
   existing issues to the installed sisyphus version's template.
+- [[update-without-state-change]]: `update` needs the current state even to change one field.
+- [[retitle-issue]]: no command changes the title of an issue.
+- [[list-ready-issues]]: no filter answers "what can start now"; only `--blocked` exists.
+- [[new-multiple-dependencies]]: `new --depends-on` takes only one issue.
+- [[add-remove-single-tags]]: `update --tags` can only replace all tags.
 - [[show-prints-resolution]]: the text output of `show` does not print `resolution`, so a reader
   cannot see whether a close or an abandon worked.
 - [[edit-issue-body-command]]: no command edits a section of the body, so the `Summary` and
@@ -62,6 +67,11 @@ hand. The sub-issues below each cover one missing piece:
 - [ ] `sisyphus lint` validates the whole `issues/` tree ([[lint-issues-command]]).
 - [x] `sisyphus graph` shows a large task's family tree in the terminal ([[graph-view-command]]).
 - [ ] `sisyphus migrate` upgrades every issue to the current schema ([[migrate-command]]).
+- [ ] `sisyphus update` can change fields without a state argument ([[update-without-state-change]]).
+- [ ] `sisyphus update` can change the title ([[retitle-issue]]).
+- [ ] `sisyphus list --ready` shows the issues that can start now ([[list-ready-issues]]).
+- [ ] `sisyphus new` takes more than one dependency ([[new-multiple-dependencies]]).
+- [ ] `sisyphus update` can add or remove one tag ([[add-remove-single-tags]]).
 - [x] `sisyphus show` prints the resolution ([[show-prints-resolution]]).
 - [x] A command edits a section of an issue's body ([[edit-issue-body-command]]).
 
