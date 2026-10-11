@@ -316,10 +316,12 @@ func showCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			name, _, doc, err := loadIndex(root).load(args[0])
+			x := loadIndex(root)
+			name, issue, doc, err := x.load(args[0])
 			if err != nil {
 				return err
 			}
+			warnIssueProblems(x, issue, doc, nil, cmd.ErrOrStderr())
 			if asJSON {
 				encoder := json.NewEncoder(cmd.OutOrStdout())
 				encoder.SetEscapeHTML(false)
@@ -447,6 +449,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 				owner:       owner,
 				parent:      parent,
 				blockedOnly: blocked,
+				warnings:    cmd.ErrOrStderr(),
 			})
 			if asJSON {
 				encoder := json.NewEncoder(cmd.OutOrStdout())
@@ -510,6 +513,7 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 					owner:       owner,
 					parent:      parent,
 					blockedOnly: blocked,
+					warnings:    cmd.ErrOrStderr(),
 				},
 				query:   query,
 				section: section,

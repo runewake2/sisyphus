@@ -40,6 +40,12 @@ add-dark-mode  Add dark mode  in-progress  medium    alice  feature, ui
 With `--json`, an array of objects with `name`, `title`, `state`, `priority`, `owner`, and `tags`.
 An empty result is an empty table, or `[]`.
 
+Warnings, on stderr: one for each issue file that sisyphus cannot read, or whose frontmatter has a
+line that is not a `key: value` field, a value that opens `[`, `{`, or a quote and does not close
+it, a `state` that does not match its directory, or a `priority`, `effort`, or `resolution` that is
+not valid. `list` checks every issue in the `--state` filter, also the ones that other filters hide. The warnings do not change stdout, so `--json` output stays valid. See
+[[0012-warn-about-invalid-issues-on-read]].
+
 ## Examples
 
 ```bash

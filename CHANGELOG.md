@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.39]] - 2026-10-11
+- Warn in `list`, `search`, and `show` about issue files that are not valid.
+
 ## [[0.0.38]] - 2026-10-11
 - Warn when an issue is in progress while some of its `depends-on` issues are not closed.
 

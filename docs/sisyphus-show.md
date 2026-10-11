@@ -61,6 +61,12 @@ arrays and objects, `depends-on` holds plain issue names, and empty optional fie
 
 A missing issue, or an issue in more than one state directory, is an error.
 
+Warnings, on stderr: one for each issue file that sisyphus cannot read, or whose frontmatter has a
+line that is not a `key: value` field, a value that opens `[`, `{`, or a quote and does not close
+it, a `state` that does not match its directory, or a `priority`, `effort`, or `resolution` that is
+not valid. `show` checks the issue that it prints. The warnings do not change stdout, so `--json` output stays valid. See
+[[0012-warn-about-invalid-issues-on-read]].
+
 ## Examples
 
 ```bash

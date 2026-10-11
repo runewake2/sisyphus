@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"slices"
 	"strings"
 )
@@ -19,10 +20,13 @@ type listRow struct {
 // states and priorities narrow to one of the given values; tags narrows to any of the given tags. owner and
 // parent narrow to an exact match. blockedOnly narrows to issues with a dependency that is not yet closed.
 // Every given filter applies together (AND).
+// warnings, when not nil, gets one warning for each issue in the state filter that has an invalid
+// file (see issueProblems), so that bad data is not shown as if it were good.
 type listOptions struct {
 	states, priorities, tags []string
 	owner, parent            string
 	blockedOnly              bool
+	warnings                 io.Writer
 }
 
 // isBlocked reports whether doc depends on any issue that is not closed.
@@ -66,6 +70,7 @@ func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 			continue
 		}
 		doc, err := x.document(issue)
+		warnIssueProblems(x, issue, doc, err, o.warnings)
 		if err != nil {
 			continue
 		}
