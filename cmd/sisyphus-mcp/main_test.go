@@ -369,3 +369,33 @@ func TestWriteToolsReturnJSONWhenAsked(t *testing.T) {
 		t.Errorf("want the issue and its path: %s", out)
 	}
 }
+
+// TestToolDescriptionsDoNotAssumeJJ checks that no description names jj without git: sisyphus works
+// the same in a repo that uses only git.
+func TestToolDescriptionsDoNotAssumeJJ(t *testing.T) {
+	session := connectedSession(t)
+	tools, err := session.ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tool := range tools.Tools {
+		texts := map[string]string{"description": tool.Description}
+		schema, _ := json.Marshal(tool.InputSchema)
+		var parsed struct {
+			Properties map[string]struct {
+				Description string `json:"description"`
+			} `json:"properties"`
+		}
+		if err := json.Unmarshal(schema, &parsed); err != nil {
+			t.Fatal(err)
+		}
+		for name, property := range parsed.Properties {
+			texts[name] = property.Description
+		}
+		for name, text := range texts {
+			if strings.Contains(text, "jj ") && !strings.Contains(text, "git") {
+				t.Errorf("%s %s names jj without git: %q", tool.Name, name, text)
+			}
+		}
+	}
+}

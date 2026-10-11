@@ -126,12 +126,12 @@ type newArgs struct {
 	Effort       string            `json:"effort,omitempty" jsonschema:"small, medium, large, or x-large. Defaults to medium."`
 	Resolution   string            `json:"resolution,omitempty" jsonschema:"completed or abandoned. Only valid when state is closed; defaults to completed."`
 	Tags         string            `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug,scheduler. Built-in: bug, feature; any other tag works too."`
-	Bookmark     string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark of the work on the issue."`
+	Bookmark     string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark or git branch of the work on the issue."`
 	DeferredFrom string            `json:"deferredFrom,omitempty" jsonschema:"An issue name, wikilink, or bookmark that deferred this work."`
 	Parent       string            `json:"parent,omitempty" jsonschema:"The parent issue, if this is a sub-issue. Must already exist."`
 	Owner        string            `json:"owner,omitempty" jsonschema:"The person or agent working on the issue."`
 	Approver     string            `json:"approver,omitempty" jsonschema:"The person or agent who accepts the issue when it closes."`
-	Workspace    string            `json:"workspace,omitempty" jsonschema:"The jj workspace where local work on the issue is happening."`
+	Workspace    string            `json:"workspace,omitempty" jsonschema:"The jj workspace or git worktree where local work on the issue happens."`
 	Remote       string            `json:"remote,omitempty" jsonschema:"A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo."`
 	DependsOn    string            `json:"dependsOn,omitempty" jsonschema:"Issues that must close before this one can start, comma-separated, for example fix-login-bug,migrate-database. Each must already exist."`
 	Context      string            `json:"context,omitempty" jsonschema:"Replaces the Context section's placeholder text with this text."`
@@ -171,10 +171,10 @@ type updateArgs struct {
 	Name       string            `json:"name" jsonschema:"The issue's full name (for example web/auth/fix-login-bug), its file name if no other issue has it, [[name]], #name, or a path to the issue."`
 	State      string            `json:"state,omitempty" jsonschema:"The new state: open, in-progress, or closed. Leave it out to keep the current state and change only the other fields."`
 	Resolution string            `json:"resolution,omitempty" jsonschema:"completed or abandoned. Only valid when state is closed; defaults to completed."`
-	Bookmark   string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark of the work. Set it when work starts."`
+	Bookmark   string            `json:"bookmark,omitempty" jsonschema:"The jj bookmark or git branch of the work. Set it when work starts."`
 	Owner      string            `json:"owner,omitempty" jsonschema:"The person or agent working on the issue."`
 	Approver   string            `json:"approver,omitempty" jsonschema:"The person or agent who accepts the issue when it closes."`
-	Workspace  string            `json:"workspace,omitempty" jsonschema:"The jj workspace where local work is happening. Appended to the issue's workspace history."`
+	Workspace  string            `json:"workspace,omitempty" jsonschema:"The jj workspace or git worktree where local work on the issue happens. Appended to the issue's workspace history."`
 	Priority   string            `json:"priority,omitempty" jsonschema:"Change the priority: critical, high, medium, or low."`
 	Effort     string            `json:"effort,omitempty" jsonschema:"Change the effort: small, medium, large, or x-large."`
 	Tags       string            `json:"tags,omitempty" jsonschema:"Replace the tags, comma-separated, for example bug,scheduler. Built-in: bug, feature; any other tag works too."`

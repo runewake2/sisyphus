@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.85]] - 2026-10-11
+- Name git next to jj in the bookmark and workspace arguments of the MCP tools.
+
 ## [[0.0.84]] - 2026-10-11
 - Replace sisyphus open with sisyphus edit <name>, which opens the issue in your editor.
 
