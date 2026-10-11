@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
+// skippedDirectories are never walked when sisyphus walks the repo itself (see repoFiles).
 var skippedDirectories = map[string]bool{
 	".git": true, ".jj": true, "bin": true, "obj": true, "node_modules": true,
 }
@@ -47,24 +47,6 @@ func relative(root, file string) string {
 		return filepath.ToSlash(file)
 	}
 	return filepath.ToSlash(rel)
-}
-
-func repoFiles(root string) []string {
-	var files []string
-	_ = filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-		if entry.IsDir() {
-			if path != root && skippedDirectories[strings.ToLower(entry.Name())] {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		files = append(files, path)
-		return nil
-	})
-	return files
 }
 
 func fileExists(path string) bool {

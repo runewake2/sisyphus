@@ -25,7 +25,12 @@ The same way Obsidian matches it:
 - By file name, with or without `.md`, in any directory, ignoring case.
 - A link that contains `/` matches the end of a path, for example `[[example/README]]`.
 - An exact path from the repo root wins over every other match.
-- `.git`, `.jj`, `bin`, `obj`, and `node_modules` are skipped.
+- `.git`, `.jj`, `bin`, `obj`, and `node_modules` are skipped, and so is every file that
+  `.gitignore` ignores. In a git repo, git decides, with every `.gitignore` and
+  `.git/info/exclude`; without git, sisyphus applies the simple rules of the root `.gitignore`
+  (names, globs, paths from the root, a trailing `/` for a directory; `!` is not supported). The
+  same files count for [[sisyphus-links]], [[sisyphus-lint]], `new`, and `slug`. See
+  [[0019-skip-ignored-files-in-the-repo-walk]].
 
 ## Output
 

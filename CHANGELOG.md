@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.66]] - 2026-10-11
+- Skip the files that `.gitignore` ignores in the repo walk of `resolve`, `links`, `lint`, `new`, and `slug`.
+
 ## [[0.0.65]] - 2026-10-11
 - Build the link maps only when a command looks up many links, so that `resolve` and `links` are as fast as before 0.0.58.
 
