@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11
 - Issue: [[delegate-issues-to-agents]]
-- Status: Draft. The open questions at the end are not answered yet.
+- Status: Draft. Q1 is answered; the other open questions at the end are not.
 
 ## Summary
 
@@ -62,7 +62,10 @@ runs.
 
 This is a draft; [[delegation-model]] decides it. The proposed model:
 
-- An issue is delegated to a role with the generic `metadata` field of sisyphus:
+- An issue is delegated to a role with the `delegate` key of the sisyphus `metadata` field (Q1,
+  answered by the human on 2026-10-11): `delegate` is the role assigned to own the task, and
+  `owner` is the agent instance that works on it, for example `delegate: merge-queue` and
+  `owner: merge-queue-1`. Set it with
   `sisyphus update <name> --metadata delegate=merge-queue`. sisyphus does not know what the key
   means.
 - hephaestus finds the work of a role with a sisyphus filter on that key, for example
@@ -162,7 +165,7 @@ A human answers a question with a reply such as "Q1 yes", or another answer.
 
 | Id | Question | Asked in | Proposed answer |
 |---|---|---|---|
-| Q1 | How is an issue delegated to a role: the `metadata` key `delegate`, a tag, or the `owner`? | [[delegation-model]] | The `metadata` key `delegate`, with the sisyphus filter `filter-by-metadata`. It needs no field for agents in sisyphus. A tag mixes roles with components, and the owner is the agent instance that works on it. |
+| Q1 | How is an issue delegated to a role: the `metadata` key `delegate`, a tag, or the `owner`? | [[delegation-model]] | Answered by the human on 2026-10-11: the `metadata` key `delegate`, the role assigned to own the task (`metadata: {delegate: merge-queue}`), with the sisyphus filter `filter-by-metadata`. Not a frontmatter field of its own. The `owner` stays the agent instance that works on it. |
 | Q2 | Where are the roles described: `hephaestus/roles/<role>.md`, `.claude/agents/`, or in code? | [[delegation-model]] | `hephaestus/roles/<role>.md`, readable by people and by any runtime. hephaestus can generate `.claude/agents/` files from it. |
 | Q3 | May the merge queue move `main`, or only prepare a bookmark? | [[merge-queue-agent]] | Only prepare `merge-queue/<date>` and a report. A human moves `main`, as [AGENTS.md](../../AGENTS.md) asks now. |
 | Q4 | What runs the agents: Claude Code subagents, the Claude Agent SDK, Claude Managed Agents, or local models? | [[delegation-runner]] | Start with Claude Code subagents, started by a human, then hephaestus on the Agent SDK. Local models only for roles that a task suite shows they can do. |

@@ -47,7 +47,7 @@ Compare at least two drafts (for example the field against a tag), as `CONTRIBUT
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-11, from the human: delegate describes the role assigned to own the task, and is a key of the sisyphus metadata field (metadata: {delegate: merge-queue}), not a frontmatter field of its own. This answers Q1 of [[agent-delegation]].
 
 ## Resolution
 

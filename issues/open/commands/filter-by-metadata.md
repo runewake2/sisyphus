@@ -41,7 +41,7 @@ hephaestus records the role of an issue in metadata, for example `sisyphus updat
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-11, from the human: hephaestus records the role that owns a task as the metadata key delegate, so this filter is how it finds the work of a role, for example sisyphus list --metadata delegate=merge-queue --ready.
 
 ## Resolution
 
