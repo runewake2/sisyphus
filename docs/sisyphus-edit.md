@@ -27,6 +27,9 @@ heading of the section, matched case-insensitively, for example `resolution` or
   the section holds only the template placeholder (`<...>`), the text replaces the placeholder.
 - The text can have more than one line. sisyphus removes blank lines at its start and its end.
 - Empty text is an error.
+- Text with a heading at the level of the section or above, for example `## Notes` in a `##`
+  section, is an error: it would split the section. A deeper heading (`###`) and a heading in a code
+  block are allowed.
 - A section that the issue does not have is an error that lists the sections it has. The title
   (`# ...`) is not a section: change it with `sisyphus update <name> --title` (see
   [[sisyphus-update]]).

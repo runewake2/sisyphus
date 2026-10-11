@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.49]] - 2026-10-11
+- Refuse text with a heading that would split the section in `sisyphus edit`.
+
 ## [[0.0.48]] - 2026-10-11
 - Keep the line endings of an issue file when sisyphus writes it.
 

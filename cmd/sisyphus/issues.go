@@ -454,6 +454,14 @@ func editSection(root, reference, heading, text string, appendText bool) (string
 	if !ok || headingLevel(doc.body[start]) < 2 {
 		return "", fmt.Errorf("Issue '%s' has no section '%s'. Its sections are: %s.", name, heading, strings.Join(sectionNames(doc.body), ", "))
 	}
+	// A heading at the level of the section or above would end the section inside the text, and make
+	// a second section that a later edit could change instead of the real one.
+	level := headingLevel(doc.body[start])
+	for _, index := range outsideCodeFences(lines) {
+		if headingPattern.MatchString(lines[index]) && headingLevel(lines[index]) <= level {
+			return "", fmt.Errorf("The text has the heading %q, which would split the section '%s'. Use a heading with more than %d '#', or no heading.", lines[index], heading, level)
+		}
+	}
 	if appendText {
 		if current, _ := sectionIn(doc.body, heading); !isPlaceholder(current) {
 			lines = slices.Concat(trimBlankLines(current), []string{""}, lines)

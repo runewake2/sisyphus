@@ -119,3 +119,28 @@ func TestUpdateDoesNotWarnAboutACompleteResolution(t *testing.T) {
 	equal(t, 0, res.exit)
 	isTrue(t, !strings.Contains(res.error, "Resolution section"), res.error)
 }
+
+func TestEditRejectsAHeadingThatWouldSplitTheSection(t *testing.T) {
+	for _, extra := range [][]string{nil, {"--append"}} {
+		r := newTestRepo(t)
+		r.mustRun("new", "fix-login-bug")
+		before := r.read("issues/open/fix-login-bug.md")
+
+		args := append(append([]string{"edit", "fix-login-bug", "Summary"}, extra...), "--", "text\n\n## Notes\n\nfake notes")
+		res := r.run(args...)
+
+		equal(t, 1, res.exit)
+		contains(t, res.error, `The text has the heading "## Notes"`)
+		equal(t, before, r.read("issues/open/fix-login-bug.md"))
+	}
+}
+
+func TestEditAcceptsADeeperHeadingAndAHeadingInCode(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug")
+
+	r.mustRun("edit", "fix-login-bug", "Notes", "--", "### Day 1\n\nfound it\n\n```\n## not a heading\n```")
+
+	section, _ := sectionIn(r.frontmatter("issues/open/fix-login-bug.md").body, "Notes")
+	contains(t, strings.Join(section, "\n"), "### Day 1")
+}
