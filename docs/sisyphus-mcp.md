@@ -115,8 +115,9 @@ When the `sisyphus` binary has another version than `sisyphus-mcp`, a warning li
 | `sisyphus_lint` | [[sisyphus-lint]] | JSON (problems are a result, not an error) |
 
 `sisyphus_close` and `sisyphus_abandon` need `message`, the text of the Resolution section, so that
-the issue tells what happened. `sisyphus_edit` always needs `section` and `text`: `edit` with only a
-name opens an editor, which is for people at a terminal, as is [[sisyphus-completion]].
+the issue tells what happened. `sisyphus_edit` always needs `section` and `text`, and an empty `section`
+is an error: `edit` with only a name opens an editor, which is for people at a terminal, as is
+[[sisyphus-completion]].
 
 Each tool's arguments mirror the command's arguments and flags, in camelCase (for example
 `dependsOn`, `deferredFrom`, `blockingIssue`). A list, such as `tags` or `dependsOn`, is one

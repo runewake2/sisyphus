@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -498,10 +499,16 @@ type editArgs struct {
 }
 
 func editHandler(_ context.Context, _ *mcp.CallToolRequest, in editArgs) (*mcp.CallToolResult, any, error) {
+	// sisyphus edit with only a name opens an editor, which an MCP server cannot use.
+	if strings.TrimSpace(in.Section) == "" {
+		return nil, nil, errors.New("Give section: the heading of the section to change, for example notes, summary, or resolution.")
+	}
 	args := []string{"edit"}
 	args = appendBoolFlag(args, "--json", in.JSON)
 	args = appendBoolFlag(args, "--append", in.Append)
-	args = appendPositionals(args, in.Name, in.Section, in.Text)
+	// The text goes even when it is empty, so that sisyphus tells that the text is empty.
+	// appendPositionals drops an empty value, and edit with two arguments gives a less clear error.
+	args = append(appendPositionals(args, in.Name, in.Section), in.Text)
 	out, err := runSisyphus(in.Dir, args...)
 	if err != nil {
 		return nil, nil, err

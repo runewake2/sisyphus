@@ -30,6 +30,9 @@ heading of the section, matched case-insensitively, for example `resolution` or
 - The editor is `$VISUAL`, or else `$EDITOR`. The value can have arguments, for example
   `code --wait` or `subl -w`. A graphical editor must wait until you close the file, or sisyphus
   checks the file before you edit it. Without `$VISUAL` and `$EDITOR`, the command fails.
+- Without a terminal on standard input, the command fails at once, also for a graphical editor:
+  `No terminal to run your editor in, ...`. An agent's shell tool and sisyphus-mcp have no terminal,
+  and an editor there would wait for ever. Use the section form instead.
 - When the editor exits, sisyphus checks the file as [[sisyphus-lint]] does for one issue, and
   warns about problems, for example a frontmatter line that it cannot read. It does not change the
   file.

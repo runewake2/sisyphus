@@ -554,3 +554,30 @@ func TestTheDocsShowTheInstructions(t *testing.T) {
 		t.Error("docs/sisyphus-mcp.md does not show the instructions of the server as they are")
 	}
 }
+
+func TestEditToolWithAnEmptySectionDoesNotStartAnEditor(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+	t.Setenv("VISUAL", "sleep 30")
+
+	text := callToolExpectingError(t, session, "sisyphus_edit", map[string]any{"dir": dir, "name": "fix-login-bug", "section": "", "text": ""})
+
+	if !strings.Contains(text, "Give section") {
+		t.Errorf("got %q", text)
+	}
+}
+
+func TestEditToolWithEmptyTextSaysThatTheTextIsEmpty(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug"})
+
+	text := callToolExpectingError(t, session, "sisyphus_edit", map[string]any{"dir": dir, "name": "fix-login-bug", "section": "notes", "text": ""})
+
+	if !strings.Contains(text, "The text is empty") {
+		t.Errorf("got %q", text)
+	}
+}
