@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.75]] - 2026-10-11
+- Shorten the title column of `sisyphus list` to fit the terminal; `--wide` keeps full titles.
+
 ## [[0.0.74]] - 2026-10-11
 - Hide empty fields and template-only sections in `sisyphus show`; `--all` shows everything.
 

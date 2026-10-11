@@ -19,6 +19,7 @@ sisyphus list [flags]
 | `--parent` | Only direct sub-issues of this issue (any form of its name). A name that gives no issue is an error. |
 | `--blocked` | Only issues that depend on an issue that is not closed yet. |
 | `--ready` | Only issues that can start now: not closed, with no dependency and no sub-issue that is not closed. Not with `--blocked`. |
+| `--wide` | Do not shorten titles to fit the terminal. |
 | `--json` | Print JSON instead of a table. |
 
 Within one flag, the values are alternatives (OR). Different flags must all match (AND).
@@ -33,6 +34,10 @@ ready in-progress issues are listed too; use `--state open --ready` for only the
 has started. See [[0014-ready-means-available]].
 
 ## Output
+
+On a terminal, the title column is shortened, with `…`, so that each row fits the width of the
+terminal (but not below 10 characters). When stdout is not a terminal, for example in a pipe or a
+file, and with `--wide`, titles are not shortened.
 
 Sorted by state (open, in-progress, closed), then priority (critical to low), then name:
 

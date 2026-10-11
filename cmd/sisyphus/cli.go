@@ -16,6 +16,7 @@ import (
 	"github.com/mattn/go-runewidth"
 	"github.com/runewake2/sisyphus"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 // run is the entry point. findRoot and the writers are parameters, so that tests can run commands in-process.
@@ -486,7 +487,7 @@ const readyHelp = "Only issues that can start now: not closed, with no depends-o
 
 func listCommand(findRoot func() (string, error)) *cobra.Command {
 	var state, priority, tags, owner, parent string
-	var asJSON, blocked, ready bool
+	var asJSON, blocked, ready, wide bool
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List and filter the issues in issues/.",
@@ -531,7 +532,11 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 			for i, row := range rows {
 				cells[i] = []string{row.Name, row.Title, row.State, row.Priority, row.Owner, strings.Join(row.Tags, ", ")}
 			}
-			writeTable(cmd.OutOrStdout(), []string{"name", "title", "state", "priority", "owner", "tags"}, cells)
+			maxWidth := 0
+			if width, isTerminal := terminalWidth(cmd.OutOrStdout()); isTerminal && !wide {
+				maxWidth = width
+			}
+			writeTableWithin(cmd.OutOrStdout(), []string{"name", "title", "state", "priority", "owner", "tags"}, cells, 1, maxWidth)
 			return nil
 		},
 	}
@@ -543,6 +548,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
 	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
 	flags.BoolVar(&ready, "ready", false, readyHelp)
+	flags.BoolVar(&wide, "wide", false, "Do not shorten titles to fit the terminal.")
 	flags.BoolVar(&asJSON, "json", false, "Print JSON instead of a table.")
 	cmd.MarkFlagsMutuallyExclusive("blocked", "ready")
 	return cmd
@@ -926,9 +932,32 @@ func isTemplateText(lines []string) bool {
 	return true
 }
 
+// terminalWidth returns the width of the terminal that out writes to, and false when out is not a
+// terminal. Tests replace it.
+var terminalWidth = func(out io.Writer) (int, bool) {
+	f, ok := out.(*os.File)
+	if !ok || !term.IsTerminal(int(f.Fd())) {
+		return 0, false
+	}
+	width, _, err := term.GetSize(int(f.Fd()))
+	if err != nil || width <= 0 {
+		return 0, false
+	}
+	return width, true
+}
+
+// minimumShrunkWidth is the narrowest that writeTableWithin makes the column it shortens.
+const minimumShrunkWidth = 10
+
 // writeTable prints cells as a table with header, padding every column to its widest cell. Widths
 // are terminal display widths, so a wide character such as a CJK letter counts as two columns.
 func writeTable(out io.Writer, header []string, cells [][]string) {
+	writeTableWithin(out, header, cells, -1, 0)
+}
+
+// writeTableWithin is writeTable with a maximum width: when maxWidth is more than 0 and the table is
+// wider, the column shrink becomes narrower, down to minimumShrunkWidth, and its cells end in "…".
+func writeTableWithin(out io.Writer, header []string, cells [][]string, shrink, maxWidth int) {
 	widths := make([]int, len(header))
 	for i, h := range header {
 		widths[i] = runewidth.StringWidth(h)
@@ -938,9 +967,15 @@ func writeTable(out io.Writer, header []string, cells [][]string) {
 			widths[i] = max(widths[i], runewidth.StringWidth(cell))
 		}
 	}
+	if total := sum(widths) + 2*(len(widths)-1); maxWidth > 0 && shrink >= 0 && total > maxWidth {
+		widths[shrink] = max(minimumShrunkWidth, widths[shrink]-(total-maxWidth))
+	}
 	format := func(values []string) string {
 		padded := make([]string, len(values))
 		for i, v := range values {
+			if runewidth.StringWidth(v) > widths[i] {
+				v = runewidth.Truncate(v, widths[i], "…")
+			}
 			padded[i] = v + strings.Repeat(" ", widths[i]-runewidth.StringWidth(v))
 		}
 		return strings.TrimRight(strings.Join(padded, "  "), " ")
@@ -954,6 +989,14 @@ func writeTable(out io.Writer, header []string, cells [][]string) {
 	for _, row := range cells {
 		fmt.Fprintln(out, format(row))
 	}
+}
+
+func sum(values []int) int {
+	total := 0
+	for _, v := range values {
+		total += v
+	}
+	return total
 }
 
 func optional(cmd *cobra.Command, name, value string) *string {

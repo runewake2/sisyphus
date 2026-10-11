@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"strings"
 	"testing"
 
@@ -272,4 +273,31 @@ func TestInvalidValuesSuggestTheNearestValidValue(t *testing.T) {
 	}
 	res := r.run("update", "fix-login-bug", "--priority", "zzzzzz")
 	isTrue(t, !strings.Contains(res.error, "Did you mean"), "no suggestion for a value that is not near")
+}
+
+func TestListShortensTitlesToFitTheTerminal(t *testing.T) {
+	r := newTestRepo(t)
+	long := "Make the login form remember the user across sessions and devices with a secure token"
+	r.mustRun("new", "remember-login-test", "--title", long)
+	r.mustRun("new", "short-title-test", "--title", "Short")
+	saved := terminalWidth
+	defer func() { terminalWidth = saved }()
+	terminalWidth = func(io.Writer) (int, bool) { return 70, true }
+
+	lines := r.mustRun("list").lines()
+	wide := r.mustRun("list", "--wide").output
+
+	for _, line := range lines {
+		isTrue(t, runewidth.StringWidth(line) <= 70, "the row fits 70 columns: "+line)
+	}
+	contains(t, strings.Join(lines, "\n"), "…")
+	contains(t, wide, long)
+}
+
+func TestListDoesNotShortenTitlesWhenNotATerminal(t *testing.T) {
+	r := newTestRepo(t)
+	long := "Make the login form remember the user across sessions and devices with a secure token"
+	r.mustRun("new", "remember-login-test", "--title", long)
+
+	contains(t, r.mustRun("list").output, long)
 }
