@@ -26,3 +26,25 @@ func TestLinksFindAHeadingOnTheFirstLineAfterAByteOrderMark(t *testing.T) {
 
 	equal(t, 0, r.run("lint").exit)
 }
+
+func TestAnUpdateKeepsCRLFLineEndings(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "crlf-issue-test")
+	r.write("issues/open/crlf-issue-test.md", strings.ReplaceAll(r.read("issues/open/crlf-issue-test.md"), "\n", "\r\n"))
+
+	r.mustRun("update", "crlf-issue-test", "--priority", "high")
+
+	content := r.read("issues/open/crlf-issue-test.md")
+	equal(t, strings.Count(content, "\n"), strings.Count(content, "\r\n"))
+	equal(t, "high", r.frontmatter("issues/open/crlf-issue-test.md").get("priority"))
+}
+
+func TestANewIssueTakesTheLineEndingsOfTheTemplate(t *testing.T) {
+	r := newTestRepo(t)
+	r.write("issues/TEMPLATE.md", strings.ReplaceAll(r.read("issues/TEMPLATE.md"), "\n", "\r\n"))
+
+	r.mustRun("new", "crlf-issue-test")
+
+	content := r.read("issues/open/crlf-issue-test.md")
+	equal(t, strings.Count(content, "\n"), strings.Count(content, "\r\n"))
+}

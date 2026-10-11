@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.48]] - 2026-10-11
+- Keep the line endings of an issue file when sisyphus writes it.
+
 ## [[0.0.47]] - 2026-10-11
 - Read issue files that start with a UTF-8 byte order mark, and keep the mark.
 

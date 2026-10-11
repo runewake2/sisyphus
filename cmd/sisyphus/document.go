@@ -12,11 +12,13 @@ import (
 )
 
 // document is a Markdown file with YAML frontmatter. Frontmatter is edited line by line, so that inline comments stay.
-// bom is true for a file that starts with a UTF-8 byte order mark; render writes it back.
+// bom is true for a file that starts with a UTF-8 byte order mark, and crlf for a file whose first
+// line ends with CRLF; render writes both back, so that a change touches only the lines it must.
 type document struct {
 	front []string
 	body  []string
 	bom   bool
+	crlf  bool
 }
 
 // utf8BOM is the UTF-8 byte order mark that some editors write at the start of a file.
@@ -26,6 +28,8 @@ var fieldPattern = regexp.MustCompile(`^([A-Za-z_-]+):\s*("(?:[^"\\]|\\.)*"|'[^'
 
 func parseDocument(content string) (*document, error) {
 	bom := strings.HasPrefix(content, utf8BOM)
+	firstEnd := strings.IndexByte(content, '\n')
+	crlf := firstEnd > 0 && content[firstEnd-1] == '\r'
 	lines := splitLines(strings.TrimPrefix(content, utf8BOM))
 	if len(lines) == 0 || lines[0] != "---" {
 		return nil, errors.New("The file does not start with YAML frontmatter ('---').")
@@ -35,7 +39,7 @@ func parseDocument(content string) (*document, error) {
 		return nil, errors.New("The YAML frontmatter has no closing '---'.")
 	}
 	// The capacity limit makes an append to front copy, so it cannot overwrite body.
-	return &document{front: lines[1:end:end], body: lines[end+1:], bom: bom}, nil
+	return &document{front: lines[1:end:end], body: lines[end+1:], bom: bom, crlf: crlf}, nil
 }
 
 func loadDocument(path string) (*document, error) {
@@ -71,7 +75,11 @@ func (d *document) render() string {
 	all := append([]string{"---"}, d.front...)
 	all = append(all, "---")
 	all = append(all, d.body...)
-	text := strings.Join(all, "\n") + "\n"
+	newline := "\n"
+	if d.crlf {
+		newline = "\r\n"
+	}
+	text := strings.Join(all, newline) + newline
 	if d.bom {
 		text = utf8BOM + text
 	}
