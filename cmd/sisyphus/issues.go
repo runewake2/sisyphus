@@ -673,7 +673,16 @@ func setDependsOn(root, reference string, blocking *string, clear bool, warnings
 		current = nil
 	case clear:
 		target := x.canonical(*blocking)
-		current = slices.DeleteFunc(current, func(n string) bool { return x.canonical(n) == target })
+		kept := slices.DeleteFunc(slices.Clone(current), func(n string) bool { return x.canonical(n) == target })
+		if len(kept) == len(current) {
+			has := "no dependencies"
+			if len(current) > 0 {
+				has = "these dependencies: " + strings.Join(current, ", ")
+			}
+			warn(warnings, fmt.Sprintf("Issue '%s' does not depend on '%s', so nothing was removed. It has %s.", name, issueName(*blocking), has))
+			return relative(root, issue.path), nil
+		}
+		current = kept
 	default:
 		added, err := dependsOnValueFor(x, *blocking, name, warnings)
 		if err != nil {

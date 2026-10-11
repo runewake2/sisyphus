@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.53]] - 2026-10-11
+- Warn when `sisyphus depends-on --clear` removes nothing.
+
 ## [[0.0.52]] - 2026-10-11
 - Fail `sisyphus list --parent` and `search --parent` for a name that gives no issue.
 

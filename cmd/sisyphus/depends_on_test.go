@@ -177,3 +177,15 @@ func namesOnly(output string) string {
 	}
 	return strings.Join(lines[2:], "\n")
 }
+
+func TestDependsOnClearWarnsWhenItRemovesNothing(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "first-issue-test")
+	r.mustRun("new", "second-issue-test", "--depends-on", "first-issue-test")
+	before := r.read("issues/open/second-issue-test.md")
+
+	res := r.mustRun("depends-on", "second-issue-test", "frist-issue-test", "--clear")
+
+	contains(t, res.error, "Issue 'second-issue-test' does not depend on 'frist-issue-test', so nothing was removed. It has these dependencies: first-issue-test.")
+	equal(t, before, r.read("issues/open/second-issue-test.md"))
+}

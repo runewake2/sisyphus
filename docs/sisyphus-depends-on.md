@@ -18,6 +18,8 @@ Both arguments take any form of an issue name (see [[commands#Naming an issue]])
 - The blocking issue must exist. A closed blocking issue is allowed, with a warning.
 - An issue cannot depend on itself, or on an issue that already depends on it directly or through
   other issues: that would make a cycle.
+- `--clear` with a `<blocking-issue>` that the issue does not depend on changes nothing, and warns
+  with the dependencies that the issue has.
 - Unlike `parent`, `depends-on` is not a hierarchy: it can link any two issues, anywhere in the
   tree, and an issue can depend on several.
 
