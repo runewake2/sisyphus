@@ -61,6 +61,17 @@ Run `sisyphus <command> --help` for all options on any command, and see [[comman
 for every command in detail. See [[CONTRIBUTING]] for the full
 workflow: the design log, decisions, versioning, the changelog, wikilinks, issues, and jj.
 
+## Shell completion
+
+sisyphus completes commands, flags, issue names, states, priorities, and tags in bash, zsh, fish,
+PowerShell, and Nushell. For bash, add this line to `~/.bashrc`:
+
+```bash
+source <(sisyphus completion bash)
+```
+
+See [[sisyphus-completion]] for the other shells.
+
 ## Obsidian
 
 sisyphus issues are plain Markdown with YAML frontmatter, so a repo that uses sisyphus also works

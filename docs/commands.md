@@ -27,6 +27,7 @@ sisyphus is a command-line issue manager. Every issue is one Markdown file with 
 | [[sisyphus-resolve]] | Find the file a wikilink points to. |
 | [[sisyphus-links]] | Check every wikilink in a document. |
 | [[sisyphus-lint]] | Check every issue and every wikilink in the repo. |
+| [[sisyphus-completion]] | Print the shell completion script. |
 
 [[sisyphus-mcp]] gives an agent all of these as tools over the Model Context Protocol.
 

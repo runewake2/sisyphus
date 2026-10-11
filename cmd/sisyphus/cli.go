@@ -57,6 +57,7 @@ func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
 	}
 	root.PersistentFlags().StringVarP(&directory, "directory", "C", "", "Run as if sisyphus was started in this directory, as git -C does.")
 	root.SetVersionTemplate("{{.Version}}\n")
+	// sisyphus completion replaces the default command of cobra, to add Nushell.
 	root.CompletionOptions.DisableDefaultCmd = true
 	root.AddCommand(
 		addJSONFlag(newCommand(findRoot)),
@@ -78,7 +79,9 @@ func newRootCommand(defaultFindRoot func() (string, error)) *cobra.Command {
 		linksCommand(findRoot),
 		lintCommand(findRoot),
 		initCommand(&directory),
+		completionCommand(),
 	)
+	addCompletions(root, findRoot)
 	return root
 }
 

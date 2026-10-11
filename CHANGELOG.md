@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.78]] - 2026-10-11
+- Add sisyphus completion for bash, zsh, fish, PowerShell, and Nushell, with issue names and flag values.
+
 ## [[0.0.77]] - 2026-10-11
 - Stop assuming jj: warn about a missing bookmark only in a jj repo, and describe the template fields for git too.
 
