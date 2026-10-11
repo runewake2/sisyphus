@@ -29,6 +29,8 @@ type listOptions struct {
 	owner, parent            string
 	blockedOnly, readyOnly   bool
 	warnings                 io.Writer
+	// withBody reads each matched issue in full; without it, only the frontmatter is read.
+	withBody bool
 }
 
 // isBlocked reports whether doc depends on any issue that is not closed.
@@ -56,7 +58,7 @@ func parentsWithOpenSubIssues(x *issueIndex) map[string]bool {
 		if issue.state == "closed" {
 			continue
 		}
-		if doc, err := x.document(issue); err == nil {
+		if doc, err := x.header(issue); err == nil {
 			if parent := x.canonical(doc.get("parent")); parent != "" {
 				parents[parent] = true
 			}
@@ -92,7 +94,11 @@ func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 		if !slices.Contains(stateFilter, issue.state) {
 			continue
 		}
-		doc, err := x.document(issue)
+		load := x.header
+		if o.withBody {
+			load = x.document
+		}
+		doc, err := load(issue)
 		warnIssueProblems(x, issue, doc, err, o.warnings)
 		if err != nil {
 			continue

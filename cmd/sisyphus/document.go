@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"slices"
 	"strings"
@@ -13,11 +15,14 @@ import (
 // document is a Markdown file with YAML frontmatter. Frontmatter is edited line by line, so that inline comments stay.
 // bom is true for a file that starts with a UTF-8 byte order mark, and crlf for a file whose first
 // line ends with CRLF; render writes both back, so that a change touches only the lines it must.
+// headerOnly is true for a document that loadHeader read only up to the end of its frontmatter: its
+// body is empty, and save refuses it, so that a partial read can never become a partial file.
 type document struct {
-	front []string
-	body  []string
-	bom   bool
-	crlf  bool
+	front      []string
+	body       []string
+	bom        bool
+	crlf       bool
+	headerOnly bool
 }
 
 // utf8BOM is the UTF-8 byte order mark that some editors write at the start of a file.
@@ -149,7 +154,47 @@ func (d *document) render() string {
 }
 
 func (d *document) save(path string) error {
+	if d.headerOnly {
+		return fmt.Errorf("internal error: %s was read without its body and cannot be written", path)
+	}
 	return os.WriteFile(path, []byte(d.render()), 0o644)
+}
+
+// loadHeader reads a file only up to the line that closes its frontmatter, for a command that does not
+// need the body. A file without frontmatter gives the same error as loadDocument.
+func loadHeader(path string) (*document, error) {
+	if traceRead != nil {
+		traceRead(path)
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	reader := bufio.NewReader(file)
+	var header strings.Builder
+	for delimiters := 0; delimiters < 2; {
+		line, err := reader.ReadString('\n')
+		header.WriteString(line)
+		trimmed := strings.TrimRight(line, "\r\n")
+		if header.Len() == len(line) {
+			trimmed = strings.TrimPrefix(trimmed, utf8BOM)
+		}
+		if trimmed == "---" {
+			delimiters++
+		} else if delimiters == 0 {
+			break // not frontmatter: parseDocument gives the error
+		}
+		if err != nil {
+			break
+		}
+	}
+	doc, err := parseDocument(header.String())
+	if err != nil {
+		return nil, err
+	}
+	doc.headerOnly = true
+	return doc, nil
 }
 
 func (d *document) get(key string) string {

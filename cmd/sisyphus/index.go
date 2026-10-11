@@ -19,6 +19,8 @@ type issueIndex struct {
 	// shorter maps each shorter end of a full name, such as the bare file name, to its issues.
 	shorter map[string][]issueFile
 	docs    map[string]loadedDocument
+	// headers holds documents that were read only up to the end of their frontmatter.
+	headers map[string]loadedDocument
 }
 
 type loadedDocument struct {
@@ -36,6 +38,7 @@ func loadIndex(root string) *issueIndex {
 		exact:   map[string][]issueFile{},
 		shorter: map[string][]issueFile{},
 		docs:    map[string]loadedDocument{},
+		headers: map[string]loadedDocument{},
 	}
 	for _, state := range states {
 		directory := filepath.Join(root, "issues", state)
@@ -132,6 +135,21 @@ func (x *issueIndex) document(issue issueFile) (*document, error) {
 	}
 	doc, err := loadDocument(issue.path)
 	x.docs[issue.path] = loadedDocument{doc: doc, err: err}
+	return doc, err
+}
+
+// header returns the frontmatter of issue, for a caller that does not use the body: the full document
+// when the command already read it, or else a document read only up to the end of its frontmatter.
+// A caller must not save it; save refuses a header.
+func (x *issueIndex) header(issue issueFile) (*document, error) {
+	if loaded, ok := x.docs[issue.path]; ok {
+		return loaded.doc, loaded.err
+	}
+	if loaded, ok := x.headers[issue.path]; ok {
+		return loaded.doc, loaded.err
+	}
+	doc, err := loadHeader(issue.path)
+	x.headers[issue.path] = loadedDocument{doc: doc, err: err}
 	return doc, err
 }
 

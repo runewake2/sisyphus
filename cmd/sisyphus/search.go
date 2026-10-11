@@ -35,6 +35,7 @@ func searchIssues(root string, o searchOptions) ([]searchRow, error) {
 	query := strings.ToLower(o.query)
 
 	x := loadIndex(root)
+	o.filters.withBody = true
 	if err := checkParentFilter(x, o.filters); err != nil {
 		return nil, err
 	}

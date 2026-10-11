@@ -565,7 +565,7 @@ func parentName(x *issueIndex, name string) string {
 	if err != nil || !found {
 		return ""
 	}
-	doc, err := x.document(match)
+	doc, err := x.header(match)
 	if err != nil {
 		return ""
 	}
@@ -580,7 +580,7 @@ type subIssue struct {
 func subIssues(x *issueIndex, name string) []subIssue {
 	var result []subIssue
 	for _, issue := range x.issues {
-		doc, err := x.document(issue)
+		doc, err := x.header(issue)
 		if err != nil || x.canonical(doc.get("parent")) != name {
 			continue
 		}
@@ -747,7 +747,7 @@ func dependsOnReaches(x *issueIndex, start, target string, seen map[string]bool)
 	if err != nil || !found {
 		return false
 	}
-	doc, err := x.document(match)
+	doc, err := x.header(match)
 	if err != nil {
 		return false
 	}
@@ -763,7 +763,7 @@ func dependsOnReaches(x *issueIndex, start, target string, seen map[string]bool)
 func dependents(x *issueIndex, name string) []subIssue {
 	var result []subIssue
 	for _, issue := range x.issues {
-		doc, err := x.document(issue)
+		doc, err := x.header(issue)
 		if err != nil {
 			continue
 		}

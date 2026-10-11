@@ -48,3 +48,38 @@ func TestANewIssueTakesTheLineEndingsOfTheTemplate(t *testing.T) {
 	content := r.read("issues/open/crlf-issue-test.md")
 	equal(t, strings.Count(content, "\n"), strings.Count(content, "\r\n"))
 }
+
+func TestLoadHeaderReadsTheSameFrontmatterAsLoadDocument(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "fix-login-bug", "--tags", "bug")
+	r.write("issues/open/crlf-bom-test.md", utf8BOM+strings.ReplaceAll(r.read("issues/open/fix-login-bug.md"), "\n", "\r\n"))
+
+	for _, name := range []string{"fix-login-bug", "crlf-bom-test"} {
+		path := r.pathOf("issues/open/" + name + ".md")
+		full, err := loadDocument(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		header, err := loadHeader(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		equalSlices(t, full.front, header.front)
+		equal(t, full.bom, header.bom)
+		equal(t, full.crlf, header.crlf)
+		equal(t, 0, len(header.body))
+		isTrue(t, header.save(path) != nil, "a header cannot be saved")
+	}
+}
+
+func TestLoadHeaderGivesTheSameErrorsAsLoadDocument(t *testing.T) {
+	r := newTestRepo(t)
+	r.write("no-frontmatter.md", "# Title\n")
+	r.write("unclosed.md", "---\ntitle: x\n")
+	for _, name := range []string{"no-frontmatter.md", "unclosed.md"} {
+		_, fullErr := loadDocument(r.pathOf(name))
+		_, headerErr := loadHeader(r.pathOf(name))
+		isTrue(t, fullErr != nil && headerErr != nil, name+" fails")
+		equal(t, fullErr.Error(), headerErr.Error())
+	}
+}

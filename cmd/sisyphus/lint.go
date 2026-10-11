@@ -46,7 +46,7 @@ func lintRepo(root string) lintResult {
 	dependencies := map[string][]string{}
 	for _, issue := range x.issues {
 		file := relative(root, issue.path)
-		doc, err := x.document(issue)
+		doc, err := x.header(issue)
 		if err != nil {
 			add(file, 0, "the file cannot be read: %s", err)
 			continue

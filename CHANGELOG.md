@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.62]] - 2026-10-11
+- Read only the frontmatter of an issue when a command does not use its body.
+
 ## [[0.0.61]] - 2026-10-11
 - Split frontmatter lines without a regular expression, so that `list`, `search`, and `lint` are about twice as fast in a large repo.
 
