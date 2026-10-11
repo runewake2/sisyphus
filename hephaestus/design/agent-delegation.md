@@ -128,8 +128,9 @@ human checks the report and moves `main`.
 ## Votes of several roles
 
 One role judges a change only in its own scope. A **referendum** lets several role agents vote on
-one implementation: each votes `yes`, `no`, or submits a modification, and every modification
-reruns the vote on the modified version. [[referendum]] describes it, and [[referendum-voting]]
+one implementation. Required reviewers must all vote `yes` to pass it; non-required reviewers can
+only suggest modifications and raise concerns. A modification goes on only when every required
+reviewer accepts it, and then every reviewer votes again on the modified version. [[referendum]] describes it, and [[referendum-voting]]
 tracks it.
 
 ## The other roles

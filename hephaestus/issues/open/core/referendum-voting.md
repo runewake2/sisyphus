@@ -22,18 +22,19 @@ remote:                # Optional. A URL: the GitHub issue or Jira ticket that t
 
 ## Summary
 
-Add referendums: a series of delegated agents vote yes or no on an implementation, or submit a modification, and every modification reruns the vote on the modified version. Each agent evaluates the contents with its own scope and intents, against the current implementation. [[referendum]] is the design.
+Add referendums: a series of delegated agents, required and non-required reviewers, vote yes or no on an implementation, or submit a modification. The required reviewers must accept a modification unanimously, and then every reviewer votes again on the modified version. Each agent evaluates the contents with its own scope and intents, against the current implementation. [[referendum]] is the design.
 
 ## Context
 
-Requested by a human on 2026-10-11. One agent of one role judges a change only in its own scope; a referendum gathers the judgments of several roles, for example the engineer, the technical docs agent, and the UX researcher, before a change goes on, for example to the merge queue ([[merge-queue-agent]]). The design has the terms, the steps of a round, the rules for modifications, the result, the record, an example, and the open questions R1-R6. A referendum uses only generic sisyphus data: `metadata`, `edit --append`, and wikilinks.
+Requested by a human on 2026-10-11. One agent of one role judges a change only in its own scope; a referendum gathers the judgments of several roles, for example the engineer, the technical docs agent, and the UX researcher, before a change goes on, for example to the merge queue ([[merge-queue-agent]]). The design has the terms, the steps of a round, the modification gate, the result, the record, an example, and the open questions R1-R8. A referendum uses only generic sisyphus data: `metadata`, `edit --append`, and wikilinks.
 
 ## Acceptance criteria
 
-- [ ] A decision record answers R1-R6.
+- [ ] A decision record answers R1-R8.
 - [ ] hephaestus can call a referendum on an issue with a set of voters, run its rounds, and record each round in the issue.
-- [ ] A modification makes a new version and a new round with every voter, and earlier ballots are void.
-- [ ] Voters do not see the ballots of other voters in the same round.
+- [ ] A referendum has required and non-required reviewers; it passes only when every required reviewer votes yes, and a non-required no is a concern, not a fail.
+- [ ] A modification goes on only when every required reviewer accepts it; it then makes a new version and a new round with every reviewer, and earlier ballots are void.
+- [ ] Reviewers do not see the ballots of other reviewers in the same round.
 - [ ] After the maximum number of rounds, or with no result, a human decides.
 - [ ] A test run with three role agents on a real bookmark, checked by a human.
 
@@ -44,7 +45,7 @@ Requested by a human on 2026-10-11. One agent of one role judges a change only i
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-11, from the human: a referendum has required reviewers, which must all vote yes to pass it, and non-required reviewers, which are only related at its edges: they can suggest modifications, but their no cannot fail it. Every modification must first be accepted unanimously by the required reviewers; then the larger vote, of all reviewers, decides whether the edit is accepted at all. This answers R1 and R6 in [[referendum]], and adds the modification gate and the open questions R7 and R8.
 
 ## Resolution
 
