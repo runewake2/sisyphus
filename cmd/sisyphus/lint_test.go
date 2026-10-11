@@ -59,16 +59,32 @@ func TestLintReportsEachKindOfProblem(t *testing.T) {
 		"issues/open/loose-issue-test.md: the value of 'title' opens a list",
 		`issues/open/loose-issue-test.md: the frontmatter line "  - stray line`,
 		"issues/open/loose-issue-test.md: the issue 'loose-issue-test' is in more than one state directory: issues/open/loose-issue-test.md, issues/closed/loose-issue-test.md",
-		"issues/open/first-issue-test.md: its parent chain has a cycle",
-		"issues/open/second-issue-test.md: its parent chain has a cycle",
+		"issues/open/first-issue-test.md: its parent chain is a cycle: first-issue-test → second-issue-test → first-issue-test",
 		"issues/open/first-issue-test.md: its depends-on entry 'gone-issue-test' does not exist",
-		"issues/open/first-issue-test.md: its dependencies form a cycle: 'second-issue-test' depends back on it",
+		"issues/open/first-issue-test.md: its dependencies form a cycle: first-issue-test → second-issue-test → first-issue-test",
 		"design/notes.md:3: the link [[nowhere-at-all]] is missing",
 		"design/notes.md:3: the link [[widget-scheduler#No Such Heading]] is missing-heading",
 	} {
 		contains(t, res.output, want)
 	}
 	contains(t, res.error, "problems in")
+	isTrue(t, !strings.Contains(res.output, "second-issue-test.md: its parent chain"), "a cycle is reported once")
+	isTrue(t, !strings.Contains(res.output, "second-issue-test.md: its dependencies form"), "a cycle is reported once")
+}
+
+func TestLintReportsALongerDependencyCycleOnceInOrder(t *testing.T) {
+	r := newTestRepo(t)
+	r.mustRun("new", "cycle-c-test")
+	r.mustRun("new", "cycle-b-test", "--depends-on", "cycle-c-test")
+	r.mustRun("new", "cycle-a-test", "--depends-on", "cycle-b-test")
+	r.mustRun("new", "outside-issue-test", "--depends-on", "cycle-a-test")
+	r.replaceIn("issues/open/cycle-c-test.md", "depends-on: []", `depends-on: ["[[cycle-a-test]]"]`)
+
+	res := r.run("lint")
+
+	equal(t, 1, res.exit)
+	equal(t, 1, strings.Count(res.output, "form a cycle"))
+	contains(t, res.output, "issues/open/cycle-a-test.md: its dependencies form a cycle: cycle-a-test → cycle-b-test → cycle-c-test → cycle-a-test")
 }
 
 func TestLintReportsAParentThatDoesNotExistAndADependencyOnItself(t *testing.T) {

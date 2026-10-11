@@ -30,6 +30,9 @@ subdirectories:
 - Each `depends-on` entry names one existing issue that is not the issue itself, and the
   dependencies do not come back to the issue.
 
+A cycle of parents or of dependencies is reported once, on the file of its first issue in sort order,
+as the issues in order: `its dependencies form a cycle: a → b → c → a`.
+
 For each Markdown file in the repo: every wikilink is `ok`, the same check as [[sisyphus-links]].
 A frontmatter link that does not resolve, for example a `parent` that does not exist, is reported
 by both checks.
@@ -45,9 +48,10 @@ One line for each problem, sorted by file:
 design/notes.md:3: the link [[nowhere-at-all]] is missing
 issues/open/fix-login-bug.md: its priority 'urgent' is not one of: critical, high, medium, low
 issues/open/fix-login-bug.md: its depends-on entry 'old-cache-layer' does not exist
+issues/open/auth-epic.md: its dependencies form a cycle: auth-epic → fix-login-bug → auth-epic
 ```
 
-and then, on stderr, `Error: 3 problems in 62 issues and 148 Markdown files.` The exit code is 1.
+and then, on stderr, `Error: 4 problems in 62 issues and 148 Markdown files.` The exit code is 1.
 
 With no problem, one line on stdout, for example `62 issues and 148 Markdown files: no problems.`,
 and exit code 0.

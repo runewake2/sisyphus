@@ -1,5 +1,8 @@
 # Changelog
 
+## [[0.0.59]] - 2026-10-11
+- Find cycles in `sisyphus lint` with one pass over the graph, and report each cycle once.
+
 ## [[0.0.58]] - 2026-10-11
 - Resolve wikilinks with maps instead of a scan of every file, so that `lint` at 20,000 issues takes 2.3 s instead of 39 s.
 
