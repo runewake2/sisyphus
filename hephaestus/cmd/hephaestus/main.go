@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/runewake2/sisyphus/hephaestus/internal/repo"
+	"github.com/runewake2/sisyphus/hephaestus/internal/roles"
 )
 
 func main() {
@@ -32,7 +33,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 }
 
 func newRootCommand() *cobra.Command {
-	var directory string
+	var directory, rolesDir string
 	root := &cobra.Command{
 		Use:   "hephaestus",
 		Short: "Give sisyphus issues to agents that each have one role, and run the tool agents.",
@@ -42,8 +43,22 @@ func newRootCommand() *cobra.Command {
 		SilenceUsage:  true,
 	}
 	root.PersistentFlags().StringVarP(&directory, "directory", "C", ".", "Run as if started in this directory, as git -C does.")
+	root.PersistentFlags().StringVar(&rolesDir, "roles", "", "The directory of the role files. Default: hephaestus/roles of the repo.")
 	findRepo := func() (repo.Repo, error) { return repo.Find(directory) }
-	root.AddCommand(versionCommand(findRepo), decisionsCommand(findRepo))
+	w := workspace{
+		directory: func() string { return directory },
+		roles: func() (string, error) {
+			if rolesDir != "" {
+				return rolesDir, nil
+			}
+			r, err := findRepo()
+			if err != nil {
+				return "", err
+			}
+			return roles.Dir(r.Root), nil
+		},
+	}
+	root.AddCommand(versionCommand(findRepo), decisionsCommand(findRepo), rolesCommand(w), delegateCommand(w), tasksCommand(w))
 	return root
 }
 

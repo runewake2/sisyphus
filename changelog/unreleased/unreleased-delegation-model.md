@@ -1,0 +1,33 @@
+# Unreleased: Delegate issues to roles, with role files and the hephaestus delegation commands
+
+- Date: 2026-10-12
+- Bookmark: samw/ai/ux-fixes
+- Components: hephaestus
+- Changelog: Describe each hephaestus role in a role file, and add hephaestus roles, delegate, and tasks.
+
+## Summary
+
+hephaestus can now delegate a sisyphus issue to a role, and find the tasks of each role. Each role
+is a Markdown file with frontmatter that hephaestus checks, and the first one is the merge queue.
+
+## Changes
+
+- The role file format, [[role-file]]: frontmatter with `role`, `kind` (`ai` or `tool`), `command`,
+  `trigger`, `on-failure`, and `can-call-referendum`, and the sections Charter, Inputs, Outputs,
+  Tools, Ask a human, and, for an AI role, Prompt.
+- `hephaestus/roles/merge-queue.md`, a tool role.
+- `hephaestus roles` lists the roles and reports every problem of every role file.
+- `hephaestus delegate <issue> <role>` sets the sisyphus metadata key `delegate`, after it checks
+  the role; `--clear` removes it. `hephaestus tasks <role>` lists the tasks of a role that can start
+  now, with the sisyphus filter `--metadata delegate=<role>`; `--all` in every state.
+- hephaestus uses sisyphus only through its command (package `internal/sisyphus`). Its tests build
+  the sisyphus command of the repo.
+
+## Decisions
+
+- [[0001-delegate-is-a-metadata-key]] (Q1)
+- [[0002-each-role-is-a-markdown-file]] (Q2)
+
+## Issues
+
+- Closed [[delegation-model]].

@@ -4,7 +4,7 @@ hephaestus is a worker manager: it provisions and manages agents, each with one 
 them sisyphus issues to resolve. It depends on sisyphus, and uses sisyphus issues as its record of
 work. It is a separate project that lives beside sisyphus, in this directory of the sisyphus repo.
 
-> **Status:** early. The versioning tools work; the workers do not exist yet. [[agent-delegation]] is the design, and
+> **Status:** early. Delegation and the versioning tools work; the workers do not exist yet. [[agent-delegation]] is the design, and
 > [[delegate-issues-to-agents]] is the first epic.
 
 hephaestus is a Go module of its own, in this directory. It runs as a CLI tool, `hephaestus`, and as
@@ -31,6 +31,9 @@ as `git -C` does.
 
 | Command | What it does |
 |---|---|
+| `hephaestus roles` | List the roles of `hephaestus/roles/<role>.md`, and report every problem of a role file ([[role-file]]). |
+| `hephaestus delegate <issue> <role>` | Delegate an issue to a role: `sisyphus update <issue> --metadata delegate=<role>`. `--clear` removes it. |
+| `hephaestus tasks <role>` | List the tasks of a role that can start now; `--all` in every state. |
 | `hephaestus version list` | List the unreleased changelog entries, in the order that `assign` uses by default. |
 | `hephaestus version assign [<entry>...]` | Give the next SHAME versions to unreleased changelog entries, in the given order: move each to `changelog/<version>.md`, add the `CHANGELOG.md` entry, set `VERSION`, and change every link to it. `--dry-run` and `--json` show the plan. |
 | `hephaestus decisions renumber [--onto main]` | Give a new number to each decision record that has the number of another one in its directory and that the base does not have, and change every link to it. `--dry-run` and `--json` show the plan. |
@@ -47,6 +50,7 @@ hephaestus/
   go.mod        The Go module of hephaestus
   cmd/          The hephaestus command
   internal/     Its packages
+  roles/        One role file for each role
   design/       Design documents of hephaestus
   issues/       The issues of hephaestus, a sisyphus tracker of its own
 ```

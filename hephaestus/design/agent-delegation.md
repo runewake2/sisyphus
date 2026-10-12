@@ -137,7 +137,7 @@ runs in two forms:
 
 ## How an issue gets to an agent
 
-This is a draft; [[delegation-model]] decides it. The proposed model:
+[[delegation-model]] decided it, and [[role-file]] describes the role files and the commands:
 
 - An issue is delegated to a role with the `delegate` key of the sisyphus `metadata` field (Q1,
   answered by the human on 2026-10-11): `delegate` is the role assigned to own the task, and
