@@ -124,6 +124,8 @@ Answered by the human on 2026-10-11:
   (any one worker of the role, or all of them, by a flag of the message), or `broadcast` (every
   listener; a listener can filter by kind).
 
+`hephaestus messages` implements it: [[0001-a-local-service-with-an-append-only-log]] records how.
+
 ## The form of hephaestus
 
 hephaestus is a Go module of its own, in `hephaestus/` (Q7, answered by the human on 2026-10-12).

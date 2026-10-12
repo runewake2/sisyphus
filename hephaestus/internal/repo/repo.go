@@ -204,3 +204,53 @@ func (r Repo) Exists(rev string) bool {
 	}
 	return false
 }
+
+// SharedDir returns the directory of hephaestus that every workspace of the repo shares: hephaestus/
+// in the jj repo directory (.jj/repo, which each jj workspace points to) or in the git common
+// directory (which each git worktree points to). Without jj or git, it is .hephaestus/ in the root.
+func (r Repo) SharedDir() string {
+	switch r.VCS {
+	case JJ:
+		repoDir := filepath.Join(r.Root, ".jj", "repo")
+		if info, err := os.Stat(repoDir); err == nil && !info.IsDir() {
+			if target, err := os.ReadFile(repoDir); err == nil {
+				repoDir = resolveFrom(filepath.Join(r.Root, ".jj"), strings.TrimSpace(string(target)))
+			}
+		}
+		return filepath.Join(repoDir, "hephaestus")
+	case Git:
+		return filepath.Join(gitCommonDir(filepath.Join(r.Root, ".git")), "hephaestus")
+	}
+	return filepath.Join(r.Root, ".hephaestus")
+}
+
+// gitCommonDir returns the directory that every worktree of a git repo shares. In the main worktree,
+// .git is that directory; in another worktree, .git is a file "gitdir: <dir>", and <dir>/commondir
+// holds the path of the shared directory, relative to <dir>.
+func gitCommonDir(dotGit string) string {
+	info, err := os.Stat(dotGit)
+	if err != nil || info.IsDir() {
+		return dotGit
+	}
+	content, err := os.ReadFile(dotGit)
+	if err != nil {
+		return dotGit
+	}
+	gitDir, found := strings.CutPrefix(strings.TrimSpace(string(content)), "gitdir:")
+	if !found {
+		return dotGit
+	}
+	worktree := resolveFrom(filepath.Dir(dotGit), strings.TrimSpace(gitDir))
+	common, err := os.ReadFile(filepath.Join(worktree, "commondir"))
+	if err != nil {
+		return worktree
+	}
+	return resolveFrom(worktree, strings.TrimSpace(string(common)))
+}
+
+func resolveFrom(base, path string) string {
+	if filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
+	return filepath.Join(base, filepath.FromSlash(path))
+}

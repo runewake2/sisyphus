@@ -58,7 +58,7 @@ func newRootCommand() *cobra.Command {
 			return roles.Dir(r.Root), nil
 		},
 	}
-	root.AddCommand(versionCommand(findRepo), decisionsCommand(findRepo), rolesCommand(w), delegateCommand(w), tasksCommand(w), mergeOrderCommand(w, findRepo))
+	root.AddCommand(versionCommand(findRepo), decisionsCommand(findRepo), rolesCommand(w), delegateCommand(w), tasksCommand(w), mergeOrderCommand(w, findRepo), messagesCommand(findRepo))
 	return root
 }
 
