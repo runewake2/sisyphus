@@ -26,7 +26,7 @@ Add a technical docs role: an agent that takes each piece of completed work and 
 
 ## Context
 
-[[agent-delegation#The other roles]] describes the role. Some checks are already tests: every command page has the sections and flags of its command, every help example is on its page, `docs/agents.md` uses only commands and flags that exist, and `docs/output.md` names every JSON field. The role covers what tests cannot: the text says what the code does, the examples give the output that the page shows, and the writing follows `CONTRIBUTING.md` (Writing style). Its trigger is a close of an issue (Q5).
+[[agent-delegation#The other roles]] describes the role. Some checks are already tests: every command page has the sections and flags of its command, every help example is on its page, [[agent-guide]] uses only commands and flags that exist, and [[output]] names every JSON field. The role covers what tests cannot: the text says what the code does, the examples give the output that the page shows, and the writing follows [[CONTRIBUTING#Writing style]]. Its trigger is a close of an issue (Q5).
 
 ## Acceptance criteria
 

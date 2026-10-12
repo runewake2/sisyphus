@@ -26,7 +26,7 @@ Add a UX researcher role: an agent that uses what is being built as a new person
 
 ## Context
 
-[[agent-delegation#The other roles]] describes the role. This repo already has two such reviews: the review that filed `cli-and-docs-ux` (a first session, every `--help`, every docs page, the README on GitHub), and the review that filed `agent-cooperation` (the CLI through a shell tool with no terminal, and sisyphus-mcp through a JSON-RPC client). The spike the sisyphus spike `spike-ollama-local-models` measured how small models use the tools. The role makes these reviews repeatable, for example after each epic closes.
+[[agent-delegation#The other roles]] describes the role. This repo already has two such reviews: the review that filed [[cli-and-docs-ux]] (a first session, every `--help`, every docs page, the README on GitHub), and the review that filed [[agent-cooperation]] (the CLI through a shell tool with no terminal, and sisyphus-mcp through a JSON-RPC client). The spike [[spike-ollama-local-models]] measured how small models use the tools. The role makes these reviews repeatable, for example after each epic closes.
 
 ## Acceptance criteria
 

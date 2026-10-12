@@ -41,7 +41,7 @@ The page must cover:
 
 ## Acceptance criteria
 
-- [ ] A docs page (for example `docs/agents.md`) has a block to paste, for the CLI and for MCP.
+- [ ] A docs page (for example `docs/agent-guide.md`) has a block to paste, for the CLI and for MCP.
 - [ ] The README and [[sisyphus-mcp]] link to it.
 - [ ] A test checks that each command in the block exists, as for the command examples.
 
@@ -55,5 +55,5 @@ The page must cover:
 
 ## Resolution
 
-Completed in [[0.0.93]]. [[agents]] has the setup, blocks to paste for a shell (long and short) and for MCP, and how several agents work together. A test checks every command and flag on the page. The README, [[sisyphus-mcp]], and [[commands]] link to it.
+Completed in [[0.0.93]]. [[agent-guide]] has the setup, blocks to paste for a shell (long and short) and for MCP, and how several agents work together. A test checks every command and flag on the page. The README, [[sisyphus-mcp]], and [[commands]] link to it.
 

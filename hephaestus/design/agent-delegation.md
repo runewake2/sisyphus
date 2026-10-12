@@ -31,30 +31,30 @@ issues matter, and checks that the docs still agree with the code. In the sisyph
 example, the work of several workspaces (`ux-fixes`, `tracker-fixes`, `edit-issue-sections`, and
 `ollama-model-spike`) was merged by hand, and each merge had to renumber the SHAME versions that
 the workspaces picked at the same time (see
-[CONTRIBUTING.md, Changelog](../../CONTRIBUTING.md#changelog)). These are roles with clear inputs
+[[CONTRIBUTING#Changelog]]). These are roles with clear inputs
 and outputs, so agents can do them, with a human at the points that need judgment.
 
 ## Rules for every role
 
-These rules add to [AGENTS.md](../../AGENTS.md). They apply to every role agent that hephaestus
+These rules add to [[AGENTS]]. They apply to every role agent that hephaestus
 runs.
 
 1. **One role for each agent.** An agent works only on the issues delegated to its role, and only
    does the work of its role. Work that it finds for another role becomes an issue for that role.
 2. **sisyphus is the interface to issues.** An agent finds, claims, and closes its work with
-   sisyphus ([docs/agents.md](../../docs/agents.md)), never by editing issue files by hand.
+   sisyphus ([[agent-guide]]), never by editing issue files by hand.
    hephaestus gives each agent an owner name, its role id and an instance, for example
    `merge-queue-1`, in `SISYPHUS_OWNER`.
 3. **Own workspace and bookmark.** hephaestus gives each agent its own jj workspace and a bookmark
    `samw/ai/<role>-<topic>`, and the agent claims each issue with `sisyphus start`
-   ([docs/sisyphus-claims.md](../../docs/sisyphus-claims.md)).
+   ([[sisyphus-claims]]).
 4. **Humans keep the code host and `main`.** No agent pushes, opens pull requests, or moves `main`
    unless a human tells it to. An agent prepares the result, and a human accepts it. A human can
    give one role more authority later, as a recorded decision, except the merge queue, which never
    moves `main` (Q3).
 5. **Every result is in the repo.** An agent records what it did in the issue (`Notes`,
    `Resolution`), in decision records, and in the changelog, as
-   [CONTRIBUTING.md](../../CONTRIBUTING.md) asks. A report that exists only in a chat is lost.
+   [[CONTRIBUTING]] asks. A report that exists only in a chat is lost.
 6. **Stop and ask.** When the work needs a choice that the issue does not make, the agent writes
    the question in `Notes`, stops the issue (`sisyphus update <name> open`), and tags it
    `needs-human`.
@@ -164,7 +164,7 @@ agents in sisyphus:
 | Need | sisyphus today | sisyphus issue |
 |---|---|---|
 | Record the role of an issue | `metadata` (`--metadata key=value`) | none |
-| Find the issues of a role | Not possible: no filter on `metadata` | `filter-by-metadata` |
+| Find the issues of a role | Not possible: no filter on `metadata` | [[filter-by-metadata]] |
 | Know who works on an issue, in any workspace | `owner`, `SISYPHUS_OWNER`, claims | none |
 | Read issues and their links as data | `--json` on `list`, `search`, `show`, `graph`, and `claims` | none |
 | The issues of a bookmark | `bookmark` in the JSON rows of `list` | none (filter in hephaestus) |
@@ -242,11 +242,11 @@ Each of these is a separate issue, with its own design before the work.
 - **UX researcher** ([[ux-researcher-agent]]): uses what is being built as a new person and as an
   agent would (a first session, every `--help`, the docs, the MCP tools, and small models), and
   files one issue for each problem, with what it saw. The sisyphus reviews that filed the epics
-  `cli-and-docs-ux` and `agent-cooperation` are examples, as a repeatable role.
+  [[cli-and-docs-ux]] and [[agent-cooperation]] are examples, as a repeatable role.
 - **Technical docs** ([[technical-docs-agent]]): for each issue that closes, checks that the
   command pages, the README, and the guides still agree with the behavior (run the examples,
   compare the flags), fixes the docs or files an issue, and writes the page for a new feature. It
-  follows the writing style of [CONTRIBUTING.md](../../CONTRIBUTING.md#writing-style).
+  follows the writing style of [[CONTRIBUTING#Writing style]].
 
 ## Open questions
 
@@ -254,7 +254,7 @@ A human answers a question with a reply such as "Q1 yes", or another answer.
 
 | Id | Question | Asked in | Proposed answer |
 |---|---|---|---|
-| Q1 | How is an issue delegated to a role: the `metadata` key `delegate`, a tag, or the `owner`? | [[delegation-model]] | Answered by the human on 2026-10-11: the `metadata` key `delegate`, the role assigned to own the task (`metadata: {delegate: merge-queue}`), with the sisyphus filter `filter-by-metadata`. Not a frontmatter field of its own. The `owner` stays the agent instance that works on it. |
+| Q1 | How is an issue delegated to a role: the `metadata` key `delegate`, a tag, or the `owner`? | [[delegation-model]] | Answered by the human on 2026-10-11: the `metadata` key `delegate`, the role assigned to own the task (`metadata: {delegate: merge-queue}`), with the sisyphus filter [[filter-by-metadata]]. Not a frontmatter field of its own. The `owner` stays the agent instance that works on it. |
 | Q2 | Where are the roles described: `hephaestus/roles/<role>.md`, `.claude/agents/`, or in code? | [[delegation-model]] | Answered by the human on 2026-10-11: each role is a Markdown file of its own, `hephaestus/roles/<role>.md`, readable by people and by any runtime. hephaestus can generate `.claude/agents/` files from it. |
 | Q3 | May the merge queue move `main`, or only prepare a bookmark? | [[merge-queue-agent]] | Answered by the human on 2026-10-11: the merge queue never moves `main`. Its only job is to make a linear history from a set of tasks. |
 | Q4 | What runs the agents: Claude Code subagents, the Claude Agent SDK, Claude Managed Agents, or local models? | [[delegation-runner]] | Answered by the human on 2026-10-11: AI agents start as Claude Code subagents, started by a human, then hephaestus on the Agent SDK. Local models only for roles that a task suite shows they can do. hephaestus also runs tool agents, which use no AI ([[#AI agents and tool agents]]). |

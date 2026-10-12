@@ -23,7 +23,7 @@ manager, hephaestus, depends on sisyphus and uses its issues to provision and ma
   for example metadata fields or a filter on `metadata` ([[filter-by-metadata]]). An agent role is
   recorded in the generic `metadata` field, not in a field for agents.
 - The sisyphus features that help any agent use issues stay in sisyphus: claims, `SISYPHUS_OWNER`,
-  the MCP server, and [[agents]]. They are about issues, not about running agents.
+  the MCP server, and [[agent-guide]]. They are about issues, not about running agents.
 
 ## Alternatives considered
 

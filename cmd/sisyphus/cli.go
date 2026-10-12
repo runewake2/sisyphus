@@ -841,10 +841,10 @@ func lintCommand(findRoot func() (string, error)) *cobra.Command {
 				}
 			}
 			if n := len(result.Problems); n > 0 {
-				return fmt.Errorf("%d %s in %d issues and %d Markdown files.", n, plural(n, "problem", "problems"), result.Issues, result.Documents)
+				return fmt.Errorf("%d %s in %d %s and %d Markdown %s.", n, plural(n, "problem", "problems"), result.Issues, plural(result.Issues, "issue", "issues"), result.Documents, plural(result.Documents, "file", "files"))
 			}
 			if !asJSON {
-				fmt.Fprintf(out, "%d issues and %d Markdown files: no problems.\n", result.Issues, result.Documents)
+				fmt.Fprintf(out, "%d %s and %d Markdown %s: no problems.\n", result.Issues, plural(result.Issues, "issue", "issues"), result.Documents, plural(result.Documents, "file", "files"))
 			}
 			return nil
 		},

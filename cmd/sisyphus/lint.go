@@ -86,7 +86,8 @@ func lintRepo(root string) lintResult {
 	checker := newLinkChecker(root)
 	documents := 0
 	for _, c := range checker.candidates.list {
-		if !hasSuffixFold(c.relative, ".md") {
+		// A nested tracker checks only its own documents; their links resolve in the whole repo.
+		if !hasSuffixFold(c.relative, ".md") || outside(c.relative) {
 			continue
 		}
 		documents++

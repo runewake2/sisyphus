@@ -95,9 +95,13 @@ type candidateSet struct {
 // scanLookups is the number of link lookups that scan the candidate list before the maps are built.
 const scanLookups = 64
 
+// repoCandidates finds every file that a wikilink of the tracker at root can point to: every file of
+// the working copy that holds root, as Obsidian does with a vault at the root of the repo. A tracker
+// below another one ("sisyphus init --nested") so resolves links to the documents of the whole repo.
+// Paths stay relative to root: a file outside it has a path that starts with "../".
 func repoCandidates(root string) *candidateSet {
 	set := &candidateSet{byRelative: map[string]int{}}
-	for _, file := range repoFiles(root) {
+	for _, file := range repoFiles(vaultRoot(root)) {
 		rel := relative(root, file)
 		keys := []string{rel}
 		if hasSuffixFold(rel, ".md") {
@@ -110,6 +114,20 @@ func repoCandidates(root string) *candidateSet {
 		set.byRelative[c.relative] = i
 	}
 	return set
+}
+
+// vaultRoot returns the directory whose files wikilinks resolve against: the root of the jj or git
+// working copy that holds root, or root itself when there is none.
+func vaultRoot(root string) string {
+	if _, workingCopy, ok := findSharedState(root); ok {
+		return workingCopy
+	}
+	return root
+}
+
+// outside reports whether a path relative to the tracker root is outside it.
+func outside(relativePath string) bool {
+	return relativePath == ".." || strings.HasPrefix(relativePath, "../")
 }
 
 // buildMaps fills exact and suffix, for a command that looks up many links.

@@ -26,7 +26,7 @@ Add a project manager role: an agent that reads the open issues and proposes how
 
 ## Context
 
-[[agent-delegation#The other roles]] describes the role. Examples of its work in this repo: `issue-manager-gaps` stayed open with one criterion left until a human moved `migrate-command` out of it; `small-model-friendly-mcp` has all its sub-issues closed and waits only on a rerun. The agent would find such cases, and propose the change as one commit for a human to accept.
+[[agent-delegation#The other roles]] describes the role. Examples of its work in this repo: [[issue-manager-gaps]] stayed open with one criterion left until a human moved [[migrate-command]] out of it; [[small-model-friendly-mcp]] has all its sub-issues closed and waits only on a rerun. The agent would find such cases, and propose the change as one commit for a human to accept.
 
 It uses `list`, `search`, `graph`, `claims`, and `lint`, and changes issues only with sisyphus commands.
 

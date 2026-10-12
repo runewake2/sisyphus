@@ -29,16 +29,16 @@ Decide how a human or an agent delegates an issue to a role, how a role agent fi
 The draft in [[agent-delegation#How an issue gets to an agent]] proposes:
 
 - Delegate an issue to a role with the generic `metadata` field of sisyphus: `sisyphus update <name> --metadata delegate=merge-queue`. sisyphus does not know what the key means, so it needs no field for agents ([[agent-delegation#What hephaestus needs from sisyphus]]).
-- Find the work of a role with a sisyphus filter on `metadata`, which the sisyphus issue `filter-by-metadata` adds for any client.
+- Find the work of a role with a sisyphus filter on `metadata`, which the sisyphus issue [[filter-by-metadata]] adds for any client.
 - One file for each role, `hephaestus/roles/<role>.md`: the charter, the inputs, the outputs, the allowed tools, the points where the agent must ask a human, and the prompt.
 - Owner names of role agents: the role id and an instance, for example `merge-queue-1`, in `SISYPHUS_OWNER`.
 
-Compare at least two drafts (for example the field against a tag), as `CONTRIBUTING.md` (How to do design work) asks.
+Compare at least two drafts (for example the field against a tag), as [[CONTRIBUTING#How to do design work]] asks.
 
 ## Acceptance criteria
 
 - [ ] A decision record answers Q1 and Q2.
-- [ ] hephaestus records the role of an issue in `metadata`, and finds the issues of a role with the filter of the sisyphus issue `filter-by-metadata`.
+- [ ] hephaestus records the role of an issue in `metadata`, and finds the issues of a role with the filter of the sisyphus issue [[filter-by-metadata]].
 - [ ] A role description format exists, with one example: `hephaestus/roles/merge-queue.md`. It tells the kind of the agent: `ai` or `tool` ([[tool-agents]]).
 
 ## Out of scope

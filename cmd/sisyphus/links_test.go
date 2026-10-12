@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"regexp"
 	"testing"
 )
@@ -153,4 +154,36 @@ func TestLinksReportsADocumentWithoutLinks(t *testing.T) {
 	equal(t, 0, res.exit)
 	equal(t, "", res.output)
 	contains(t, res.error, "No wikilinks in design/links-doc.md")
+}
+
+func TestANestedTrackerResolvesLinksInTheWholeRepo(t *testing.T) {
+	r := newTestRepo(t)
+	r.write(".git/HEAD", "ref: refs/heads/main\n") // the working copy is the repo root
+	r.write("CONTRIBUTING.md", "# Contributing\n\n## Issues\n")
+	r.mustRun("new", "fix-login-bug")
+	nested := &testRepo{t: t, root: filepath.Join(r.root, "tools")}
+	nested.write("issues/TEMPLATE.md", kitTemplate(t))
+	nested.mustRun("new", "build-tool")
+	nested.write("notes.md", "See [[CONTRIBUTING#Issues]], [[fix-login-bug]], and [[build-tool]].\n")
+
+	lint := nested.mustRun("lint")
+	links := nested.mustRun("links", "notes.md", "--json").output
+	list := nested.mustRun("list").output
+
+	contains(t, lint.output, "1 issue and 3 Markdown files: no problems.")
+	contains(t, links, `"resolved": "../CONTRIBUTING.md"`)
+	contains(t, links, `"resolved": "../issues/open/fix-login-bug.md"`)
+	contains(t, list, "build-tool")
+	notContains(t, list, "fix-login-bug")
+}
+
+func TestTheRootTrackerChecksTheDocumentsOfANestedOne(t *testing.T) {
+	r := newTestRepo(t)
+	r.write(".git/HEAD", "ref: refs/heads/main\n")
+	r.write("tools/issues/TEMPLATE.md", kitTemplate(t))
+	r.write("tools/notes.md", "See [[missing-doc]].\n")
+
+	res := r.run("lint")
+
+	contains(t, res.output, "tools/notes.md:1: the link [[missing-doc]] is missing")
 }

@@ -26,7 +26,7 @@ Add a merge queue role: a tool agent, which uses no model ([[tool-agents]]), who
 
 ## Context
 
-In this repo, the bookmarks of several workspaces were merged by hand, and each merge had to renumber the SHAME versions that the workspaces picked at the same time (`CONTRIBUTING.md` (Changelog)). [[agent-delegation#Merge queue]] describes the role: its input (a set of tasks, each with its bookmark), its order, how it handles each merge, and its output (a bookmark `merge-queue/<date>` and a report). It never moves `main` (Q3, answered by the human).
+In this repo, the bookmarks of several workspaces were merged by hand, and each merge had to renumber the SHAME versions that the workspaces picked at the same time ([[CONTRIBUTING#Changelog]]). [[agent-delegation#Merge queue]] describes the role: its input (a set of tasks, each with its bookmark), its order, how it handles each merge, and its output (a bookmark `merge-queue/<date>` and a report). It never moves `main` (Q3, answered by the human).
 
 Parts:
 

@@ -29,7 +29,7 @@ Compute the merge order of a set of tasks, each with its bookmark: dependencies 
 The rules are in [[agent-delegation#Merge queue]]. The data comes from the repo:
 
 - The issues of a bookmark: the issues whose `bookmark` field is the bookmark, and the `Fixes #<name>` trailers of its changes.
-- Dependencies: `depends-on` between those issues (`docs/sisyphus-graph.md` has the edges).
+- Dependencies: `depends-on` between those issues ([[sisyphus-graph]] has the edges).
 - Stacks: a bookmark whose base is another bookmark of the set.
 - Overlap: the files that two bookmarks both change, from the VCS.
 

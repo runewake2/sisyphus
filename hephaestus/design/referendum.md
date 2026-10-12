@@ -126,7 +126,7 @@ can always overrule a result, and the record shows that a human did.
 
 ## Record
 
-Every referendum is recorded in the repo, as [AGENTS.md](../../AGENTS.md) asks for every result:
+Every referendum is recorded in the repo, as [[AGENTS]] asks for every result:
 
 - The issue gets the state of its referendum in `metadata`, for example
   `referendum=round-2` and then `referendum=passed`, with
@@ -140,7 +140,7 @@ Every referendum is recorded in the repo, as [AGENTS.md](../../AGENTS.md) asks f
   nobody changes it after the result. A later referendum on the same issue gets a new file.
 
 sisyphus needs no new field or command for this: `metadata`, `edit --append`, and wikilinks are
-enough. A filter on `metadata` (sisyphus issue `filter-by-metadata`) lets hephaestus find the open
+enough. A filter on `metadata` (sisyphus issue [[filter-by-metadata]]) lets hephaestus find the open
 referendums.
 
 ## Example

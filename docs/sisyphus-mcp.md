@@ -59,7 +59,7 @@ Set `SISYPHUS_OWNER` in the `env` of the server to give each agent an owner name
 agent starts gets it as its owner when the call has no `owner`, and `mine` of `sisyphus_list` and
 `sisyphus_search` filters on it.
 
-[[agents]] has instructions to paste into the `AGENTS.md` or `CLAUDE.md` of your repo.
+[[agent-guide]] has instructions to paste into the `AGENTS.md` or `CLAUDE.md` of your repo.
 
 A guide to running sisyphus with a local Ollama model is planned: [[ollama-task-manager-guide]].
 

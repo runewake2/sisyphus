@@ -117,10 +117,10 @@ func TestReadmeLinksWorkOnGitHub(t *testing.T) {
 	}
 }
 
-// TestTheAgentGuideUsesCommandsAndFlagsThatExist checks each command in docs/agents.md, in inline code
+// TestTheAgentGuideUsesCommandsAndFlagsThatExist checks each command in docs/agent-guide.md, in inline code
 // and on indented lines, because agents copy that text into their instructions.
 func TestTheAgentGuideUsesCommandsAndFlagsThatExist(t *testing.T) {
-	page, err := os.ReadFile(filepath.Join("..", "..", "docs", "agents.md"))
+	page, err := os.ReadFile(filepath.Join("..", "..", "docs", "agent-guide.md"))
 	if err != nil {
 		t.Fatal(err)
 	}

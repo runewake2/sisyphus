@@ -1,0 +1,31 @@
+# Unreleased: Resolve the links of a nested tracker in the whole repo
+
+- Date: 2026-10-12
+- Bookmark: samw/ai/ux-fixes
+- Components: cli, docs, hephaestus
+- Changelog: Resolve the wikilinks of a nested tracker in the whole repo, and rename the agent guide to docs/agent-guide.md.
+
+## Summary
+
+In a nested tracker (`sisyphus init --nested`), `lint`, `links`, `resolve`, and `rename` now resolve
+wikilinks against every file of the jj or git working copy, as Obsidian does with a vault at the
+root of the repo. Before, a link from `hephaestus/` to `AGENTS.md` was reported missing.
+
+## Changes
+
+- The files that a link can point to come from the root of the working copy that holds the
+  tracker. Paths stay relative to the tracker, so a file outside it has a path such as
+  `../CONTRIBUTING.md`. The issues of a nested tracker stay separate, and its `lint` checks only its
+  own documents.
+- The hephaestus documents and issues use wikilinks to sisyphus documents and issues again,
+  instead of Markdown links and names in code text.
+- The agent guide moves from `docs/agents.md` to `docs/agent-guide.md`. Wikilinks ignore case, so
+  `[[agents]]` resolved to `AGENTS.md`, not to the guide, since [[0.0.93]]; every link to the guide
+  is now `[[agent-guide]]`.
+- The summary of `lint` says "1 issue" and "1 Markdown file", not "1 issues".
+- Tests cover links from a nested tracker to the repo, and the check of nested documents from the
+  root tracker.
+
+## Issues
+
+- Closed [[nested-tracker-links]].

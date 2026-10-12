@@ -48,7 +48,7 @@ Sub-issues:
 ## Out of scope
 
 - Roles that the human did not ask for. Add them as new sub-issues when they are needed.
-- Agents that push or move `main` without a human decision (`AGENTS.md`).
+- Agents that push or move `main` without a human decision ([[AGENTS]]).
 
 ## Notes
 

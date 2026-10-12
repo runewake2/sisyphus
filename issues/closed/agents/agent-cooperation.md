@@ -52,5 +52,5 @@ The sub-issues are in three groups:
 
 ## Resolution
 
-Completed in [[0.0.85]] to [[0.0.102]]. All 13 sub-issues are closed: claims are refused across owners and workspaces ([[0022-refuse-to-take-a-claimed-issue]], [[0024-share-claims-between-workspaces]]), writes are atomic and locked ([[0023-lock-and-write-issues-atomically]]), the MCP server has lifecycle tools, instructions, annotations, time limits, and a version check, and [[agents]] tells repos how to set up agents. Claims do not cross machines; that is future work.
+Completed in [[0.0.85]] to [[0.0.102]]. All 13 sub-issues are closed: claims are refused across owners and workspaces ([[0022-refuse-to-take-a-claimed-issue]], [[0024-share-claims-between-workspaces]]), writes are atomic and locked ([[0023-lock-and-write-issues-atomically]]), the MCP server has lifecycle tools, instructions, annotations, time limits, and a version check, and [[agent-guide]] tells repos how to set up agents. Claims do not cross machines; that is future work.
 

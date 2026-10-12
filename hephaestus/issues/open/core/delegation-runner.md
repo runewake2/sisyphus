@@ -26,7 +26,7 @@ Build the system that holds the role agents: it starts a role agent when a trigg
 
 ## Context
 
-The proposal is to start with Claude Code subagents that a human starts, made from `hephaestus/roles/<role>.md`, then a runner on the Claude Agent SDK. Local models only for roles that a task suite shows they can do, as the sisyphus spike `spike-ollama-local-models` did for issue tracking. Split this issue before the work starts: it is x-large.
+The proposal is to start with Claude Code subagents that a human starts, made from `hephaestus/roles/<role>.md`, then a runner on the Claude Agent SDK. Local models only for roles that a task suite shows they can do, as [[spike-ollama-local-models]] did for issue tracking. Split this issue before the work starts: it is x-large.
 
 ## Acceptance criteria
 

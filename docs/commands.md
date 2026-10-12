@@ -56,7 +56,7 @@ The groups are the same as in `sisyphus --help`.
 | [[sisyphus-init]] | Set up `issues/` in a repo. |
 | [[sisyphus-completion]] | Print the shell completion script. |
 
-[[sisyphus-mcp]] gives an agent all of these as tools over the Model Context Protocol. [[agents]] tells
+[[sisyphus-mcp]] gives an agent all of these as tools over the Model Context Protocol. [[agent-guide]] tells
 how to let AI agents use sisyphus.
 
 ## How sisyphus finds the repo
