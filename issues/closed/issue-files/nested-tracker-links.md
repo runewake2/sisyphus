@@ -46,5 +46,5 @@ Options: resolve links in the whole repo of the VCS (the vault of Obsidian), or 
 
 ## Resolution
 
-Completed in [[unreleased-nested-tracker-links]]. Links of a nested tracker resolve against every file of the working copy that holds it, as in Obsidian; its issues stay separate, and its lint checks only its own documents. The fix found that [[agent-guide]] (then docs/agents.md) was hidden by AGENTS.md, so the guide has a new name.
+Completed in [[0.0.107]]. Links of a nested tracker resolve against every file of the working copy that holds it, as in Obsidian; its issues stay separate, and its lint checks only its own documents. The fix found that [[agent-guide]] (then docs/agents.md) was hidden by AGENTS.md, so the guide has a new name.
 

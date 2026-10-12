@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-12
-- Version: [[unreleased-renumber-versions-on-merge]]
+- Version: [[0.0.108]]
 
 ## Context
 

@@ -53,5 +53,5 @@ Compare at least two drafts (for example the field against a tag), as [[CONTRIBU
 
 ## Resolution
 
-Completed in [[unreleased-delegation-model]]. A role is a Markdown file with checked frontmatter ([[role-file]]); `hephaestus delegate` records the role in the sisyphus metadata key delegate, and `hephaestus tasks` finds the tasks of a role with the sisyphus metadata filter. Decisions: [[0001-delegate-is-a-metadata-key]] and [[0002-each-role-is-a-markdown-file]].
+Completed in [[0.0.110]]. A role is a Markdown file with checked frontmatter ([[role-file]]); `hephaestus delegate` records the role in the sisyphus metadata key delegate, and `hephaestus tasks` finds the tasks of a role with the sisyphus metadata filter. Decisions: [[0001-delegate-is-a-metadata-key]] and [[0002-each-role-is-a-markdown-file]].
 

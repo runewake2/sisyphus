@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-12
-- Version: [[unreleased-message-queue]]
+- Version: [[0.0.112]]
 
 ## Context
 

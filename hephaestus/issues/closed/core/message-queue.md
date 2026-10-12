@@ -50,5 +50,5 @@ Requested by a human on 2026-10-11: agents must be able to send information to e
 
 ## Resolution
 
-Completed in [[unreleased-message-queue]]. `hephaestus messages serve` is a local service with a token and an append-only log in the shared hephaestus directory of the repo; `send`, `receive`, `ack`, `log`, and `listen` address one worker, one or all workers of a role, or a broadcast filtered by kind, with at-least-once, ordered delivery. Tool agents get their tasks with `listen`. See [[0001-a-local-service-with-an-append-only-log]].
+Completed in [[0.0.112]]. `hephaestus messages serve` is a local service with a token and an append-only log in the shared hephaestus directory of the repo; `send`, `receive`, `ack`, `log`, and `listen` address one worker, one or all workers of a role, or a broadcast filtered by kind, with at-least-once, ordered delivery. Tool agents get their tasks with `listen`. See [[0001-a-local-service-with-an-append-only-log]].
 

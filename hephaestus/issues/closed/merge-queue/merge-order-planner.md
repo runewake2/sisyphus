@@ -52,5 +52,5 @@ A cycle of dependencies between bookmarks is an error that names the issues. Thi
 
 ## Resolution
 
-Completed in [[unreleased-merge-order-planner]]. `hephaestus merge-order <task>...` groups the tasks by bookmark, puts dependencies and stacks first, then the fewest shared files, the oldest change, and the name, and gives the reason for each place. It leaves out a bookmark with no change, and stops at a task with no bookmark, a missing bookmark, or a cycle.
+Completed in [[0.0.111]]. `hephaestus merge-order <task>...` groups the tasks by bookmark, puts dependencies and stacks first, then the fewest shared files, the oldest change, and the name, and gives the reason for each place. It leaves out a bookmark with no change, and stops at a task with no bookmark, a missing bookmark, or a cycle.
 

@@ -48,5 +48,5 @@ Requested by a human on 2026-10-11, with the answer to Q4: AI agents start as Cl
 
 ## Resolution
 
-Completed in [[unreleased-tool-agents]]. `hephaestus agent run <role>` runs a worker of a tool role from messages: it claims the issue, runs the command, closes the issue on exit code 0, and otherwise stops it for a human or the AI role of on-failure. `hephaestus agent review <role>` gives the ballot of a tool reviewer. The tool role repo-check did the first real task, [[check-tool-agents-change]]. See [[0003-a-tool-agent-runs-its-command-for-each-message]].
+Completed in [[0.0.113]]. `hephaestus agent run <role>` runs a worker of a tool role from messages: it claims the issue, runs the command, closes the issue on exit code 0, and otherwise stops it for a human or the AI role of on-failure. `hephaestus agent review <role>` gives the ballot of a tool reviewer. The tool role repo-check did the first real task, [[check-tool-agents-change]]. See [[0003-a-tool-agent-runs-its-command-for-each-message]].
 

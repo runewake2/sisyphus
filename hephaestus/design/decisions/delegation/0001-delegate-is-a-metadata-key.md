@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-12
-- Version: [[unreleased-delegation-model]]
+- Version: [[0.0.110]]
 
 ## Context
 

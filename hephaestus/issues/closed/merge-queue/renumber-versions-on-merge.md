@@ -50,5 +50,5 @@ These are the rules of the repo, not of issues, so this is hephaestus code, not 
 
 ## Resolution
 
-Completed in [[unreleased-renumber-versions-on-merge]]. A human decided that versions come from the merge queue ([[0001-versions-come-from-the-merge-queue]]), so versions no longer collide: `hephaestus version assign` gives each unreleased changelog entry its version in the order of the merge, with every link to it. Decision record numbers still can collide; `hephaestus decisions renumber --onto main` renumbers the record that the base does not have.
+Completed in [[0.0.108]]. A human decided that versions come from the merge queue ([[0001-versions-come-from-the-merge-queue]]), so versions no longer collide: `hephaestus version assign` gives each unreleased changelog entry its version in the order of the merge, with every link to it. Decision record numbers still can collide; `hephaestus decisions renumber --onto main` renumbers the record that the base does not have.
 

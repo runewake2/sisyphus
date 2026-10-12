@@ -45,5 +45,5 @@ hephaestus records the role of an issue in metadata, for example `sisyphus updat
 
 ## Resolution
 
-Completed in [[unreleased-filter-by-metadata]]. `list` and `search` take `--metadata key=value` (repeatable, all must match; a key alone matches any value), their JSON rows include `metadata`, and the MCP tools take the filter as an object.
+Completed in [[0.0.109]]. `list` and `search` take `--metadata key=value` (repeatable, all must match; a key alone matches any value), their JSON rows include `metadata`, and the MCP tools take the filter as an object.
 

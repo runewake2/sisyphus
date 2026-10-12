@@ -1,5 +1,26 @@
 # Changelog
 
+## [[0.0.113]] - 2026-10-12
+- Run tool agents with hephaestus agent run, which do delegated tasks with a program and no model, and add hephaestus agent review.
+
+## [[0.0.112]] - 2026-10-12
+- Add the hephaestus message queue: a service with an append-only log that relays messages between workers, with at-least-once, ordered delivery.
+
+## [[0.0.111]] - 2026-10-12
+- Add hephaestus merge-order, which orders the work of a set of tasks for the merge queue and tells why.
+
+## [[0.0.110]] - 2026-10-12
+- Describe each hephaestus role in a role file, and add hephaestus roles, delegate, and tasks.
+
+## [[0.0.109]] - 2026-10-12
+- Filter list and search on metadata with --metadata key=value, and include metadata in their JSON rows.
+
+## [[0.0.108]] - 2026-10-12
+- Give versions only when the merge queue lands work, with hephaestus version assign and decisions renumber.
+
+## [[0.0.107]] - 2026-10-12
+- Resolve the wikilinks of a nested tracker in the whole repo, and rename the agent guide to docs/agent-guide.md.
+
 ## [[0.0.106]] - 2026-10-11
 - Draw only the issues in selected states with sisyphus graph --state.
 
