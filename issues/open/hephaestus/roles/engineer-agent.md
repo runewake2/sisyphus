@@ -30,7 +30,7 @@ Add an engineer role: an agent that takes two or more concurrent workstreams (bo
 
 ## Acceptance criteria
 
-- [ ] `hephaestus/roles/engineer.md` describes the role.
+- [x] `hephaestus/roles/engineer.md` describes the role.
 - [ ] Given two or more workstreams, it reports their overlaps and conflicts of direction, and proposes a decision record and issue changes.
 - [ ] A test run on two real bookmarks of this repo, checked by a human.
 
@@ -40,7 +40,7 @@ Add an engineer role: an agent that takes two or more concurrent workstreams (bo
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-12: the role file [[engineer]] defines the role: its charter, inputs, outputs, tools, the points where it asks a human, and its prompt ([[unreleased-define-the-ai-roles]]). The runs need [[delegation-runner]], which runs AI roles.
 
 ## Resolution
 

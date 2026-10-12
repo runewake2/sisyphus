@@ -1,0 +1,33 @@
+# Unreleased: Define the AI roles of the hephaestus government
+
+- Date: 2026-10-12
+- Bookmark: samw/ai/ux-fixes
+- Components: hephaestus
+- Changelog: Define the AI roles engineer, project-manager, ux-researcher, and technical-docs, and describe how the roles govern together.
+
+## Summary
+
+The four AI roles of hephaestus have role files: the engineer, the project manager, the UX
+researcher, and the technical docs agent. The design has a new section, "The government", that
+tells how they and the tool roles work together.
+
+## Changes
+
+- `hephaestus/roles/engineer.md`: aligns concurrent workstreams, calls referendums on its proposed
+  direction, and resolves the conflicts that the merge queue leaves out.
+- `hephaestus/roles/project-manager.md`: proposes how to consolidate and focus the issues on its own
+  bookmark, and never closes an issue without a human.
+- `hephaestus/roles/ux-researcher.md`: reviews the product as a new person, an agent through a
+  shell, an MCP client, and a small model, and files one issue for each problem.
+- `hephaestus/roles/technical-docs.md`: starts on each close (`issue-closed`), checks the docs
+  against the change, and corrects only documentation.
+- Each has a charter, its inputs and outputs, its tools, the points where it asks a human, and its
+  prompt. `hephaestus roles` checks all six roles.
+- [[agent-delegation#The government]]: a table of the six roles (kind, trigger, referendums, where
+  failed work goes, scope as a reviewer), the path of a piece of work, and the decisions that stay
+  with humans.
+
+## Issues
+
+- Progress on [[project-manager-agent]], [[engineer-agent]], [[ux-researcher-agent]], and
+  [[technical-docs-agent]]: each role file exists. Their runs need [[delegation-runner]].

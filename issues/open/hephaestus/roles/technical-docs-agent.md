@@ -30,7 +30,7 @@ Add a technical docs role: an agent that takes each piece of completed work and 
 
 ## Acceptance criteria
 
-- [ ] `hephaestus/roles/technical-docs.md` describes the role.
+- [x] `hephaestus/roles/technical-docs.md` describes the role.
 - [ ] For a closed issue, it reports where the docs and the behavior disagree, and fixes the docs in a change, or files an issue.
 - [ ] For a new feature, it writes or completes the page, in the format of the other pages.
 
@@ -40,7 +40,7 @@ Add a technical docs role: an agent that takes each piece of completed work and 
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-12: the role file [[technical-docs]] defines the role: its charter, inputs, outputs, tools, the points where it asks a human, and its prompt ([[unreleased-define-the-ai-roles]]). The runs need [[delegation-runner]], which runs AI roles.
 
 ## Resolution
 

@@ -32,7 +32,7 @@ It uses `list`, `search`, `graph`, `claims`, and `lint`, and changes issues only
 
 ## Acceptance criteria
 
-- [ ] `hephaestus/roles/project-manager.md` describes the role, with the points where it must ask a human.
+- [x] `hephaestus/roles/project-manager.md` describes the role, with the points where it must ask a human.
 - [ ] A run on this repo gives a proposal (duplicates, splits, closes, priorities, epics) as one change that a human can accept or reject.
 - [ ] It never closes or deletes an issue without that acceptance.
 
@@ -42,7 +42,7 @@ It uses `list`, `search`, `graph`, `claims`, and `lint`, and changes issues only
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-12: the role file [[project-manager]] defines the role: its charter, inputs, outputs, tools, the points where it asks a human, and its prompt ([[unreleased-define-the-ai-roles]]). The runs need [[delegation-runner]], which runs AI roles.
 
 ## Resolution
 

@@ -255,6 +255,39 @@ Each of these is a separate issue, with its own design before the work.
   compare the flags), fixes the docs or files an issue, and writes the page for a new feature. It
   follows the writing style of [[CONTRIBUTING#Writing style]].
 
+## The government
+
+The roles together are the government of the repo: each has one scope, and they work together
+through sisyphus issues, messages ([[#Messages between workers]]), referendums ([[referendum]]), and
+the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]]).
+
+| Role | Kind | Started by | Calls a referendum | Work it cannot do goes to | Scope as a reviewer |
+|---|---|---|---|---|---|
+| [[merge-queue|merge-queue]] | tool | a request with a set of tasks | no | a human; a conflict to `engineer` | none |
+| [[repo-check|repo-check]] | tool | a request, a `bookmark-ready` broadcast | no | a human | the checks of the repo (its exit code) |
+| [[engineer|engineer]] | ai | a request, a `conflict` message | yes | a human | the direction of the work |
+| [[project-manager|project-manager]] | ai | a request | no | a human | the scope and priority of issues |
+| [[ux-researcher|ux-researcher]] | ai | a request | no | a human | how people and agents use the change |
+| [[technical-docs|technical-docs]] | ai | the close of an issue (`issue-closed`), a request | no | a human | the docs of the change |
+
+The path of a piece of work:
+
+1. A human or the project manager delegates an issue to a role (`hephaestus delegate`), and a worker
+   of the role does it on its own bookmark.
+2. `repo-check` checks the bookmark. For a change that more than one scope judges, a human or the
+   engineer calls a referendum, with the reviewers of those scopes.
+3. The merge queue makes a linear history from the finished tasks, with their versions. A conflict
+   that needs judgment goes to the engineer, who resolves it on a bookmark of its own.
+4. A human checks the line of the merge queue, and moves `main`.
+5. The close of each issue starts the technical docs agent. The project manager and the UX
+   researcher review the issues and the product on request, and file what they find.
+
+Humans keep the decisions that no role makes: they move `main`, accept the proposals of the
+project manager, decide a failed referendum, and take each issue tagged `needs-human`.
+
+[[delegation-runner]] runs the AI roles, and broadcasts `issue-closed` and `bookmark-ready`; until
+it exists, a human starts each role.
+
 ## Open questions
 
 A human answers a question with a reply such as "Q1 yes", or another answer.

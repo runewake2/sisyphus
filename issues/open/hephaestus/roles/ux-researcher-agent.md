@@ -30,7 +30,7 @@ Add a UX researcher role: an agent that uses what is being built as a new person
 
 ## Acceptance criteria
 
-- [ ] `hephaestus/roles/ux-researcher.md` describes the role and its review methods (new person, agent through a shell, MCP client, small model).
+- [x] `hephaestus/roles/ux-researcher.md` describes the role and its review methods (new person, agent through a shell, MCP client, small model).
 - [ ] A run files issues with what it saw, and does not file an issue that already exists.
 - [ ] A human checks the issues of one run.
 
@@ -40,7 +40,7 @@ Add a UX researcher role: an agent that uses what is being built as a new person
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-12: the role file [[ux-researcher]] defines the role: its charter, inputs, outputs, tools, the points where it asks a human, and its prompt ([[unreleased-define-the-ai-roles]]). The runs need [[delegation-runner]], which runs AI roles.
 
 ## Resolution
 

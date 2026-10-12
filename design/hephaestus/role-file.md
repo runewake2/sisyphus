@@ -6,7 +6,8 @@
 Each role of hephaestus is a Markdown file of its own, `hephaestus/roles/<role>.md`
 ([[0002-each-role-is-a-markdown-file]]). People read it to know what the role does; hephaestus reads
 its frontmatter to run the role; for an AI role, the model gets its sections as its instructions.
-[[merge-queue|roles/merge-queue.md]] and [[repo-check|roles/repo-check.md]] are examples of tool roles.
+[[merge-queue|roles/merge-queue.md]] and [[repo-check|roles/repo-check.md]] are examples of tool roles. [[engineer|roles/engineer.md]], [[project-manager|roles/project-manager.md]],
+[[ux-researcher|roles/ux-researcher.md]], and [[technical-docs|roles/technical-docs.md]] are AI roles.
 
 ## Frontmatter
 
