@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -54,18 +57,35 @@ func newAIRepo(t *testing.T) *testRepo {
 
 func TestAnAIWorkerRunsTheModelWithThePromptOfTheTask(t *testing.T) {
 	r := newAIRepo(t)
-	r.mustRun("messages", "send", "--from", "alice", "--role", "reviewer", "--kind", "task", "--issue", "fix-login-bug", "--data", `{"bookmark": "ai/fix"}`, "Review the fix.")
-	runner := `cat > prompt.txt; echo {role} > role.txt; sisyphus close "$HEPHAESTUS_MESSAGE_ISSUE" -m "Reviewed: no problems."`
+	r.mustRun("messages", "send", "--from", "alice", "--role", "reviewer", "--kind", "task", "--issue", "fix-login-bug", "--data", `{"note": "ai/fix"}`, "Review the fix.")
+	out := t.TempDir()
+	runner := `cat > ` + out + `/prompt.txt; echo {role} > ` + out + `/role.txt; pwd > ` + out + `/pwd.txt; sisyphus close "$HEPHAESTUS_MESSAGE_ISSUE" -m "Reviewed: no problems." && git add -A && git -c user.name=t -c user.email=t@t commit -qm "Review fix-login-bug"`
 
 	results := r.runAgent("reviewer", "--runner", runner)
 
-	equal(t, "done", results[0].Status)
-	equal(t, "reviewer\n", r.read("role.txt"))
-	prompt := r.read("prompt.txt")
+	if results[0].Status != "done" {
+		t.Fatalf("%+v", results[0])
+	}
+	read := func(name string) string {
+		data, err := os.ReadFile(filepath.Join(out, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(data)
+	}
+	equal(t, "reviewer\n", read("role.txt"))
+	// The task ran in a workspace of its own, which is gone now; its commit and bookmark stay.
+	equal(t, results[0].Workspace+"\n", read("pwd.txt"))
+	isTrue(t, results[0].Removed, "the workspace of the done task was not removed")
+	_, err := os.Stat(results[0].Workspace)
+	isTrue(t, os.IsNotExist(err), "the workspace directory is still there")
+	contains(t, r.git("show", "ai/reviewer-fix-login-bug:issues/closed/fix-login-bug.md"), "owner: reviewer-1")
+	prompt := read("prompt.txt")
 	for _, part := range []string{
 		"You are reviewer-1, a worker of the hephaestus role reviewer.",
+		"Your workspace for this task is " + results[0].Workspace + ", with the bookmark ai/reviewer-fix-login-bug.",
 		"A message from alice, of the kind task:\n\n    Review the fix.",
-		`"bookmark": "ai/fix"`,
+		`"note": "ai/fix"`,
 		"The issue of the task is fix-login-bug. You have it in progress.",
 		"## Charter\n\nReview the change of a task.",
 		"## Prompt\n\nReview the change, and close the issue with your review.",
@@ -73,9 +93,6 @@ func TestAnAIWorkerRunsTheModelWithThePromptOfTheTask(t *testing.T) {
 	} {
 		contains(t, prompt, part)
 	}
-	issue := r.showIssue("fix-login-bug")
-	equal(t, "closed", issue["state"])
-	equal(t, "reviewer-1", issue["owner"])
 }
 
 func TestAnAIWorkerCanStopItsIssue(t *testing.T) {
@@ -85,7 +102,7 @@ func TestAnAIWorkerCanStopItsIssue(t *testing.T) {
 	results := r.runAgent("reviewer", "--runner", `sisyphus update "$HEPHAESTUS_MESSAGE_ISSUE" open --add-tags needs-human`)
 
 	equal(t, "stopped", results[0].Status)
-	equal(t, "open", r.showIssue("fix-login-bug")["state"])
+	equal[any](t, "open", showIssueIn(t, results[0].Workspace, "fix-login-bug")["state"])
 }
 
 func TestAnIssueThatTheModelLeavesInProgressGoesToAHuman(t *testing.T) {
@@ -96,10 +113,12 @@ func TestAnIssueThatTheModelLeavesInProgressGoesToAHuman(t *testing.T) {
 
 	equal(t, "failed", results[0].Status)
 	equal(t, "needs-human", results[0].Next)
-	issue := r.showIssue("fix-login-bug")
+	isTrue(t, !results[0].Removed, "the workspace of a failed task was removed")
+	issue := showIssueIn(t, results[0].Workspace, "fix-login-bug") // the issue changed in the task workspace
 	equal(t, "open", issue["state"])
 	contains(t, issue["body"].(string), "the AI worker reviewer-1 ran")
 	contains(t, issue["body"].(string), "The model ended with the issue still in progress.")
+	contains(t, issue["body"].(string), "the workspace of the task is kept for a human: "+results[0].Workspace)
 }
 
 func TestAFailedModelGoesToAHuman(t *testing.T) {
@@ -111,7 +130,7 @@ func TestAFailedModelGoesToAHuman(t *testing.T) {
 
 	equal(t, "failed", results[0].Status)
 	equal(t, "needs-human", results[0].Next)
-	contains(t, toStrings(r.showIssue("fix-login-bug")["tags"])[len(toStrings(r.showIssue("fix-login-bug")["tags"]))-1], "needs-human")
+	contains(t, strings.Join(toStrings(showIssueIn(t, results[0].Workspace, "fix-login-bug")["tags"]), ","), "needs-human")
 }
 
 func TestExportWritesAClaudeSubagentForEachAIRole(t *testing.T) {
@@ -150,4 +169,18 @@ func TestTheSubagentsOfThisRepoAreInSync(t *testing.T) {
 	if exit != 0 {
 		t.Errorf("the subagents are not in sync: %s", errOut.String())
 	}
+}
+
+// showIssueIn returns sisyphus show --json of an issue in the working copy dir.
+func showIssueIn(t *testing.T, dir, name string) map[string]any {
+	t.Helper()
+	out, err := exec.Command("sisyphus", "-C", dir, "show", name, "--json", "--all").Output()
+	if err != nil {
+		t.Fatalf("sisyphus show %s in %s: %v", name, dir, err)
+	}
+	var issue map[string]any
+	if err := json.Unmarshal(out, &issue); err != nil {
+		t.Fatal(err)
+	}
+	return issue
 }

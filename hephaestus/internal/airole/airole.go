@@ -64,7 +64,10 @@ func ClaudeAgent(role roles.Role) string {
 
 // TaskPrompt returns the prompt of one task: who the worker is, the task message, and what to do
 // with the issue at the end.
-func TaskPrompt(role roles.Role, worker string, m mq.Message, workspace string) string {
+//
+// workspace is the directory where the worker works, and bookmark the bookmark of its work, if the
+// task has a workspace of its own.
+func TaskPrompt(role roles.Role, worker string, m mq.Message, workspace, bookmark string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "You are %s, a worker of the hephaestus role %s. Your owner name is %s.\n\n", worker, role.Name, worker)
 	fmt.Fprintf(&b, "## Your task\n\nA message from %s, of the kind %s:\n\n%s\n", m.From, m.Kind, indent(m.Body))
@@ -75,7 +78,11 @@ func TaskPrompt(role roles.Role, worker string, m mq.Message, workspace string) 
 			fmt.Fprintf(&b, "\nIts data:\n\n```json\n%s\n```\n", pretty)
 		}
 	}
-	fmt.Fprintf(&b, "\nWork in %s.\n", workspace)
+	if bookmark != "" {
+		fmt.Fprintf(&b, "\nYour workspace for this task is %s, with the bookmark %s. hephaestus made it for you. Work and commit only there, and set the bookmark %s on your work. hephaestus removes the workspace when you finish the task; your commits and the bookmark stay.\n", workspace, bookmark, bookmark)
+	} else {
+		fmt.Fprintf(&b, "\nWork in %s.\n", workspace)
+	}
 	if m.Issue != "" && (m.To.Broadcast || m.To.All) {
 		fmt.Fprintf(&b, "\nThe message is a notice about the issue %s, to every listener. Do not start, close, or reopen that issue: another worker owns it, or it is closed. Record your result in its Notes (sisyphus edit %s notes \"...\" --append), and file an issue for each piece of work that you find.\n", m.Issue, m.Issue)
 	} else if m.Issue != "" {

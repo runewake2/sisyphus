@@ -330,7 +330,8 @@ in its section `Works with`, which `hephaestus roles` checks):
    work: no duplicate, in its area, with acceptance criteria that a worker can check, and a
    proposed priority and role. A human delegates it (`hephaestus delegate`), normally to
    `implementer`.
-2. **Work.** A worker of `implementer` does it on its own bookmark. It has its comments and commit
+2. **Work.** A worker of `implementer` does it in a workspace and on a bookmark of its own, which
+   hephaestus makes for the task and removes when it is done. It has its comments and commit
    descriptions reviewed by `technical-docs/comments`, with no context, in a loop of at most three
    reviews.
 3. **Review.** When the implementer closes the issue, `hephaestus watch` broadcasts `bookmark-ready`

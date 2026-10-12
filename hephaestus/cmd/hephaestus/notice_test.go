@@ -165,9 +165,14 @@ func TestAnAIRunRecordsItsUsageAndStopsAtItsTokenLimit(t *testing.T) {
 	equal(t, "done", done[0].Status)
 	equal(t, 2200, done[0].Usage.Tokens)
 	equal(t, 0.25, done[0].Usage.CostUSD)
-	contains(t, r.showIssue("fix-login-bug")["body"].(string), "used 2200 tokens, $0.25, 2 turns, in ")
+	// The model closed the issue but did not commit, so the workspace is kept, with the record of the run.
+	isTrue(t, !done[0].Removed, "a workspace with changes that no commit keeps was removed")
+	body := showIssueIn(t, done[0].Workspace, "fix-login-bug")["body"].(string)
+	contains(t, body, "used 2200 tokens, $0.25, 2 turns, in ")
+	contains(t, body, "has changes that no commit keeps, so it is kept for a human")
 
 	r.mustRunSisyphus("new", "long-review")
+	r.commit("long-review")
 	r.mustRun("messages", "send", "--from", "alice", "--role", "reviewer", "--kind", "task", "--issue", "long-review", "Review it.")
 	t.Setenv("TURNS", "20")
 	over := r.runAgent("reviewer", "--runner", runner, "--max-tokens", "3000")
@@ -175,7 +180,7 @@ func TestAnAIRunRecordsItsUsageAndStopsAtItsTokenLimit(t *testing.T) {
 	equal(t, "error", over[0].Status)
 	contains(t, over[0].Detail, "the task passed its limit of 3000 tokens, so it was stopped")
 	equal(t, 3300, over[0].Usage.Tokens)
-	equal[any](t, "open", r.showIssue("long-review")["state"])
+	equal[any](t, "open", showIssueIn(t, over[0].Workspace, "long-review")["state"])
 }
 
 func TestWatchBroadcastsTheNoticesOfAClose(t *testing.T) {
@@ -205,4 +210,43 @@ func TestWatchBroadcastsTheNoticesOfAClose(t *testing.T) {
 	contains(t, string(ready[0].Data), "ai/fix")
 	equal(t, 1, len(closed))
 	equal(t, "hephaestus-watch", closed[0].From)
+}
+
+func TestANoticeAboutABookmarkWorksInAScratchCopyAndKeepsItsFixes(t *testing.T) {
+	r := newNoticeRepo(t, time.Minute)
+	r.write("hephaestus/roles/upcase.md", toolRoleFile("upcase", `tr a-z A-Z < fix.txt > fix.tmp && mv fix.tmp fix.txt`, "", "[bookmark-ready]"))
+	r.commit("upcase")
+	r.git("checkout", "-q", "-b", "ai/fix")
+	r.write("fix.txt", "fixed\n")
+	r.commit("the fix")
+	r.git("checkout", "-q", "main")
+	r.runAgent("upcase") // listens before the notice
+	r.mustRun("messages", "send", "--from", "hephaestus-watch", "--broadcast", "--kind", "bookmark-ready", "--issue", "fix-login-bug", "--data", `{"bookmark": "ai/fix"}`, "ready")
+
+	results := r.runAgent("upcase")
+
+	equal(t, "done", results[0].Status)
+	equal(t, "ai/fix-upcase-fix-login-bug", results[0].Fixes)
+	equal(t, "FIXED\n", r.git("show", "ai/fix-upcase-fix-login-bug:fix.txt"))
+	equal(t, "fixed\n", r.git("show", "ai/fix:fix.txt"))                                 // the bookmark under review does not change
+	isTrue(t, !r.exists("fix.txt"), "the notice changed the working copy of the worker") // main has no fix.txt
+	contains(t, r.showIssue("fix-login-bug")["body"].(string), "made changes to ai/fix in the bookmark ai/fix-upcase-fix-login-bug")
+	notContains(t, r.git("worktree", "list"), "hephaestus-notice-")
+}
+
+func TestADoneTaskAnnouncesItsCloseAndRemovesItsWorkspace(t *testing.T) {
+	r := newAIRepo(t)
+	r.mustRun("messages", "receive", "--as", "check-1", "--role", "repo-check", "--kind", "bookmark-ready")
+	r.mustRun("messages", "send", "--from", "alice", "--role", "reviewer", "--kind", "task", "--issue", "fix-login-bug", "Do it.")
+	runner := `cat >/dev/null; echo work > work.txt; sisyphus close "$HEPHAESTUS_MESSAGE_ISSUE" -m "Done." && git add -A && git -c user.name=t -c user.email=t@t commit -qm "Do fix-login-bug"`
+
+	results := r.runAgent("reviewer", "--runner", runner)
+
+	equal(t, "done", results[0].Status)
+	isTrue(t, results[0].Removed, "the workspace of the done task was not removed")
+	ready := receivedJSON(t, r, "--as", "check-1", "--role", "repo-check", "--kind", "bookmark-ready")
+	equal(t, 1, len(ready))
+	head := strings.TrimSpace(r.git("rev-parse", "ai/reviewer-fix-login-bug"))
+	equal(t, "bookmark-ready-fix-login-bug-"+head[:12], ready[0].ID) // the id that hephaestus watch uses
+	equal(t, "work\n", r.git("show", "ai/reviewer-fix-login-bug:work.txt"))
 }

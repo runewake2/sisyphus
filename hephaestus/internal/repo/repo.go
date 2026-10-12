@@ -352,3 +352,35 @@ func (r Repo) ChangedSince(base string) ([]string, error) {
 	slices.Sort(existing)
 	return existing, nil
 }
+
+// MainRoot returns the root of the main working copy of the repo: the jj workspace or git worktree
+// that holds the store, also when r is another workspace of it.
+func (r Repo) MainRoot() string {
+	switch r.VCS {
+	case JJ:
+		return filepath.Dir(filepath.Dir(filepath.Dir(r.SharedDir()))) // <root>/.jj/repo/hephaestus
+	case Git:
+		return filepath.Dir(filepath.Dir(r.SharedDir())) // <root>/.git/hephaestus
+	}
+	return r.Root
+}
+
+// CommitOf returns the commit id of a revision, for example a bookmark. In jj, it asks jj, so a
+// bookmark that a workspace made a moment ago counts also before jj exports it to git.
+func (r Repo) CommitOf(rev string) (string, error) {
+	switch r.VCS {
+	case JJ:
+		out, err := r.run("log", "--no-graph", "-r", rev, "-T", `commit_id ++ "\n"`, "--limit", "1")
+		if err != nil {
+			return "", err
+		}
+		if commit := strings.TrimSpace(out); commit != "" {
+			return commit, nil
+		}
+		return "", fmt.Errorf("%s names no commit", rev)
+	case Git:
+		out, err := r.run("rev-parse", "--verify", "--quiet", rev+"^{commit}")
+		return strings.TrimSpace(out), err
+	}
+	return "", errors.New("Finding a commit needs jj or git.")
+}

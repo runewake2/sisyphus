@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -101,8 +100,7 @@ func watchOnce(cmd *cobra.Command, w workspace, r repo.Repo, client *mq.Client, 
 	}
 	next, events := watch.Plan(prev, issues, gitRepo{gitDir: gitDir, base: onto, baseID: baseID}, onto, time.Now())
 	for _, e := range events {
-		data, _ := json.Marshal(map[string]string{"issue": e.Issue, "bookmark": e.Bookmark, "head": e.Head, "base": e.Base})
-		if _, err := client.Send(mq.Message{ID: e.ID, From: "hephaestus-watch", To: mq.Address{Broadcast: true}, Kind: e.Kind, Issue: e.Issue, Body: e.Body, Data: data}); err != nil {
+		if _, err := client.Send(e.Message("hephaestus-watch")); err != nil {
 			return fmt.Errorf("could not broadcast %s for %s: %v", e.Kind, e.Issue, err)
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", e.Kind, e.Issue)

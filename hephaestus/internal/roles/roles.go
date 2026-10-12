@@ -63,6 +63,9 @@ type Role struct {
 	Timeout time.Duration `json:"timeout,omitempty"`
 	// MaxTokens is the most tokens that one task of an AI role may use. Zero: no limit.
 	MaxTokens int `json:"max-tokens,omitempty"`
+	// Workspace is where a task of the role runs: task (a workspace of its own for each task; the
+	// default of an AI role) or none (the directory of the worker; the default of a tool role).
+	Workspace string `json:"workspace"`
 	// Charter is the text of the Charter section, for a summary.
 	Charter  string `json:"charter"`
 	sections map[string]string
@@ -292,6 +295,14 @@ func read(dir, file string) (Role, []string) {
 			problems = append(problems, fmt.Sprintf("timeout %q is not a time, for example 30m or 2h", value))
 		}
 		role.Timeout = timeout
+	}
+	role.Workspace = map[string]string{AI: "task", Tool: "none"}[role.Kind]
+	switch value := fields["workspace"]; value {
+	case "":
+	case "task", "none":
+		role.Workspace = value
+	default:
+		problems = append(problems, fmt.Sprintf("workspace %q is task or none", value))
 	}
 	if value := fields["max-tokens"]; value != "" {
 		tokens, err := strconv.Atoi(value)

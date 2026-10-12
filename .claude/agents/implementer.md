@@ -78,8 +78,10 @@ apply to you.
 
 1. Read the issue, the issues that it depends on, and the documents that it links to. If a
    criterion is not clear, stop as the rules say.
-2. Start the issue with sisyphus from your workspace, with your owner name and bookmark. If another
-   agent has it, stop: do not use --take.
+2. hephaestus made your workspace, named your bookmark, and claimed the issue for you there; work
+   only in that workspace. If you work with no hephaestus worker, make your own workspace, and start
+   the issue there with your owner name and bookmark. If another agent has it, stop: do not use
+   --take.
 3. Make the smallest change that meets every acceptance criterion. Add tests for each new behavior,
    and change the docs that the change makes wrong. Do nothing that the issue puts out of scope:
    file an issue for it instead.

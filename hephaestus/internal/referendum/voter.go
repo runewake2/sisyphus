@@ -11,9 +11,9 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/runewake2/sisyphus/hephaestus/internal/roles"
+	"github.com/runewake2/sisyphus/hephaestus/internal/scratch"
 	"github.com/runewake2/sisyphus/hephaestus/internal/toolagent"
 )
 
@@ -31,9 +31,6 @@ type RoleVoter struct {
 	Runner string
 	// Out gets the output of the reviewers, for a person to follow the run.
 	Out io.Writer
-	// worktrees serializes the changes to the worktrees of the git directory: reviewers run at the
-	// same time, and git worktree add and remove of one must not see half of another.
-	worktrees sync.Mutex
 }
 
 // Ballot asks one reviewer for its ballot on v.
@@ -44,14 +41,14 @@ func (rv *RoleVoter) Ballot(ctx context.Context, r *Referendum, reviewer Reviewe
 		b.Error = "it has no role file"
 		return b
 	}
-	w, err := rv.worktree(v.Commit)
+	w, err := scratch.New(rv.GitDir, v.Commit, "hephaestus-referendum-")
 	if err != nil {
 		b.Error = err.Error()
 		return b
 	}
-	defer w.remove()
+	defer w.Remove()
 	if role.Kind == roles.Tool {
-		ballot, err := toolagent.Review(ctx, role, w.dir, r.BaseID, rv.out())
+		ballot, err := toolagent.Review(ctx, role, w.Dir, r.BaseID, rv.out())
 		if err != nil {
 			b.Error = err.Error()
 			return b
@@ -59,14 +56,14 @@ func (rv *RoleVoter) Ballot(ctx context.Context, r *Referendum, reviewer Reviewe
 		b.Vote, b.Reasons = ballot.Vote, ballot.Reasons
 		if ballot.Vote == Modify {
 			b.Change = &Modification{Summary: fmt.Sprintf("The changes of the command of the tool role %s to %s.", role.Name, strings.Join(ballot.Files, ", "))}
-			if b.Change.Commit, b.Change.Diff, err = w.commit(v.Commit, fmt.Sprintf("referendum %s: modification of %s", r.ID, role.Name)); err != nil {
+			if b.Change.Commit, b.Change.Diff, err = w.Commit(v.Commit, fmt.Sprintf("referendum %s: modification of %s", r.ID, role.Name)); err != nil {
 				b.Error = err.Error()
 			}
 		}
 		return b
 	}
 
-	output, err := rv.runModel(ctx, role, w.dir, r, BallotPrompt(r, reviewer, role, v))
+	output, err := rv.runModel(ctx, role, w.Dir, r, BallotPrompt(r, reviewer, role, v))
 	if err != nil {
 		b.Error = err.Error()
 		return b
@@ -90,7 +87,7 @@ func (rv *RoleVoter) Ballot(ctx context.Context, r *Referendum, reviewer Reviewe
 	if reply.Section != "" {
 		b.Change.Edit = &IssueEdit{Section: reply.Section, Text: reply.Text}
 	}
-	if b.Change.Commit, b.Change.Diff, err = w.commit(v.Commit, fmt.Sprintf("referendum %s: modification of %s\n\n%s", r.ID, role.Name, reply.Modification)); err != nil {
+	if b.Change.Commit, b.Change.Diff, err = w.Commit(v.Commit, fmt.Sprintf("referendum %s: modification of %s\n\n%s", r.ID, role.Name, reply.Modification)); err != nil {
 		b.Error = err.Error()
 	}
 	return b
@@ -109,29 +106,29 @@ func (rv *RoleVoter) Gate(ctx context.Context, r *Referendum, reviewer Reviewer,
 	if m.Commit != "" {
 		commit = m.Commit
 	}
-	w, err := rv.worktree(commit)
+	w, err := scratch.New(rv.GitDir, commit, "hephaestus-referendum-")
 	if err != nil {
 		vote.Error = err.Error()
 		return vote
 	}
-	defer w.remove()
+	defer w.Remove()
 	if role.Kind == roles.Tool {
 		// A tool judges only what the modification makes worse in its scope: what it finds on the
 		// version already is not caused by the modification.
-		after, err := toolagent.Review(ctx, role, w.dir, r.BaseID, rv.out())
+		after, err := toolagent.Review(ctx, role, w.Dir, r.BaseID, rv.out())
 		if err != nil {
 			vote.Error = err.Error()
 			return vote
 		}
 		before := toolagent.Ballot{Vote: Yes}
 		if after.Vote != Yes {
-			wv, err := rv.worktree(v.Commit)
+			wv, err := scratch.New(rv.GitDir, v.Commit, "hephaestus-referendum-")
 			if err != nil {
 				vote.Error = err.Error()
 				return vote
 			}
-			before, err = toolagent.Review(ctx, role, wv.dir, r.BaseID, rv.out())
-			wv.remove()
+			before, err = toolagent.Review(ctx, role, wv.Dir, r.BaseID, rv.out())
+			wv.Remove()
 			if err != nil {
 				vote.Error = err.Error()
 				return vote
@@ -140,7 +137,7 @@ func (rv *RoleVoter) Gate(ctx context.Context, r *Referendum, reviewer Reviewer,
 		vote.Accept, vote.Reasons = toolGate(role, before, after)
 		return vote
 	}
-	output, err := rv.runModel(ctx, role, w.dir, r, GatePrompt(r, reviewer, role, v, m))
+	output, err := rv.runModel(ctx, role, w.Dir, r, GatePrompt(r, reviewer, role, v, m))
 	if err != nil {
 		vote.Error = err.Error()
 		return vote
@@ -188,33 +185,33 @@ func (rv *RoleVoter) Combine(r *Referendum, v Version, mods []Modification) (str
 	if len(mods) == 1 {
 		return mods[0].Commit, nil, nil
 	}
-	w, err := rv.worktree(v.Commit)
+	w, err := scratch.New(rv.GitDir, v.Commit, "hephaestus-referendum-")
 	if err != nil {
 		return "", nil, err
 	}
-	defer w.remove()
+	defer w.Remove()
 	var conflicts []int
 	for i, m := range mods {
-		head, err := rv.git(w.dir, "rev-parse", "HEAD")
+		head, err := w.Git("rev-parse", "HEAD")
 		if err != nil {
 			return "", nil, err
 		}
-		if _, err := rv.git(w.dir, "cherry-pick", "--allow-empty", "--keep-redundant-commits", v.Commit+".."+m.Commit); err != nil {
-			rv.git(w.dir, "cherry-pick", "--abort")
-			if _, err := rv.git(w.dir, "reset", "--quiet", "--hard", head); err != nil {
+		if _, err := w.Git("cherry-pick", "--allow-empty", "--keep-redundant-commits", v.Commit+".."+m.Commit); err != nil {
+			w.Git("cherry-pick", "--abort")
+			if _, err := w.Git("reset", "--quiet", "--hard", head); err != nil {
 				return "", nil, err
 			}
 			conflicts = append(conflicts, i)
 		}
 	}
-	head, err := rv.git(w.dir, "rev-parse", "HEAD")
+	head, err := w.Git("rev-parse", "HEAD")
 	return head, conflicts, err
 }
 
 // NewVersion keeps the commit of v on the branch referendum/<id>/v<number>.
 func (rv *RoleVoter) NewVersion(r *Referendum, v Version) (string, error) {
 	ref := fmt.Sprintf("referendum/%s/v%d", r.ID, v.Number)
-	if _, err := rv.git("", "branch", "--force", ref, v.Commit); err != nil {
+	if _, err := scratch.Git(rv.GitDir, "", "branch", "--force", ref, v.Commit); err != nil {
 		return "", err
 	}
 	return ref, nil
@@ -278,91 +275,6 @@ func lastJSON(output string, into any, ok func() bool) bool {
 		}
 	}
 	return false
-}
-
-// git runs git on the git directory, in the worktree dir if it is not empty.
-func (rv *RoleVoter) git(dir string, args ...string) (string, error) {
-	full := []string{"--git-dir=" + rv.GitDir}
-	if dir != "" {
-		full = []string{"-C", dir}
-	}
-	full = append(full, identity()...)
-	cmd := exec.Command("git", append(full, args...)...)
-	var out, errOut bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &out, &errOut
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, strings.TrimSpace(errOut.String()))
-	}
-	return strings.TrimSpace(out.String()), nil
-}
-
-// identity gives git a committer when the user has none, so that a modification never fails for it.
-func identity() []string {
-	var args []string
-	for _, key := range []string{"user.name", "user.email"} {
-		if out, err := exec.Command("git", "config", key).Output(); err != nil || strings.TrimSpace(string(out)) == "" {
-			args = append(args, "-c", key+"="+map[string]string{"user.name": "hephaestus referendum", "user.email": "hephaestus@localhost"}[key])
-		}
-	}
-	return args
-}
-
-// scratch is the scratch worktree of one reviewer.
-type scratch struct {
-	rv  *RoleVoter
-	dir string
-}
-
-func (rv *RoleVoter) worktree(commit string) (*scratch, error) {
-	dir, err := os.MkdirTemp("", "hephaestus-referendum-")
-	if err != nil {
-		return nil, err
-	}
-	os.Remove(dir) // git worktree add makes it
-	rv.worktrees.Lock()
-	defer rv.worktrees.Unlock()
-	if _, err := rv.git("", "worktree", "add", "--detach", "--quiet", dir, commit); err != nil {
-		return nil, err
-	}
-	return &scratch{rv: rv, dir: dir}, nil
-}
-
-func (s *scratch) remove() {
-	s.rv.worktrees.Lock()
-	defer s.rv.worktrees.Unlock()
-	if _, err := s.rv.git("", "worktree", "remove", "--force", s.dir); err != nil {
-		os.RemoveAll(s.dir)
-		s.rv.git("", "worktree", "prune")
-	}
-}
-
-// commit commits the changes of the worktree, if any, and returns the head and the diff from base.
-// With no commit and no change, it returns no head.
-func (s *scratch) commit(base, message string) (string, string, error) {
-	status, err := s.rv.git(s.dir, "status", "--porcelain")
-	if err != nil {
-		return "", "", err
-	}
-	if status != "" {
-		if _, err := s.rv.git(s.dir, "add", "-A"); err != nil {
-			return "", "", err
-		}
-		if _, err := s.rv.git(s.dir, "commit", "--quiet", "-m", message); err != nil {
-			return "", "", err
-		}
-	}
-	head, err := s.rv.git(s.dir, "rev-parse", "HEAD")
-	if err != nil || head == base {
-		return "", "", err
-	}
-	if merges, _ := s.rv.git(s.dir, "rev-list", "--merges", base+"..HEAD"); merges != "" {
-		return "", "", errors.New("its modification has merge commits; a modification is a linear line of commits on the version")
-	}
-	if ancestors, _ := s.rv.git(s.dir, "rev-list", "HEAD.."+base); ancestors != "" {
-		return "", "", errors.New("its modification does not start at the commit of the version")
-	}
-	diff, err := s.rv.git(s.dir, "diff", base, "HEAD")
-	return head, diff, err
 }
 
 // RoleMap returns the roles of the reviewers by name.

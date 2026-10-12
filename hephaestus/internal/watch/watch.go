@@ -12,6 +12,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/runewake2/sisyphus/hephaestus/internal/mq"
 	"github.com/runewake2/sisyphus/hephaestus/internal/sisyphus"
 )
 
@@ -83,25 +84,42 @@ func Plan(prev *State, issues []sisyphus.Issue, repo Repo, base string, now time
 		before, known := prev.Issues[issue.Name]
 		closedNow := !known || before.State != "closed"
 		moved := known && before.State == "closed" && hasHead && before.Head != head
-		if hasHead && (closedNow || moved) && !repo.InBase(head) {
-			body := fmt.Sprintf("The work of %s is ready for review: %s at %.12s, on %s.", issue.Name, issue.Bookmark, head, base)
-			if moved {
-				body = fmt.Sprintf("The work of %s changed after its close: %s is now at %.12s, on %s.", issue.Name, issue.Bookmark, head, base)
-			}
-			events = append(events, Event{
-				ID: fmt.Sprintf("%s-%s-%.12s", BookmarkReady, flat(issue.Name), head), Kind: BookmarkReady,
-				Issue: issue.Name, Bookmark: issue.Bookmark, Head: head, Base: base, Body: body,
-			})
-		}
-		if closedNow {
-			events = append(events, Event{
-				ID: fmt.Sprintf("%s-%s", IssueClosed, flat(issue.Name)), Kind: IssueClosed,
-				Issue: issue.Name, Bookmark: issue.Bookmark, Head: head, Base: base,
-				Body: fmt.Sprintf("The issue %s closed.", issue.Name),
-			})
+		if closedNow || moved {
+			events = append(events, Notices(issue.Name, issue.Bookmark, head, base, hasHead && !repo.InBase(head), closedNow)...)
 		}
 	}
 	return next, events
+}
+
+// Notices returns the notices of a close: bookmark-ready when the bookmark has work for review
+// (review), and issue-closed when the issue closed now (closed). The ids come from the issue and the
+// head, so that the watcher and a worker that announce the same close make one message.
+func Notices(issue, bookmark, head, base string, review, closed bool) []Event {
+	var events []Event
+	if review {
+		body := fmt.Sprintf("The work of %s is ready for review: %s at %.12s, on %s.", issue, bookmark, head, base)
+		if !closed {
+			body = fmt.Sprintf("The work of %s changed after its close: %s is now at %.12s, on %s.", issue, bookmark, head, base)
+		}
+		events = append(events, Event{
+			ID: fmt.Sprintf("%s-%s-%.12s", BookmarkReady, flat(issue), head), Kind: BookmarkReady,
+			Issue: issue, Bookmark: bookmark, Head: head, Base: base, Body: body,
+		})
+	}
+	if closed {
+		events = append(events, Event{
+			ID: fmt.Sprintf("%s-%s", IssueClosed, flat(issue)), Kind: IssueClosed,
+			Issue: issue, Bookmark: bookmark, Head: head, Base: base,
+			Body: fmt.Sprintf("The issue %s closed.", issue),
+		})
+	}
+	return events
+}
+
+// Message returns the broadcast of a notice.
+func (e Event) Message(from string) mq.Message {
+	data, _ := json.Marshal(map[string]string{"issue": e.Issue, "bookmark": e.Bookmark, "head": e.Head, "base": e.Base})
+	return mq.Message{ID: e.ID, From: from, To: mq.Address{Broadcast: true}, Kind: e.Kind, Issue: e.Issue, Body: e.Body, Data: data}
 }
 
 // flat returns a name with "-" for "/", for an id.

@@ -19,6 +19,9 @@ import (
 	"github.com/runewake2/sisyphus/hephaestus/internal/toolagent"
 )
 
+// bookmarkPrefixVariable names the start of the bookmark of each task, for example samw/ai/.
+const bookmarkPrefixVariable = "HEPHAESTUS_BOOKMARK_PREFIX"
+
 func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "agent",
@@ -28,6 +31,7 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 	var once, asJSON bool
 	var taskTimeout time.Duration
 	var maxTokens int
+	var workspaces, bookmarkPrefix, onto string
 	run := &cobra.Command{
 		Use:   "run <role>",
 		Short: "Run a worker of a role: do the task of each message that it gets.",
@@ -46,7 +50,13 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 			"Each task has a time limit (--task-timeout, or timeout in the role file, or 1h), and a task of an AI role " +
 			"can have a token limit (--max-tokens, or max-tokens in the role file). A task that passes a limit stops, " +
 			"with every program that it started, and goes to a human. When the runner reports usage as JSON lines, the " +
-			"tokens, cost, and turns of each run go into the result and the Notes of the issue.",
+			"tokens, cost, and turns of each run go into the result and the Notes of the issue.\n\n" +
+			"A task of a role with workspace: task (the default of an AI role) runs in a workspace of its own: a jj " +
+			"workspace or git worktree <repo>-<role>-<issue> in --workspaces, on the bookmark of the task or on --onto, " +
+			"with the bookmark <prefix><role>-<issue>. The worker claims the issue there. When the task is done, it " +
+			"announces the close (bookmark-ready and issue-closed, as hephaestus watch does) and removes the workspace; " +
+			"when it is not, it keeps the workspace for a human. A notice about a bookmark runs in a scratch copy of the " +
+			"bookmark; changes that it makes go to the bookmark <prefix>fix-<role>-<issue>.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir, err := w.roles()
@@ -79,6 +89,13 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 				Role: role, Runner: runner, Worker: name, Dir: w.directory(), Queue: client, Sisyphus: sisyphus.Run,
 				Out: cmd.ErrOrStderr(), Err: cmd.ErrOrStderr(), Now: time.Now,
 				TaskTimeout: taskTimeout, MaxTokens: maxTokens,
+				Repo: r, Workspaces: workspaces, BookmarkPrefix: bookmarkPrefix, Base: onto,
+			}
+			if agent.BookmarkPrefix == "" {
+				agent.BookmarkPrefix = os.Getenv(bookmarkPrefixVariable)
+			}
+			if agent.BookmarkPrefix == "" {
+				agent.BookmarkPrefix = "ai/"
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
@@ -99,6 +116,9 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 	run.Flags().StringVar(&runner, "runner", "", "For an AI role: the command that runs the model, with the prompt on its standard input, for example \"claude -p --agent {role}\". Default: "+toolagent.RunnerVariable+".")
 	run.Flags().BoolVar(&asJSON, "json", false, "Print the result of each message as JSON when it stops.")
 	run.Flags().DurationVar(&taskTimeout, "task-timeout", 0, "The longest time that one task may run; then it stops, with every program that it started, and goes to a human. Default: timeout of the role file, or "+toolagent.DefaultTaskTimeout.String()+".")
+	run.Flags().StringVar(&workspaces, "workspaces", "", "The directory of the task workspaces. Default: workspaces/ beside the main working copy of the repo.")
+	run.Flags().StringVar(&bookmarkPrefix, "bookmark-prefix", "", "The start of the bookmark of each task, for example samw/ai/. Default: "+bookmarkPrefixVariable+", or ai/.")
+	run.Flags().StringVar(&onto, "onto", "main", "The base of a task workspace, and of a review.")
 	run.Flags().IntVar(&maxTokens, "max-tokens", 0, "For an AI role: the most tokens that one task may use; then it stops. The runner must report usage as JSON lines, as claude -p --output-format stream-json --verbose does. Default: max-tokens of the role file, or no limit.")
 	var reviewJSON bool
 	var reviewBase string

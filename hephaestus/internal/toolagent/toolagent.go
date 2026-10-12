@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -23,6 +24,9 @@ import (
 	"github.com/runewake2/sisyphus/hephaestus/internal/mq"
 	"github.com/runewake2/sisyphus/hephaestus/internal/repo"
 	"github.com/runewake2/sisyphus/hephaestus/internal/roles"
+	"github.com/runewake2/sisyphus/hephaestus/internal/scratch"
+	"github.com/runewake2/sisyphus/hephaestus/internal/taskspace"
+	"github.com/runewake2/sisyphus/hephaestus/internal/watch"
 )
 
 // ownerVariable is the owner name of the worker, as sisyphus reads it.
@@ -56,8 +60,15 @@ type Sisyphus func(dir string, args ...string) (string, error)
 // TaskData is the part of the data of a task message that a tool agent reads.
 type TaskData struct {
 	// Workspace is the directory where the command runs, and where sisyphus finds the issue.
-	// Default: the directory of the agent.
+	// Default: a workspace of its own for a role with workspace: task, or the directory of the agent.
 	Workspace string `json:"workspace,omitempty"`
+	// Bookmark is the bookmark that the task is about. A task workspace starts on it, and a notice
+	// about it runs in a scratch copy of it.
+	Bookmark string `json:"bookmark,omitempty"`
+	// Head is the commit of the bookmark when the notice was sent.
+	Head string `json:"head,omitempty"`
+	// Base is the base of a task workspace that has no bookmark. Default: the base of the agent.
+	Base string `json:"base,omitempty"`
 }
 
 // Agent is one worker of a tool role.
@@ -78,7 +89,16 @@ type Agent struct {
 	// MaxTokens is the most tokens that one task of an AI role may use. Zero: the max-tokens of the
 	// role, or no limit.
 	MaxTokens int
-	handled   map[string]bool
+	// Repo is the repo of the worker. With it, a task of a role with workspace: task gets a workspace
+	// of its own, and a notice about a bookmark runs in a scratch copy of the bookmark.
+	Repo repo.Repo
+	// Workspaces is the directory of the task workspaces. Default: workspaces/ beside the main root.
+	Workspaces string
+	// BookmarkPrefix starts the name of the bookmark of each task, for example ai/.
+	BookmarkPrefix string
+	// Base is the base of a task workspace, normally main.
+	Base    string
+	handled map[string]bool
 }
 
 // DefaultTaskTimeout is the time limit of a task when neither the worker nor the role gives one.
@@ -121,6 +141,11 @@ type Result struct {
 	Seconds float64 `json:"seconds,omitempty"`
 	// Usage is what the model of an AI role used, as its runner reports it.
 	Usage *Usage `json:"usage,omitempty"`
+	// Workspace is the task workspace, and whether it was removed after the task.
+	Workspace string `json:"workspace,omitempty"`
+	Removed   bool   `json:"removed,omitempty"`
+	// Fixes is the bookmark with the changes that a notice made in its scratch copy.
+	Fixes string `json:"fixes,omitempty"`
 }
 
 // RunnerVariable names the environment variable of the runner of AI roles.
@@ -187,7 +212,6 @@ func (a *Agent) Handle(ctx context.Context, m mq.Message) Result {
 	stop := mq.KeepAlive(a.Queue.Renew, a.Worker, []string{m.ID}, a.Err)
 	result := a.handle(ctx, m)
 	stop()
-	a.recordUsage(m, result)
 	fmt.Fprintf(a.Err, "%s: message %s: %s%s\n", a.Worker, m.ID, result.Status, map[bool]string{true: " (" + result.Issue + ")", false: ""}[result.Issue != ""])
 	if m.From != a.Worker {
 		data, _ := json.Marshal(result)
@@ -204,8 +228,10 @@ func (a *Agent) Handle(ctx context.Context, m mq.Message) Result {
 	return result
 }
 
-func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
-	result := Result{Message: m.ID, Issue: m.Issue}
+// It names its result, so that its deferred steps (the usage, the workspace, the fixes of a notice)
+// can complete it.
+func (a *Agent) handle(ctx context.Context, m mq.Message) (result Result) {
+	result = Result{Message: m.ID, Issue: m.Issue}
 	var data TaskData
 	if len(m.Data) > 0 {
 		if err := json.Unmarshal(m.Data, &data); err != nil {
@@ -217,8 +243,39 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 	if data.Workspace != "" {
 		dir = data.Workspace
 	}
+	// tracker is where the issue of the message is recorded: the task workspace, or else the
+	// directory of the worker. A scratch copy is not: it goes away.
+	tracker := dir
+	var space *taskspace.Space
+	var copy *scratch.Worktree
+	switch {
+	case Notice(m) && data.Bookmark != "" && a.Repo.VCS != repo.None:
+		// A notice about a bookmark runs in a scratch copy of it, never in the workspace of another.
+		w, base, err := a.scratchCopy(data)
+		if err != nil {
+			result.Status, result.Detail = "error", err.Error()
+			return result
+		}
+		defer w.Remove()
+		copy, dir = w, w.Dir
+		defer func() { a.keepFixes(m, data, copy, base, &result) }()
+	case !Notice(m) && data.Workspace == "" && a.Role.Workspace == "task" && a.Repo.VCS != repo.None:
+		s, err := a.taskSpace(m, data)
+		if err != nil {
+			result.Status, result.Detail = "error", "Its workspace could not be made: "+err.Error()
+			return result
+		}
+		space, dir, tracker = &s, s.Dir, s.Dir
+		result.Workspace = s.Dir
+		defer func() { a.closeSpace(m, data, s, &result) }()
+	}
+	defer func() { a.recordUsage(tracker, m, result) }() // before the workspace goes
 	if m.Issue != "" && !Notice(m) {
-		if _, err := a.Sisyphus(dir, "start", m.Issue, "--owner", a.Worker); err != nil {
+		start := []string{"start", m.Issue, "--owner", a.Worker}
+		if space != nil {
+			start = append(start, "--bookmark", space.Bookmark, "--workspace", space.Name)
+		}
+		if _, err := a.Sisyphus(dir, start...); err != nil {
 			result.Status, result.Detail = "refused", err.Error()
 			if !strings.Contains(err.Error(), "in progress") {
 				result.Status = "error"
@@ -226,10 +283,10 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 			return result
 		}
 	}
-	exit, output, err := a.command(ctx, dir, m, &result)
+	exit, output, err := a.command(ctx, dir, m, &result, space)
 	result.Exit, result.Output = exit, tail(output, outputLines)
 	if Notice(m) {
-		return a.noticeResult(dir, m, result, err)
+		return a.noticeResult(tracker, m, result, err)
 	}
 	if err != nil {
 		result.Status, result.Detail = "error", err.Error()
@@ -273,16 +330,160 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 	return result
 }
 
-// recordUsage adds a line about what the model of an AI role used to the Notes of the issue of the
-// message: the record of the run, for the economists and the operations auditor.
-func (a *Agent) recordUsage(m mq.Message, result Result) {
-	if result.Usage == nil || !result.Usage.Reported || result.Issue == "" {
+// taskSpace makes the workspace of a task: <role>-<issue>, with the bookmark <prefix><name>, on the
+// bookmark of the task, or on the base.
+func (a *Agent) taskSpace(m mq.Message, data TaskData) (taskspace.Space, error) {
+	about := m.ID
+	if m.Issue != "" {
+		about = path.Base(m.Issue)
+	}
+	name := taskspace.Name(a.Role.Flat(), about)
+	base := data.Bookmark
+	if base == "" {
+		base = data.Base
+	}
+	if base == "" {
+		base = a.base()
+	}
+	if a.Repo.VCS == repo.JJ {
+		if err := exportJJ(a.Repo); err != nil {
+			return taskspace.Space{}, err
+		}
+	}
+	return taskspace.Create(a.Repo, a.Workspaces, name, base, a.BookmarkPrefix+name)
+}
+
+func (a *Agent) base() string {
+	if a.Base != "" {
+		return a.Base
+	}
+	return "main"
+}
+
+// closeSpace ends the workspace of a task. When the task is done, it announces the close of its
+// issue (the same notices that hephaestus watch sends, so the queue keeps one of each), and removes
+// the workspace; its commits and bookmark stay. Otherwise it keeps the workspace for a human, and
+// tells where it is.
+func (a *Agent) closeSpace(m mq.Message, data TaskData, s taskspace.Space, result *Result) {
+	if result.Status != "done" {
+		if m.Issue != "" && result.Status != "refused" {
+			note := fmt.Sprintf("%s: the workspace of the task is kept for a human: %s (bookmark %s).", a.Now().Format("2006-01-02"), s.Dir, s.Bookmark)
+			a.Sisyphus(s.Dir, "edit", m.Issue, "notes", "--append", "--", note)
+		}
 		return
 	}
-	dir := a.Dir
-	var data TaskData
-	if json.Unmarshal(m.Data, &data) == nil && data.Workspace != "" {
-		dir = data.Workspace
+	if m.Issue != "" {
+		a.announce(m.Issue, s)
+	}
+	if taskspace.Dirty(a.Repo, s) {
+		note := fmt.Sprintf("%s: the task is done, but its workspace %s has changes that no commit keeps, so it is kept for a human.", a.Now().Format("2006-01-02"), s.Dir)
+		if m.Issue != "" {
+			a.Sisyphus(s.Dir, "edit", m.Issue, "notes", "--append", "--", note)
+		}
+		fmt.Fprintln(a.Err, "Warning: "+note)
+		return
+	}
+	if err := taskspace.Remove(a.Repo, s); err != nil {
+		fmt.Fprintf(a.Err, "Warning: %s could not remove the workspace %s: %v\n", a.Worker, s.Dir, err)
+		return
+	}
+	result.Removed = true
+}
+
+// announce broadcasts bookmark-ready and issue-closed for an issue that the task closed in its
+// workspace, when the queue runs.
+func (a *Agent) announce(issue string, s taskspace.Space) {
+	if a.issueState(s.Dir, issue) != "closed" {
+		return
+	}
+	head, err := a.Repo.CommitOf(s.Bookmark)
+	review := err == nil && head != ""
+	if review {
+		if merged, err := a.Repo.IsAncestor(head, a.base()); err == nil && merged {
+			review = false
+		}
+	} else {
+		fmt.Fprintf(a.Err, "Warning: the task of %s closed, but its bookmark %s does not exist: no review can start.\n", issue, s.Bookmark)
+	}
+	for _, e := range watch.Notices(issue, s.Bookmark, head, a.base(), review, true) {
+		if _, err := a.Queue.Send(e.Message(a.Worker)); err != nil {
+			fmt.Fprintf(a.Err, "Warning: %s could not broadcast %s for %s: %v\n", a.Worker, e.Kind, issue, err)
+		}
+	}
+}
+
+// scratchCopy makes a scratch copy of the bookmark of a notice, at the head that the notice names.
+func (a *Agent) scratchCopy(data TaskData) (*scratch.Worktree, string, error) {
+	if a.Repo.VCS == repo.JJ {
+		if err := exportJJ(a.Repo); err != nil {
+			return nil, "", err
+		}
+	}
+	gitDir, err := a.Repo.GitDir()
+	if err != nil {
+		return nil, "", err
+	}
+	commit := data.Head
+	if commit == "" {
+		if commit, err = a.Repo.CommitOf(data.Bookmark); err != nil {
+			return nil, "", fmt.Errorf("the bookmark %s of the notice does not exist", data.Bookmark)
+		}
+	}
+	w, err := scratch.New(gitDir, commit, "hephaestus-notice-")
+	return w, commit, err
+}
+
+// keepFixes keeps the changes that a notice made in its scratch copy: it commits them on the bookmark
+// <prefix>fix-<role>-<issue>, and records it in the Notes of the issue, for the author to squash.
+func (a *Agent) keepFixes(m mq.Message, data TaskData, w *scratch.Worktree, base string, result *Result) {
+	head, _, err := w.Commit(base, fmt.Sprintf("%s: changes of the notice %s on %s", a.Role.Name, m.ID, data.Bookmark))
+	if err != nil {
+		fmt.Fprintf(a.Err, "Warning: %s could not keep the changes of its notice: %v\n", a.Worker, err)
+		return
+	}
+	if head == "" {
+		return
+	}
+	about := m.ID
+	if m.Issue != "" {
+		about = path.Base(m.Issue)
+	}
+	// A flat name: a git branch cannot be a directory of another one, for example ai/fix/... beside ai/fix.
+	fixes := a.BookmarkPrefix + taskspace.Name("fix", a.Role.Flat(), about)
+	if _, err := w.Git("branch", "--force", fixes, head); err != nil {
+		fmt.Fprintf(a.Err, "Warning: %s could not keep the changes of its notice: %v\n", a.Worker, err)
+		return
+	}
+	if a.Repo.VCS == repo.JJ {
+		importJJ(a.Repo)
+	}
+	result.Fixes = fixes
+	if m.Issue != "" {
+		note := fmt.Sprintf("%s: %s (role %s) made changes to %s in the bookmark %s, on top of it. The author squashes them into the change that they belong to.", a.Now().Format("2006-01-02"), a.Worker, a.Role.Name, data.Bookmark, fixes)
+		a.Sisyphus(a.Dir, "edit", m.Issue, "notes", "--append", "--", note)
+	}
+}
+
+func exportJJ(r repo.Repo) error {
+	cmd := exec.Command("jj", "git", "export")
+	cmd.Dir = r.Root
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("jj git export: %v: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+func importJJ(r repo.Repo) {
+	cmd := exec.Command("jj", "git", "import")
+	cmd.Dir = r.Root
+	cmd.Run()
+}
+
+// recordUsage adds a line about what the model of an AI role used to the Notes of the issue of the
+// message: the record of the run, for the economists and the operations auditor.
+func (a *Agent) recordUsage(dir string, m mq.Message, result Result) {
+	if result.Usage == nil || !result.Usage.Reported || result.Issue == "" {
+		return
 	}
 	u := result.Usage
 	note := fmt.Sprintf("%s: the run of %s (role %s) for message %s used %d tokens", a.Now().Format("2006-01-02"), a.Worker, a.Role.Name, m.ID, u.Tokens)
@@ -376,7 +577,7 @@ func (a *Agent) stop(dir string, m mq.Message, result *Result) {
 // could not start.
 // The command stops at the time limit of the task, or when an AI role passes its token limit; that
 // is an error, and result gets the time and the usage.
-func (a *Agent) command(ctx context.Context, dir string, m mq.Message, result *Result) (int, string, error) {
+func (a *Agent) command(ctx context.Context, dir string, m mq.Message, result *Result, space *taskspace.Space) (int, string, error) {
 	limit := a.timeout()
 	ctx, cancel := context.WithTimeout(ctx, limit)
 	defer cancel()
@@ -393,7 +594,11 @@ func (a *Agent) command(ctx context.Context, dir string, m mq.Message, result *R
 	}
 	input = append(input, '\n')
 	if a.Role.Kind == roles.AI {
-		input = []byte(airole.TaskPrompt(a.Role, a.Worker, m, dir))
+		bookmark := ""
+		if space != nil {
+			bookmark = space.Bookmark
+		}
+		input = []byte(airole.TaskPrompt(a.Role, a.Worker, m, dir, bookmark))
 	}
 	cmd := Shell(ctx, a.commandLine())
 	cmd.Dir = dir
@@ -413,6 +618,9 @@ func (a *Agent) command(ctx context.Context, dir string, m mq.Message, result *R
 		"HEPHAESTUS_MESSAGE_FROM="+m.From,
 		"HEPHAESTUS_MESSAGE_ISSUE="+m.Issue,
 	)
+	if space != nil {
+		cmd.Env = append(cmd.Env, "HEPHAESTUS_WORKSPACE="+space.Dir, "HEPHAESTUS_BOOKMARK="+space.Bookmark)
+	}
 	err = cmd.Run()
 	text := output.String()
 	if meter != nil {

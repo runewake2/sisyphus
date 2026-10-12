@@ -29,6 +29,7 @@ names ([[#Running an AI role]]).
 | `model` | A model, for example `sonnet` | An AI role only: the model of its subagent. Without it, the model of the session. |
 | `timeout` | A time, for example `30m` or `2h` | Optional: the longest time that one task of the role may run. Then it stops, with every program that it started, and goes to a human. Without it: 1 hour, or `agent run --task-timeout`. |
 | `max-tokens` | A number of tokens, for example `2000000` | An AI role only, optional: the most tokens (input, output, and cache) that one task may use. Then it stops. The runner must report usage as JSON lines, as `claude -p --output-format stream-json --verbose` does ([[0006-a-task-has-a-time-limit-and-a-token-limit]]). |
+| `workspace` | `task` or `none` | Optional: where a task of the role runs. `task` (the default of an AI role): a jj workspace or git worktree of its own for each task, with its own bookmark, removed when the task is done. `none` (the default of a tool role): the directory of the worker. A notice about a bookmark always runs in a scratch copy of the bookmark ([[0008-each-task-has-a-workspace-of-its-own]]). |
 | `can-call-referendum` | `true` or `false` (the default) | Whether a human allows the role to call a referendum ([[referendum]]). |
 
 A comment after `#` is allowed on each line.
