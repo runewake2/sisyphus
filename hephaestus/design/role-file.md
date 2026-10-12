@@ -6,7 +6,7 @@
 Each role of hephaestus is a Markdown file of its own, `hephaestus/roles/<role>.md`
 ([[0002-each-role-is-a-markdown-file]]). People read it to know what the role does; hephaestus reads
 its frontmatter to run the role; for an AI role, the model gets its sections as its instructions.
-[[merge-queue|roles/merge-queue.md]] is an example of a tool role.
+[[merge-queue|roles/merge-queue.md]] and [[repo-check|roles/repo-check.md]] are examples of tool roles.
 
 ## Frontmatter
 
@@ -17,6 +17,7 @@ its frontmatter to run the role; for an AI role, the model gets its sections as 
 | `command` | A command line | A tool role only: the program that does the work of a task. An AI role has none. |
 | `trigger` | `request`, `close`, `schedule`, or a list such as `[request, schedule]` | What starts the role (Q5 of [[agent-delegation]]). |
 | `on-failure` | `needs-human` (the default), or an AI role | Where the work goes that the role cannot do. A tool can give it to an AI role; nothing gives work back to a tool. |
+| `listens` | A list of kinds, for example `[bookmark-ready]` | Optional: the kinds of broadcast that the workers of the role react to ([[message-queue]]). They also get every message to them and to the role. |
 | `can-call-referendum` | `true` or `false` (the default) | Whether a human allows the role to call a referendum ([[referendum]]). |
 
 A comment after `#` is allowed on each line.

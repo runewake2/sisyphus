@@ -89,6 +89,9 @@ differs: hephaestus runs the command of the role on the task, instead of a model
   2026-10-11): a lint or the tests vote with their exit code, and a formatter can submit its changes
   as a modification.
 
+`hephaestus agent run <role>` runs a worker of a tool role, and `hephaestus agent review <role>`
+gives its ballot: [[0003-a-tool-agent-runs-its-command-for-each-message]] records how.
+
 ## Messages between workers
 
 Agents must be able to send information to each other: one worker to another, and to every worker

@@ -39,6 +39,9 @@ type Role struct {
 	Triggers          []string `json:"triggers"`
 	OnFailure         string   `json:"on-failure"`
 	CanCallReferendum bool     `json:"can-call-referendum"`
+	// Listens holds the kinds of broadcast that the role reacts to, for example bookmark-ready. Its
+	// workers also get every message to them and to the role.
+	Listens []string `json:"listens,omitempty"`
 	// Charter is the text of the Charter section, for a summary.
 	Charter  string `json:"charter"`
 	sections map[string]string
@@ -141,7 +144,7 @@ func read(file string) (Role, []string) {
 			problems = append(problems, fmt.Sprintf("the frontmatter line %q is not key: value", line))
 			continue
 		}
-		fields[strings.TrimSpace(key)] = strings.Trim(strings.TrimSpace(value), `"'`)
+		fields[strings.TrimSpace(key)] = unquote(strings.TrimSpace(value))
 	}
 	if fields["role"] != role.Name {
 		problems = append(problems, fmt.Sprintf("role is %q, but the file name is %s.md: they must be the same", fields["role"], role.Name))
@@ -174,6 +177,15 @@ func read(file string) (Role, []string) {
 	}
 	if value := fields["on-failure"]; value != "" {
 		role.OnFailure = value
+	}
+	for _, kind := range strings.Split(strings.Trim(fields["listens"], "[]"), ",") {
+		if kind = strings.TrimSpace(kind); kind == "" {
+			continue
+		}
+		if !namePattern.MatchString(kind) {
+			problems = append(problems, fmt.Sprintf("listens has %q, which is not a kind: lowercase words, for example bookmark-ready", kind))
+		}
+		role.Listens = append(role.Listens, kind)
 	}
 	switch fields["can-call-referendum"] {
 	case "", "false":
@@ -252,4 +264,13 @@ func firstParagraph(text string) string {
 		text = text[:i]
 	}
 	return strings.Join(strings.Fields(text), " ")
+}
+
+// unquote removes the quotes around a value that is quoted as a whole, for example "a b". A quote
+// inside a value, for example in a command line, stays.
+func unquote(value string) string {
+	if len(value) >= 2 && (value[0] == '"' || value[0] == '\'') && value[len(value)-1] == value[0] {
+		return value[1 : len(value)-1]
+	}
+	return value
 }

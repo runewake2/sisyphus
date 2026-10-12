@@ -254,3 +254,43 @@ func resolveFrom(base, path string) string {
 	}
 	return filepath.Join(base, filepath.FromSlash(path))
 }
+
+// WorkingDiff returns the changes of the working copy, as a git diff: in jj, the change of the
+// working-copy commit; in git, the changes that are not committed, staged or not.
+func (r Repo) WorkingDiff() (string, error) {
+	switch r.VCS {
+	case JJ:
+		return r.run("diff", "--git")
+	case Git:
+		diff, err := r.run("diff", "HEAD")
+		if err != nil {
+			return "", err
+		}
+		// git diff leaves out new files that git does not track yet; jj diff has them.
+		untracked, err := r.run("ls-files", "--others", "--exclude-standard")
+		if err != nil {
+			return "", err
+		}
+		for _, file := range lines(untracked) {
+			cmd := exec.Command("git", "diff", "--no-index", "--", os.DevNull, file)
+			cmd.Dir = r.Root
+			out, _ := cmd.Output() // exit code 1 means that there is a difference
+			diff += strings.ReplaceAll(string(out), "a/"+os.DevNull, "a/"+file)
+		}
+		return diff, nil
+	}
+	return "", errors.New("Finding the changes of the working copy needs jj or git.")
+}
+
+// DiffFiles returns the paths of the files that a git diff changes.
+func DiffFiles(diff string) []string {
+	var files []string
+	for _, line := range strings.Split(diff, "\n") {
+		if rest, ok := strings.CutPrefix(line, "diff --git a/"); ok {
+			if i := strings.Index(rest, " b/"); i >= 0 {
+				files = append(files, rest[:i])
+			}
+		}
+	}
+	return files
+}
