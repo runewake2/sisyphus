@@ -197,3 +197,49 @@ func TestAReferendumChecksItsCallFirst(t *testing.T) {
 	res = r.run("referendum", "call", "fix-login-bug", "-q", "?", "--required", "check-ok")
 	contains(t, res.errors, "The issue fix-login-bug has a referendum that runs (referendum=round-2")
 }
+
+func TestAReferendumThatTimesOutFailsAndStopsItsReviewers(t *testing.T) {
+	r, _ := newReferendumRepo(t)
+	marker := filepath.Join(t.TempDir(), "still-running")
+	slow := filepath.Join(t.TempDir(), "slow.sh")
+	if err := os.WriteFile(slow, []byte("#!/bin/sh\ncat >/dev/null\nsleep 3\ntouch "+marker+"\necho '{\"vote\": \"yes\"}'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	started := time.Now()
+
+	res := r.run("referendum", "call", "fix-login-bug", "-q", "Merge it?", "--required", "docs", "--runner", slow, "--timeout", "500ms")
+
+	equal(t, 1, res.exit)
+	isTrue(t, time.Since(started) < 2500*time.Millisecond, "the referendum waited for its reviewer after the timeout")
+	contains(t, res.errors, "has the result failed. The referendum timed out: it had no result within 500ms.")
+	equal(t, "failed", r.metadataOf("fix-login-bug")["referendum"])
+	issue := r.showIssue("fix-login-bug")
+	equal[any](t, "in-progress", issue["state"]) // the issue stays open for its owner
+	notContains(t, strings.Join(toStrings(issue["tags"]), ","), "needs-human")
+	contains(t, issue["body"].(string), "referendum result: failed. The referendum timed out")
+	time.Sleep(3 * time.Second)
+	_, err := os.Stat(marker)
+	isTrue(t, os.IsNotExist(err), "the reviewer went on after the timeout")
+	notContains(t, r.git("worktree", "list"), "hephaestus-referendum-")
+}
+
+func TestAReferendumPastItsDeadlineIsRecordedAsFailed(t *testing.T) {
+	r, model := newReferendumRepo(t)
+	r.write("referendums/2026-10-01-fix-login-bug.md", "# Referendum: fix-login-bug\n\n- Result: **running**\n")
+	r.mustRunSisyphus("update", "fix-login-bug", "--metadata", "referendum=round-2", "--metadata", "referendum-record=2026-10-01-fix-login-bug",
+		"--metadata", "referendum-deadline="+time.Now().Add(time.Hour).UTC().Format(time.RFC3339))
+
+	res := r.run("referendum", "call", "fix-login-bug", "-q", "Merge it?", "--required", "check-ok", "--runner", model)
+	equal(t, 1, res.exit)
+	contains(t, res.errors, "has a referendum that runs (referendum=round-2, record 2026-10-01-fix-login-bug), until ")
+
+	r.mustRunSisyphus("update", "fix-login-bug", "--metadata", "referendum-deadline="+time.Now().Add(-time.Minute).UTC().Format(time.RFC3339))
+	res = r.run("referendum", "call", "fix-login-bug", "-q", "Merge it?", "--required", "check-ok", "--runner", model)
+
+	equal(t, 0, res.exit)
+	contains(t, res.errors, "The referendum 2026-10-01-fix-login-bug on fix-login-bug had no result by its deadline: it is recorded as failed.")
+	contains(t, r.read("referendums/2026-10-01-fix-login-bug.md"), "## Timed out\n\n")
+	body := r.showIssue("fix-login-bug")["body"].(string)
+	contains(t, body, "referendum result: failed. The referendum timed out: it had no result by its deadline")
+	contains(t, body, "referendum result: passed.")
+}

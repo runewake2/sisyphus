@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -26,7 +29,11 @@ import (
 const (
 	referendumKey = "referendum"
 	recordKey     = "referendum-record"
+	deadlineKey   = "referendum-deadline"
 )
+
+// DefaultReferendumTimeout is the time that a referendum has for its result.
+const DefaultReferendumTimeout = time.Hour
 
 // roleVariable names the role of the agent that runs hephaestus, as a worker sets it.
 const roleVariable = "HEPHAESTUS_ROLE"
@@ -44,6 +51,7 @@ func callCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command
 	var question, bookmark, onto, runner string
 	var required, optional []string
 	var maxRounds, parallel int
+	var timeout time.Duration
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "call <issue>",
@@ -63,7 +71,11 @@ func callCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command
 			"line for each round and for the result, and the full record in referendums/<id>.md. When it passes on a " +
 			"modified version, the issue edits of that version are applied, and the bookmark of the issue becomes the " +
 			"branch of that version. A human, or an agent whose role file has can-call-referendum: true, can call one. " +
-			"The exit code is 0 only when the referendum passes.",
+			"The exit code is 0 only when the referendum passes.\n\n" +
+			"A referendum that times out (--timeout), or that is stopped with Ctrl-C or SIGTERM, fails: its reviewers " +
+			"are stopped, the result is failed, and the issue stays open for its owner. The issue records the " +
+			"deadline in metadata referendum-deadline, so that when a referendum stopped with no record at all, for " +
+			"example after a crash, the next call after its deadline records it as failed and goes on.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			issue := args[0]
@@ -105,8 +117,22 @@ func callCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command
 			if err != nil {
 				return err
 			}
+			if timeout <= 0 {
+				return errors.New("--timeout must be longer than 0, for example 1h.")
+			}
 			if state := detail.Metadata[referendumKey]; strings.HasPrefix(state, "round-") {
-				return fmt.Errorf("The issue %s has a referendum that runs (%s=%s, record %s). Wait for its result. If it stopped, a human decides it: hephaestus referendum decide %s passed|failed --reason <why>.", detail.Name, referendumKey, state, detail.Metadata[recordKey], detail.Name)
+				deadline, err := time.Parse(time.RFC3339, detail.Metadata[deadlineKey])
+				if err != nil || time.Now().Before(deadline) {
+					until := "with no deadline; a human decides it: hephaestus referendum decide " + detail.Name + " passed|failed --reason <why>"
+					if err == nil {
+						until = "until " + deadline.Local().Format("2006-01-02 15:04:05") + ", its deadline"
+					}
+					return fmt.Errorf("The issue %s has a referendum that runs (%s=%s, record %s), %s. Wait for its result.", detail.Name, referendumKey, state, detail.Metadata[recordKey], until)
+				}
+				if err := timedOut(w.directory(), detail.Name, detail.Metadata[recordKey], deadline, findRepo); err != nil {
+					return err
+				}
+				fmt.Fprintf(cmd.ErrOrStderr(), "The referendum %s on %s had no result by its deadline: it is recorded as failed.\n", detail.Metadata[recordKey], detail.Name)
 			}
 			if bookmark == "" {
 				bookmark = detail.Bookmark
@@ -135,6 +161,10 @@ func callCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command
 				return fmt.Errorf("The base %q does not exist.", onto)
 			}
 
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			ctx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
 			now := time.Now()
 			ref := &referendum.Referendum{
 				Date: now.Format("2006-01-02"), Issue: detail.Name, Question: strings.TrimSpace(question), CalledBy: calledBy,
@@ -152,12 +182,21 @@ func callCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command
 			if err := rec.write(); err != nil {
 				return err
 			}
-			rec.sisyphus("update", ref.Issue, "--metadata", referendumKey+"=round-1", "--metadata", recordKey+"="+ref.ID)
+			deadline := now.Add(timeout).UTC().Format(time.RFC3339)
+			rec.sisyphus("update", ref.Issue, "--metadata", referendumKey+"=round-1", "--metadata", recordKey+"="+ref.ID, "--metadata", deadlineKey+"="+deadline)
 			fmt.Fprintf(cmd.ErrOrStderr(), "referendum %s: %s on %s (%.12s), %d reviewers\n", ref.ID, ref.Issue, bookmark, commit, len(reviewers))
 
-			runErr := referendum.Run(cmd.Context(), ref, voter, referendum.Options{Parallel: parallel, On: rec.on})
+			runErr := referendum.Run(ctx, ref, voter, referendum.Options{Parallel: parallel, On: rec.on})
 			importJJ(r)
-			if runErr != nil {
+			switch {
+			case runErr != nil && ctx.Err() != nil:
+				// A referendum that times out or is stopped fails; the issue stays open for its owner.
+				ref.Result, ref.Reasons = referendum.Failed, fmt.Sprintf("The referendum timed out: it had no result within %s.", timeout)
+				if !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+					ref.Result, ref.Reasons = referendum.Failed, "The referendum was stopped before its result."
+				}
+				rec.on(referendum.Event{Kind: "result"})
+			case runErr != nil:
 				rec.sisyphus("update", ref.Issue, "--metadata", referendumKey+"="+referendum.NoResult, "--add-tags", toolagent.NeedsHuman)
 				rec.note(fmt.Sprintf("%s, the referendum stopped: %v. A human decides. Record: [[%s]].", ref.Date, runErr, ref.ID))
 				return runErr
@@ -183,6 +222,7 @@ func callCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command
 	cmd.Flags().StringVar(&onto, "onto", "main", "The current implementation, to compare with.")
 	cmd.Flags().StringVar(&runner, "runner", "", "The command that runs the model of an AI reviewer, for example \"claude -p --agent {role}\". Default: "+toolagent.RunnerVariable+".")
 	cmd.Flags().IntVar(&maxRounds, "max-rounds", referendum.DefaultMaxRounds, "The maximum number of rounds. Then a human decides.")
+	cmd.Flags().DurationVar(&timeout, "timeout", DefaultReferendumTimeout, "The time that the referendum has for its result. Then it fails, and the issue stays open.")
 	cmd.Flags().IntVar(&parallel, "parallel", 0, "The maximum number of reviewers that run at the same time. 0: all of them.")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the full referendum as JSON.")
 	return cmd
@@ -244,6 +284,31 @@ func decideCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comma
 	}
 	cmd.Flags().StringVar(&reason, "reason", "", "Why the human decided so.")
 	return cmd
+}
+
+// timedOut records as failed a referendum that had no result by its deadline: the process that ran
+// it stopped with no record, for example in a crash. The issue stays open.
+func timedOut(dir, issue, id string, deadline time.Time, findRepo func() (repo.Repo, error)) error {
+	date := time.Now().Format("2006-01-02")
+	reason := fmt.Sprintf("The referendum timed out: it had no result by its deadline, %s.", deadline.Local().Format("2006-01-02 15:04"))
+	if r, err := findRepo(); err == nil && id != "" {
+		file := filepath.Join(r.Root, referendum.Dir, id+".md")
+		if record, err := os.ReadFile(file); err == nil {
+			section := fmt.Sprintf("\n## Timed out\n\n%s: **failed**. %s\n", date, reason)
+			if err := os.WriteFile(file, append(record, []byte(section)...), 0o644); err != nil {
+				return err
+			}
+		}
+	}
+	if _, err := sisyphus.Run(dir, "update", issue, "--metadata", referendumKey+"="+referendum.Failed); err != nil {
+		return err
+	}
+	note := fmt.Sprintf("%s, referendum result: failed. %s", date, reason)
+	if id != "" {
+		note += " Record: [[" + id + "]]."
+	}
+	_, err := sisyphus.Run(dir, "edit", issue, "notes", "--append", "--", note)
+	return err
 }
 
 // caller returns who calls the referendum: the role of the agent, when it runs as a worker, which

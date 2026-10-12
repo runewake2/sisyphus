@@ -68,6 +68,12 @@ answers left open.
   The full record is `referendums/<date>-<issue>.md`, with `-2`, `-3`, and so on for a later
   referendum. hephaestus rewrites it after each round. Only `decide` adds to it after the result.
   When the message queue runs, the owner of the issue gets a `referendum` message with the result.
+- **Timeout** (from the human, 2026-10-12: a referendum that times out fails, and the issue remains
+  open). `--timeout` (1 hour by default), Ctrl-C, and SIGTERM stop the reviewers, with every program
+  that they started, and the result is `failed`, with no `needs-human` tag. The state of the issue
+  does not change. The issue gets `referendum-deadline` in its metadata. When a call finds a
+  referendum that still has `round-<n>` after its deadline, because its process ended with no
+  record, it records that referendum as failed and goes on.
 - **Exit code.** It is 0 only when the referendum passes, so that a script can do
   `hephaestus referendum call ... && hephaestus merge-queue ...`.
 

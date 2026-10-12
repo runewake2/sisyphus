@@ -107,6 +107,10 @@ The other rules:
   and goes with the result.
 - **A modification is a new version.** It gets the next version number, the change ids of the new
   implementation, and the name of its author.
+- **Time is limited** (from the human, 2026-10-12): a referendum that times out fails, and the issue
+  stays open for its owner. `--timeout` gives the time (1 hour by default); Ctrl-C and SIGTERM stop
+  it the same way. The issue records the deadline, so that a referendum that stopped with no record,
+  for example in a crash, is recorded as failed by the next call after its deadline.
 - **Rounds are limited.** After 3 rounds (R5, answered by the human on 2026-10-11: try 3 for now),
   hephaestus stops the referendum
   with the result `no result`, and asks a human, with every version, every gate, and every ballot.

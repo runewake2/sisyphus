@@ -370,12 +370,19 @@ func (a *Agent) issueState(dir, issue string) string {
 	return shown.State
 }
 
-// Shell returns the command that runs a command line in the shell of the platform.
+// Shell returns the command that runs a command line in the shell of the platform. When ctx ends,
+// it stops the whole command, also the programs that the shell started, for example a model runner,
+// so that a stopped task spends no more tokens or CPU.
 func Shell(ctx context.Context, line string) *exec.Cmd {
+	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		return exec.CommandContext(ctx, "cmd", "/C", line)
+		cmd = exec.CommandContext(ctx, "cmd", "/C", line)
+	} else {
+		cmd = exec.CommandContext(ctx, "sh", "-c", line)
 	}
-	return exec.CommandContext(ctx, "sh", "-c", line)
+	stopTree(cmd)
+	cmd.WaitDelay = 5 * time.Second
+	return cmd
 }
 
 func tail(text string, n int) string {
