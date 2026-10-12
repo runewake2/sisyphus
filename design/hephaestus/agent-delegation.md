@@ -262,6 +262,11 @@ Each of these is a separate issue, with its own design before the work.
   `formatter/markdown` ([[roles/formatter/README|the formatter roles]]). Each formats only the files
   that the work changes. They are the first tool reviewers that submit a modification in a
   referendum.
+- **Economists** ([[economist-roles]]): a family of AI roles that analyze cost against a budget,
+  each for one kind of cost: `economist/tokens` for the tokens and money of AI agents,
+  `economist/cloud` for cloud services such as AWS, and `economist/compute` for CPU, RAM, GPU, and
+  storage ([[roles/economist/README|the economist roles]]). They read and propose; they never
+  change a resource or a role.
 - **Technical docs** ([[technical-docs-agent]]): for each issue that closes, checks that the
   command pages, the README, and the guides still agree with the behavior (run the examples,
   compare the flags), fixes the docs or files an issue, and writes the page for a new feature. It
@@ -287,6 +292,7 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 | [[roles/technical-docs]] | ai | the close of an issue (`issue-closed`), a request | no | a human | the docs of the change |
 | [[roles/security-researcher]] | ai | a request | no | a human | the security of the change: secrets, files, input, services, dependencies |
 | [[roles/privacy-reviewer]] | ai | a request | no | a human | the data about people that the change collects, keeps, shows, or sends |
+| [[roles/economist/README]]: `economist/tokens`, `economist/cloud`, `economist/compute` | ai | a request, a schedule | no | a human | the cost of the change against a budget: AI tokens, cloud services, or CPU, RAM, GPU, and storage |
 
 The path of a piece of work:
 
@@ -300,7 +306,8 @@ The path of a piece of work:
 4. A human checks the line of the merge queue, and moves `main`.
 5. The close of each issue starts the technical docs agent. The project manager, the UX
    researcher, the security researcher, and the privacy reviewer review the issues and the product
-   on request, and file what they find.
+   on request, and file what they find. The economists report the cost of the work against its
+   budget on request or on a schedule.
 
 Humans keep the decisions that no role makes: they move `main`, accept the proposals of the
 project manager, decide a failed referendum, and take each issue tagged `needs-human`.
