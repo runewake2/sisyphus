@@ -1,0 +1,38 @@
+# Unreleased: Add the merge queue
+
+- Date: 2026-10-12
+- Bookmark: samw/ai/ux-fixes
+- Components: hephaestus
+- Changelog: Add hephaestus merge-queue, which makes one linear history from the work of a set of tasks and gives the versions as it lands.
+
+## Summary
+
+`hephaestus merge-queue <task>...` makes one linear history from the work of a set of tasks, on a
+new bookmark `merge-queue/<date>`, and gives the unreleased changelog entries their versions as the
+work lands. It never moves `main`, never pushes, and makes no model call.
+
+## Changes
+
+- It merges in a scratch git worktree (the git store of jj, after `jj git export`), in the order of
+  `merge-order`, with cherry-picks of the commits that the line does not have yet.
+- After each bookmark: `decisions renumber`, `version assign` of the entries that the bookmark
+  added, in commit order, in one commit "merge-queue: give versions to <bookmark>", then `--checks`.
+- A bookmark that conflicts, fails the checks, has a merge commit, or comes after a left-out
+  bookmark is left out, with a note in its tasks; a conflict also gets a message to the `engineer`
+  role.
+- `--from-message` takes the set of tasks from the data of a task message, so that the role
+  `merge-queue` runs as a tool agent (`hephaestus agent run merge-queue`). The role file has the
+  checks of this repo.
+- In a jj workspace that is not colocated, jj does not export bookmarks to git by itself; the merge
+  queue exports them first. A first real run found this.
+- A real run merged the work of the tasks [[nested-tracker-links]], [[filter-by-metadata]], and
+  [[rename-issue-command]] (the bookmark `samw/ai/ux-fixes`, 22 changes) onto
+  `merge-queue/2026-10-12`, gave the versions 0.0.107 to 0.0.113, and passed the checks.
+
+## Decisions
+
+- [[0001-merge-with-git-in-a-scratch-worktree]]
+
+## Issues
+
+- Started [[merge-queue-agent]]. A human must check the result of the real run before it closes.

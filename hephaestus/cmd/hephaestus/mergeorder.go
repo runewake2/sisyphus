@@ -29,30 +29,9 @@ func mergeOrderCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 			if err != nil {
 				return err
 			}
-			states := map[string]string{}
-			all, err := sisyphus.List(w.directory(), "--state", "all")
+			tasks, err := resolveTasks(w.directory(), args)
 			if err != nil {
 				return err
-			}
-			for _, issue := range all {
-				states[issue.Name] = issue.State
-			}
-			var tasks []mergeorder.Task
-			seen := map[string]bool{}
-			for _, reference := range args {
-				detail, err := sisyphus.Show(w.directory(), reference)
-				if err != nil {
-					return err
-				}
-				if seen[detail.Name] {
-					continue
-				}
-				seen[detail.Name] = true
-				task := mergeorder.Task{Name: detail.Name, State: detail.State, Bookmark: detail.Bookmark}
-				for _, dependency := range detail.DependsOn {
-					task.DependsOn = append(task.DependsOn, mergeorder.Dependency{Name: dependency, State: states[dependency]})
-				}
-				tasks = append(tasks, task)
 			}
 			plan, err := mergeorder.Compute(r, tasks, onto)
 			if err != nil {
@@ -86,4 +65,35 @@ func mergeOrderCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 	cmd.Flags().StringVar(&onto, "onto", "main", "The base of the merge.")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the order as JSON.")
 	return cmd
+}
+
+// resolveTasks reads the tasks of the set with sisyphus: their full names, states, bookmarks, and
+// dependencies, with the state of each dependency.
+func resolveTasks(dir string, references []string) ([]mergeorder.Task, error) {
+	states := map[string]string{}
+	all, err := sisyphus.List(dir, "--state", "all")
+	if err != nil {
+		return nil, err
+	}
+	for _, issue := range all {
+		states[issue.Name] = issue.State
+	}
+	var tasks []mergeorder.Task
+	seen := map[string]bool{}
+	for _, reference := range references {
+		detail, err := sisyphus.Show(dir, reference)
+		if err != nil {
+			return nil, err
+		}
+		if seen[detail.Name] {
+			continue
+		}
+		seen[detail.Name] = true
+		task := mergeorder.Task{Name: detail.Name, State: detail.State, Bookmark: detail.Bookmark}
+		for _, dependency := range detail.DependsOn {
+			task.DependsOn = append(task.DependsOn, mergeorder.Dependency{Name: dependency, State: states[dependency]})
+		}
+		tasks = append(tasks, task)
+	}
+	return tasks, nil
 }

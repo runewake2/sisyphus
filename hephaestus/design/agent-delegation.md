@@ -178,7 +178,8 @@ A new need goes to sisyphus only if it is generic issue data. Everything else is
 
 ## Merge queue
 
-The first role. [[merge-queue-agent]] tracks it. It is a tool agent (Q10, answered by the human
+The first role. [[merge-queue-agent]] tracks it, and `hephaestus merge-queue` does it
+([[0001-merge-with-git-in-a-scratch-worktree]]). It is a tool agent (Q10, answered by the human
 on 2026-10-11): its order, rebases, renumbering, and checks follow fixed rules, so it uses no
 model, and costs no tokens.
 

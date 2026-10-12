@@ -43,6 +43,7 @@ as `git -C` does.
 | `hephaestus messages log` | Print every message of the log, also when the service does not run. |
 | `hephaestus agent run <role>` | Run a worker of a tool role: for each message, claim its issue, run the command of the role, and close or stop the issue from the exit code. No model call ([[0003-a-tool-agent-runs-its-command-for-each-message]]). |
 | `hephaestus agent review <role>` | Run a tool role as a referendum reviewer, and print its ballot: `yes`, `no`, or `modify` with the changes that it made. |
+| `hephaestus merge-queue <task>...` | Make one linear history from the work of a set of tasks, onto a new bookmark `merge-queue/<date>`: merge each bookmark in the order of `merge-order`, renumber decision records, give the versions, and run `--checks`. It never moves `main` ([[0001-merge-with-git-in-a-scratch-worktree]]). |
 | `hephaestus version list` | List the unreleased changelog entries, in the order that `assign` uses by default. |
 | `hephaestus version assign [<entry>...]` | Give the next SHAME versions to unreleased changelog entries, in the given order: move each to `changelog/<version>.md`, add the `CHANGELOG.md` entry, set `VERSION`, and change every link to it. `--dry-run` and `--json` show the plan. |
 | `hephaestus decisions renumber [--onto main]` | Give a new number to each decision record that has the number of another one in its directory and that the base does not have, and change every link to it. `--dry-run` and `--json` show the plan. |

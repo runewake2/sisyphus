@@ -294,3 +294,22 @@ func DiffFiles(diff string) []string {
 	}
 	return files
 }
+
+// GitDir returns the git directory that holds the commits of the repo: the git common directory of a
+// git repo, or the git store of a jj repo (.jj/repo/store/git_target). A jj repo with another
+// backend has none.
+func (r Repo) GitDir() (string, error) {
+	switch r.VCS {
+	case Git:
+		return gitCommonDir(filepath.Join(r.Root, ".git")), nil
+	case JJ:
+		repoDir := filepath.Dir(r.SharedDir()) // .jj/repo, also from another workspace
+		store := filepath.Join(repoDir, "store")
+		target, err := os.ReadFile(filepath.Join(store, "git_target"))
+		if err != nil {
+			return "", errors.New("This jj repo has no git backend: the merge queue needs git commits.")
+		}
+		return resolveFrom(store, strings.TrimSpace(string(target))), nil
+	}
+	return "", errors.New("This directory is in no jj or git repo.")
+}
