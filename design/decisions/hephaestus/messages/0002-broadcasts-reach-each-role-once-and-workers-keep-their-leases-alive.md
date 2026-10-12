@@ -26,7 +26,9 @@ workers a keep-alive that tells the scheduler that they still work, so that no w
 - **Roles of families.** A role in a message or a receive can be a path, for example
   `formatter/golang`. A message to every worker of a role (`--all`) whose role is a family, for
   example `formatter`, reaches the workers of each role in it. A message to one worker of a family
-  reaches nobody: one worker must be of one role.
+  reaches nobody: one worker must be of one role. `hephaestus messages send` sends it all the same,
+  but warns, with the roles of the family and the two ways to reach them (from the human,
+  2026-10-12).
 - **A broadcast reaches each listening role once.** The lease and the acknowledgement of a
   broadcast are for the role of the worker, not for the worker. One worker of the role handles it.
   A broadcast reaches a role when a worker of the role registered before it, so a worker that

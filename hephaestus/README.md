@@ -37,7 +37,7 @@ as `git -C` does.
 | `hephaestus tasks <role>` | List the tasks of a role that can start now; `--all` in every state. |
 | `hephaestus merge-order <task>...` | Print the order in which the merge queue merges the work of a set of tasks, with the reason for each place. `--onto` gives the base (default `main`); `--json` prints it as JSON. |
 | `hephaestus messages serve` | Run the message queue of the repo: a service on 127.0.0.1 that every workspace of the repo finds, with an append-only log ([[0001-a-local-service-with-an-append-only-log]]). |
-| `hephaestus messages send` | Send a message `--to <worker>`, `--role <role>` (`--all` for every worker of it, or of every role of a family such as `formatter`), or `--broadcast` (once to each listening role), with `--kind`, `--issue`, and `--data`. |
+| `hephaestus messages send` | Send a message `--to <worker>`, `--role <role>` (`--all` for every worker of it, or of every role of a family such as `formatter`; without `--all`, a family reaches no worker, and send warns), or `--broadcast` (once to each listening role), with `--kind`, `--issue`, and `--data`. |
 | `hephaestus messages receive`, `ack` | Print the messages that wait for a worker (`--as`, default `SISYPHUS_OWNER`), and acknowledge them, so that they do not come again. |
 | `hephaestus messages listen -- <command>` | Run a command for each message of a worker, as a tool agent does; exit code 0 acknowledges the message. |
 | `hephaestus messages renew <id>...` | Renew the leases of messages that a worker still handles: its keep-alive. `agent run` and `messages listen` renew by themselves. |

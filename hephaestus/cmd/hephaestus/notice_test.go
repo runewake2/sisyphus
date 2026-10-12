@@ -72,3 +72,18 @@ func TestAKeepAliveKeepsALongTaskFromAnotherWorker(t *testing.T) {
 	equal(t, "run by slow-1\n", r.read("slow.txt"))
 	contains(t, workers, "slow-1")
 }
+
+func TestAMessageToOneWorkerOfAFamilyWarns(t *testing.T) {
+	r := newNoticeRepo(t, time.Minute)
+	r.write("hephaestus/roles/formatter/lower/role.md", toolRoleFile("formatter/lower", "true", "", ""))
+
+	family := r.mustRun("messages", "send", "--from", "alice", "--role", "formatter", "--kind", "task", "format it")
+	all := r.mustRun("messages", "send", "--from", "alice", "--role", "formatter", "--all", "--kind", "info", "to every formatter")
+	one := r.mustRun("messages", "send", "--from", "alice", "--role", "formatter/upper", "--kind", "task", "format it")
+
+	contains(t, family.errors, "Warning: formatter is a family of roles (formatter/lower, formatter/upper), not a role. A message to one worker of a family reaches no worker")
+	contains(t, family.errors, "--role formatter/lower, or to every worker of every role of the family with --role formatter --all.")
+	isTrue(t, family.output != "", "the message is sent all the same")
+	equal(t, "", all.errors)
+	equal(t, "", one.errors)
+}

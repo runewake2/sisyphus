@@ -20,13 +20,14 @@ import (
 
 	"github.com/runewake2/sisyphus/hephaestus/internal/mq"
 	"github.com/runewake2/sisyphus/hephaestus/internal/repo"
+	"github.com/runewake2/sisyphus/hephaestus/internal/roles"
 )
 
 // ownerVariable names the worker of a command when --from or --as is not given: the owner name that
 // hephaestus gives each worker, as sisyphus uses it.
 const ownerVariable = "SISYPHUS_OWNER"
 
-func messagesCommand(findRepo func() (repo.Repo, error)) *cobra.Command {
+func messagesCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "messages",
 		Short: "Send and receive messages between workers, through the message queue of the repo.",
@@ -43,7 +44,7 @@ func messagesCommand(findRepo func() (repo.Repo, error)) *cobra.Command {
 		}
 		return mq.Connect(r.SharedDir())
 	}
-	cmd.AddCommand(serveCommand(findRepo), sendCommand(connect), receiveCommand(connect), ackCommand(connect),
+	cmd.AddCommand(serveCommand(findRepo), sendCommand(w, connect), receiveCommand(connect), ackCommand(connect),
 		renewCommand(connect), workersCommand(connect), logCommand(findRepo), listenCommand(connect))
 	return cmd
 }
@@ -100,6 +101,34 @@ func address(to, role string, all, broadcast bool) (mq.Address, error) {
 	return mq.Address{Worker: to, Role: role, All: all, Broadcast: broadcast}, nil
 }
 
+// familyWarning returns a warning when a message to one worker of a role names a family, for example
+// formatter: no worker has the role of a family, so the message reaches no worker. The roles come
+// from the role files; with none to read, it says nothing.
+func familyWarning(w workspace, to mq.Address) string {
+	if to.Role == "" || to.All {
+		return ""
+	}
+	dir, err := w.roles()
+	if err != nil {
+		return ""
+	}
+	all, _ := roles.Load(dir)
+	var members []string
+	for _, role := range all {
+		if role.Name == to.Role {
+			return ""
+		}
+		if strings.HasPrefix(role.Name, to.Role+"/") {
+			members = append(members, role.Name)
+		}
+	}
+	if len(members) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s is a family of roles (%s), not a role. A message to one worker of a family reaches no worker: it waits for a worker of the role %s, and none has it. Send it to one role of the family, for example --role %s, or to every worker of every role of the family with --role %s --all.",
+		to.Role, strings.Join(members, ", "), to.Role, members[0], to.Role)
+}
+
 // worker returns the name of the worker of a command: the flag, or SISYPHUS_OWNER.
 func worker(flag, name string) (string, error) {
 	if flag != "" {
@@ -111,7 +140,7 @@ func worker(flag, name string) (string, error) {
 	return "", fmt.Errorf("Give --%s <worker>, or set %s.", name, ownerVariable)
 }
 
-func sendCommand(connect func() (*mq.Client, error)) *cobra.Command {
+func sendCommand(w workspace, connect func() (*mq.Client, error)) *cobra.Command {
 	var from, to, role, kind, issue, data, id string
 	var all, broadcast, asJSON bool
 	cmd := &cobra.Command{
@@ -151,6 +180,9 @@ func sendCommand(connect func() (*mq.Client, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if warning := familyWarning(w, receiver); warning != "" {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %s\n", warning)
+			}
 			if asJSON {
 				return writeJSON(cmd.OutOrStdout(), sent)
 			}
@@ -161,7 +193,7 @@ func sendCommand(connect func() (*mq.Client, error)) *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVar(&from, "from", "", "The sender: a worker name. Default: "+ownerVariable+".")
 	flags.StringVar(&to, "to", "", "Send to one worker, by its owner name, for example merge-queue-1.")
-	flags.StringVar(&role, "role", "", "Send to one worker of the role, for example engineer.")
+	flags.StringVar(&role, "role", "", "Send to one worker of the role, for example engineer or formatter/golang. A family, for example formatter, needs --all; without it, the message reaches no worker, and send warns.")
 	flags.BoolVar(&all, "all", false, "With --role: send to every worker of the role.")
 	flags.BoolVar(&broadcast, "broadcast", false, "Send to every listener.")
 	flags.StringVar(&kind, "kind", "info", "The kind of the message, for example task, info, or referendum. Listeners filter broadcasts by it.")
