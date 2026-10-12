@@ -278,6 +278,10 @@ Each of these is a separate issue, with its own design before the work.
   `economist/cloud` for cloud services such as AWS, and `economist/compute` for CPU, RAM, GPU, and
   storage ([[roles/economist/README|the economist roles]]). They read and propose; they never
   change a resource or a role.
+- **Abstraction engineer** ([[abstraction-engineer-agent]]): finds code that does again what the repo
+  already has, and code that repeats often enough to share, and proposes clear abstractions where
+  the boundary makes sense: three or more copies, or copies that must stay the same, with one reason
+  to change, and never across a boundary that a decision record keeps.
 - **Comment reviewer** ([[comment-reviewer-agent]]): `technical-docs/comments`, a variant of technical
   docs that makes the code comments and the commit messages of a change brief, concise, and
   correct, in Simplified Technical English. It reads only the produced artifacts (the diff, the code,
@@ -302,6 +306,7 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 | [[roles/implementer]] | ai | a request: a delegated issue | no | a human | none: it does the work |
 | [[roles/code-reviewer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | the code of the change: correctness, tests, and fit |
 | [[roles/test-engineer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | whether the tests show each acceptance criterion |
+| [[roles/abstraction-engineer]] | ai | a request, a schedule, a `bookmark-ready` broadcast | no | a human | reuse and the boundaries of the change: code that the repo already has, and code that repeats |
 | [[roles/engineer]] | ai | a request, a `conflict` message | yes | a human | the direction of the work |
 | [[roles/project-manager]] | ai | a request | no | a human | the scope and priority of issues |
 | [[roles/ux-researcher]] | ai | a request | no | a human | how people and agents use the change |
