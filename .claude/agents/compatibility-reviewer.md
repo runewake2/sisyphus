@@ -39,7 +39,7 @@ change the code. As a reviewer in a referendum, it judges compatibility.
 
 ## Works with
 
-- `implementer`: sends the `bookmark-ready` broadcast that starts it, and keeps the interfaces that it reports.
+- `implementer`: closes the issue whose `bookmark-ready` notice, from `hephaestus watch`, starts it, and keeps the interfaces that it reports.
 - `engineer`: makes it a required reviewer of referendums that change an interface.
 - `release-manager`: lists the breaks that a line of the merge queue releases.
 - `ux-researcher`: finds how people and agents use the interfaces that it guards.

@@ -40,6 +40,8 @@ workers a keep-alive that tells the scheduler that they still work, so that no w
   The prompt of an AI worker tells it to record its result in the Notes. A message to one worker, or
   to one worker of a role, stays a task: the worker claims its issue.
 - **The order of the implementer.** It broadcasts `bookmark-ready` before it closes its issue.
+  Replaced the same day: `hephaestus watch` sends `bookmark-ready` and `issue-closed` from the state
+  of the issues ([[0007-the-watcher-sends-the-notices-of-a-close]]).
 - **Keep-alive.** `POST /renew` gives each lease that a worker holds a new full lease, and tells
   which leases the worker lost. `hephaestus agent run` and `messages listen` renew at once, and then
   three times in each lease (at most every 15 seconds), while they handle a message. The service

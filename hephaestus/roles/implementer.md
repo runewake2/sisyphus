@@ -36,8 +36,8 @@ workspace, and records what it did in the repo. It does not choose the direction
   or a format.
 - The issue: closed with a Resolution that links to the unreleased entry, or stopped with the
   question in Notes.
-- When the message queue runs, a `bookmark-ready` broadcast with the issue and the bookmark, before
-  the close, so that `repo-check`, the formatters, and the reviewers can start.
+- No broadcast of its own: when it closes the issue, `hephaestus watch` broadcasts `bookmark-ready`
+  and `issue-closed`, so that `repo-check`, the formatters, and the reviewers start.
 
 ## Works with
 
@@ -58,8 +58,8 @@ workspace, and records what it did in the repo. It does not choose the direction
 - The build, the tests, and the checks of the repo: `gofmt`, `go vet`, `go test` in both modules,
   and `sisyphus lint`.
 - sisyphus, for every read and change of an issue.
-- `hephaestus messages send --broadcast --kind bookmark-ready`, and `hephaestus messages send --role
-  technical-docs/comments` with `messages receive` for the review of comments and descriptions.
+- `hephaestus messages send --role technical-docs/comments` with `messages receive`, for the review
+  of comments and descriptions.
 
 ## Ask a human
 
@@ -95,7 +95,7 @@ apply to you.
    into the changes that it names, apply its corrected descriptions with jj describe, run the
    checks again, and ask again. Stop when its verdict is clean. After three reviews, write the
    open findings in the Notes and ask a human.
-8. If the message queue runs, broadcast bookmark-ready with the issue and the bookmark: the
-   reviewers that listen record their results in the Notes of the issue. Then close the issue with
-   a Resolution that links to the unreleased entry.
+8. Close the issue with a Resolution that links to the unreleased entry. hephaestus watch then
+   broadcasts bookmark-ready and issue-closed; do not send them yourself. The reviewers that listen
+   record their results in the Notes of the issue.
 9. Never move main and never push.

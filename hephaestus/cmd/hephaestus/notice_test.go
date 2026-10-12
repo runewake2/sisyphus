@@ -177,3 +177,32 @@ func TestAnAIRunRecordsItsUsageAndStopsAtItsTokenLimit(t *testing.T) {
 	equal(t, 3300, over[0].Usage.Tokens)
 	equal[any](t, "open", r.showIssue("long-review")["state"])
 }
+
+func TestWatchBroadcastsTheNoticesOfAClose(t *testing.T) {
+	r := newNoticeRepo(t, time.Minute)
+	r.git("checkout", "-q", "-b", "ai/fix")
+	r.write("fix.txt", "fixed\n")
+	r.commit("the fix")
+	r.git("checkout", "-q", "main")
+	r.mustRunSisyphus("start", "fix-login-bug", "--owner", "implementer-1", "--bookmark", "ai/fix")
+	r.mustRun("messages", "receive", "--as", "check-1", "--role", "check-ok", "--kind", "bookmark-ready")
+	r.mustRun("messages", "receive", "--as", "docs-1", "--role", "technical-docs", "--kind", "issue-closed")
+
+	first := r.mustRun("watch", "--once")
+	contains(t, first.errors, "The watcher recorded")
+	equal(t, "", first.output)
+
+	r.mustRunSisyphus("close", "fix-login-bug", "-m", "Fixed.")
+	second := r.mustRun("watch", "--once")
+	third := r.mustRun("watch", "--once")
+
+	equal(t, "bookmark-ready fix-login-bug\nissue-closed fix-login-bug\n", second.output)
+	equal(t, "", third.output)
+	ready := receivedJSON(t, r, "--as", "check-1", "--role", "check-ok", "--kind", "bookmark-ready")
+	closed := receivedJSON(t, r, "--as", "docs-1", "--role", "technical-docs", "--kind", "issue-closed")
+	equal(t, 1, len(ready))
+	equal(t, "fix-login-bug", ready[0].Issue)
+	contains(t, string(ready[0].Data), "ai/fix")
+	equal(t, 1, len(closed))
+	equal(t, "hephaestus-watch", closed[0].From)
+}

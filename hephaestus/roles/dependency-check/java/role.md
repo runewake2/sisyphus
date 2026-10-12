@@ -33,7 +33,7 @@ check ([[roles/dependency-check/README|the dependency check roles]]).
 
 ## Works with
 
-- `implementer`: sends the `bookmark-ready` broadcast that starts it, and updates the dependencies.
+- `implementer`: closes the issue whose `bookmark-ready` notice, from `hephaestus watch`, starts it, and updates the dependencies.
 - `security-researcher`: gets each check that fails, as its `on-failure` role.
 - `economist/compute`: reads how long each check runs.
 

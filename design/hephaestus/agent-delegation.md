@@ -333,7 +333,9 @@ in its section `Works with`, which `hephaestus roles` checks):
 2. **Work.** A worker of `implementer` does it on its own bookmark. It has its comments and commit
    descriptions reviewed by `technical-docs/comments`, with no context, in a loop of at most three
    reviews.
-3. **Review.** The implementer broadcasts `bookmark-ready` before it closes the issue. One worker of
+3. **Review.** When the implementer closes the issue, `hephaestus watch` broadcasts `bookmark-ready`
+   and then `issue-closed`, from the state of the issue and its bookmark, so the flow does not
+   depend on a model that remembers a step. One worker of
    each listening role records its result in the Notes of the issue: the formatters, `repo-check`,
    and the dependency checks of each ecosystem (a failure goes to `security-researcher`), and `code-reviewer`,
    `test-engineer`, `abstraction-engineer`, and `compatibility-reviewer`. For a change that more
@@ -344,7 +346,7 @@ in its section `Works with`, which `hephaestus roles` checks):
    reviewed by `technical-docs/comments`. The merge queue broadcasts `merge-queue-done`.
 5. **Release.** `release-manager` checks the line, and writes the summary that a human reads before
    moving `main`. Only a human moves `main`.
-6. **Docs.** The close of each issue (`issue-closed`) starts `technical-docs`.
+6. **Docs.** The `issue-closed` notice of each close starts `technical-docs`.
 7. **Oversight.** On request or on a schedule, `project-manager` reviews the tracker,
    `operations-auditor` reviews how the roles work, and the economists report cost against a
    budget. `ux-researcher`, `security-researcher`, `privacy-reviewer`, `performance-engineer`, and

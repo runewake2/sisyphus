@@ -37,7 +37,7 @@ them.
 
 ## Works with
 
-- `implementer`: sends the `bookmark-ready` broadcast that starts it, and squashes the formatting into its change.
+- `implementer`: closes the issue whose `bookmark-ready` notice, from `hephaestus watch`, starts it, and squashes the formatting into its change.
 - `repo-check`: checks the format of the Go code. The formatter fixes what repo-check would report.
 
 ## Tools

@@ -29,7 +29,7 @@ It changes nothing. It is a tool role: it uses no model.
 
 ## Works with
 
-- `implementer`: sends the `bookmark-ready` broadcast that starts it.
+- `implementer`: closes the issue whose `bookmark-ready` notice, from `hephaestus watch`, starts it.
 - `formatter`: formats the changed files on the same broadcast. repo-check fails on Go code that `formatter/golang` would change.
 
 ## Tools
