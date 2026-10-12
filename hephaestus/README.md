@@ -34,6 +34,7 @@ as `git -C` does.
 | `hephaestus roles` | List the roles of `hephaestus/roles/<role>.md`, and report every problem of a role file ([[role-file]]). |
 | `hephaestus delegate <issue> <role>` | Delegate an issue to a role: `sisyphus update <issue> --metadata delegate=<role>`. `--clear` removes it. |
 | `hephaestus tasks <role>` | List the tasks of a role that can start now; `--all` in every state. |
+| `hephaestus merge-order <task>...` | Print the order in which the merge queue merges the work of a set of tasks, with the reason for each place. `--onto` gives the base (default `main`); `--json` prints it as JSON. |
 | `hephaestus version list` | List the unreleased changelog entries, in the order that `assign` uses by default. |
 | `hephaestus version assign [<entry>...]` | Give the next SHAME versions to unreleased changelog entries, in the given order: move each to `changelog/<version>.md`, add the `CHANGELOG.md` entry, set `VERSION`, and change every link to it. `--dry-run` and `--json` show the plan. |
 | `hephaestus decisions renumber [--onto main]` | Give a new number to each decision record that has the number of another one in its directory and that the base does not have, and change every link to it. `--dry-run` and `--json` show the plan. |

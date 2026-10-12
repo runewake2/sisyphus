@@ -188,7 +188,8 @@ the queue: they land on the linear branch through the same supervised merge queu
 the work.
 
 **Order:** the merge queue merges the bookmark of one task at a time, in an order that keeps the work correct
-and the conflicts small ([[merge-order-planner]]):
+and the conflicts small ([[merge-order-planner]], `hephaestus merge-order`). Tasks with the same bookmark
+merge together, and a bookmark with no change from the base is left out:
 
 1. Dependencies first: when an issue of one bookmark depends on an issue of another
    (`depends-on`), the bookmark of the dependency goes first.

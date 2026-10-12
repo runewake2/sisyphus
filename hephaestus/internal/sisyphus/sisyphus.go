@@ -57,3 +57,27 @@ func List(dir string, args ...string) ([]Issue, error) {
 	}
 	return issues, nil
 }
+
+// Detail is the part of sisyphus show --json that hephaestus reads.
+type Detail struct {
+	Name      string            `json:"name"`
+	Title     string            `json:"title"`
+	State     string            `json:"state"`
+	Owner     string            `json:"owner,omitempty"`
+	Bookmark  string            `json:"bookmark,omitempty"`
+	DependsOn []string          `json:"depends-on,omitempty"`
+	Metadata  map[string]string `json:"metadata,omitempty"`
+}
+
+// Show runs sisyphus show --json for the issue reference.
+func Show(dir, reference string) (Detail, error) {
+	out, err := Run(dir, "show", "--json", "--", reference)
+	if err != nil {
+		return Detail{}, err
+	}
+	var detail Detail
+	if err := json.Unmarshal([]byte(out), &detail); err != nil {
+		return Detail{}, err
+	}
+	return detail, nil
+}

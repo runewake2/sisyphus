@@ -1,16 +1,16 @@
 ---
 title: "Compute the order in which the merge queue merges bookmarks"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: high         # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [merge-queue, hephaestus] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-11
-closed:                # YYYY-MM-DD. Set this only when state is closed.
-owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
+closed: 2026-10-12     # YYYY-MM-DD. Set this only when state is closed.
+owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+bookmark: samw/ai/ux-fixes # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: [ux-fixes] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent: "[[merge-queue/merge-queue-agent]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
@@ -52,6 +52,5 @@ A cycle of dependencies between bookmarks is an error that names the issues. Thi
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed in [[unreleased-merge-order-planner]]. `hephaestus merge-order <task>...` groups the tasks by bookmark, puts dependencies and stacks first, then the fewest shared files, the oldest change, and the name, and gives the reason for each place. It leaves out a bookmark with no change, and stops at a task with no bookmark, a missing bookmark, or a cycle.
+

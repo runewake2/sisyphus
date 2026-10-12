@@ -1,0 +1,28 @@
+# Unreleased: Compute the merge order of a set of tasks
+
+- Date: 2026-10-12
+- Bookmark: samw/ai/ux-fixes
+- Components: hephaestus
+- Changelog: Add hephaestus merge-order, which orders the work of a set of tasks for the merge queue and tells why.
+
+## Summary
+
+`hephaestus merge-order <task>...` prints the order in which the merge queue merges the work of a
+set of tasks, with the reason for each place, as text or JSON.
+
+## Changes
+
+- The work of a task is its `bookmark`; tasks with the same bookmark merge together, and a bookmark
+  with no change from the base (`--onto`, default `main`) is left out.
+- The order keeps dependencies (a task that depends on a task of another bookmark goes after it)
+  and stacks (a bookmark based on another one goes after it) first. Then the bookmark that shares
+  changed files with the fewest others goes first, then the oldest change, then the name.
+- A task with no bookmark, a bookmark that does not exist, and a cycle are errors that name the
+  tasks. A dependency outside the set that is not closed gives a warning.
+- It reads the tasks with `sisyphus show --json` and `sisyphus list --json`, and the repo with jj or
+  git. It changes nothing.
+- Tests use git repos with branches, and a jj repo when jj is installed.
+
+## Issues
+
+- Closed [[merge-order-planner]].
