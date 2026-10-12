@@ -72,7 +72,35 @@ type Agent struct {
 	Sisyphus Sisyphus
 	Out, Err io.Writer
 	Now      func() time.Time
-	handled  map[string]bool
+	// TaskTimeout is the longest time that one task may run; then it is stopped, with every program
+	// that it started. Zero: the timeout of the role, or DefaultTaskTimeout.
+	TaskTimeout time.Duration
+	// MaxTokens is the most tokens that one task of an AI role may use. Zero: the max-tokens of the
+	// role, or no limit.
+	MaxTokens int
+	handled   map[string]bool
+}
+
+// DefaultTaskTimeout is the time limit of a task when neither the worker nor the role gives one.
+const DefaultTaskTimeout = time.Hour
+
+// timeout returns the time limit of one task.
+func (a *Agent) timeout() time.Duration {
+	switch {
+	case a.TaskTimeout > 0:
+		return a.TaskTimeout
+	case a.Role.Timeout > 0:
+		return a.Role.Timeout
+	}
+	return DefaultTaskTimeout
+}
+
+// maxTokens returns the token limit of one task of an AI role, or 0 for no limit.
+func (a *Agent) maxTokens() int {
+	if a.MaxTokens > 0 {
+		return a.MaxTokens
+	}
+	return a.Role.MaxTokens
 }
 
 // Result is what a tool agent did with one message.
@@ -89,6 +117,10 @@ type Result struct {
 	Next string `json:"next,omitempty"`
 	// Detail is the reason of a refusal or an error.
 	Detail string `json:"detail,omitempty"`
+	// Seconds is how long the command ran.
+	Seconds float64 `json:"seconds,omitempty"`
+	// Usage is what the model of an AI role used, as its runner reports it.
+	Usage *Usage `json:"usage,omitempty"`
 }
 
 // RunnerVariable names the environment variable of the runner of AI roles.
@@ -155,6 +187,7 @@ func (a *Agent) Handle(ctx context.Context, m mq.Message) Result {
 	stop := mq.KeepAlive(a.Queue.Renew, a.Worker, []string{m.ID}, a.Err)
 	result := a.handle(ctx, m)
 	stop()
+	a.recordUsage(m, result)
 	fmt.Fprintf(a.Err, "%s: message %s: %s%s\n", a.Worker, m.ID, result.Status, map[bool]string{true: " (" + result.Issue + ")", false: ""}[result.Issue != ""])
 	if m.From != a.Worker {
 		data, _ := json.Marshal(result)
@@ -193,7 +226,7 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 			return result
 		}
 	}
-	exit, output, err := a.command(ctx, dir, m)
+	exit, output, err := a.command(ctx, dir, m, &result)
 	result.Exit, result.Output = exit, tail(output, outputLines)
 	if Notice(m) {
 		return a.noticeResult(dir, m, result, err)
@@ -238,6 +271,31 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 	result.Status = "failed"
 	a.stop(dir, m, &result)
 	return result
+}
+
+// recordUsage adds a line about what the model of an AI role used to the Notes of the issue of the
+// message: the record of the run, for the economists and the operations auditor.
+func (a *Agent) recordUsage(m mq.Message, result Result) {
+	if result.Usage == nil || !result.Usage.Reported || result.Issue == "" {
+		return
+	}
+	dir := a.Dir
+	var data TaskData
+	if json.Unmarshal(m.Data, &data) == nil && data.Workspace != "" {
+		dir = data.Workspace
+	}
+	u := result.Usage
+	note := fmt.Sprintf("%s: the run of %s (role %s) for message %s used %d tokens", a.Now().Format("2006-01-02"), a.Worker, a.Role.Name, m.ID, u.Tokens)
+	if u.CostUSD > 0 {
+		note += fmt.Sprintf(", $%.2f", u.CostUSD)
+	}
+	if u.Turns > 0 {
+		note += fmt.Sprintf(", %d turns", u.Turns)
+	}
+	note += fmt.Sprintf(", in %s: %s.", time.Duration(result.Seconds*float64(time.Second)).Round(time.Second), result.Status)
+	if _, err := a.Sisyphus(dir, "edit", result.Issue, "notes", "--append", "--", note); err != nil {
+		fmt.Fprintf(a.Err, "Warning: %s could not record the usage of its run in %s: %v\n", a.Worker, result.Issue, err)
+	}
 }
 
 // noticeResult records the result of a notice in the Notes of its issue, and changes no state: the
@@ -316,7 +374,19 @@ func (a *Agent) stop(dir string, m mq.Message, result *Result) {
 // command runs the command of the role in dir, with the message as JSON on its standard input. It
 // returns the exit code and the output (stdout and stderr together). An error is a command that
 // could not start.
-func (a *Agent) command(ctx context.Context, dir string, m mq.Message) (int, string, error) {
+// The command stops at the time limit of the task, or when an AI role passes its token limit; that
+// is an error, and result gets the time and the usage.
+func (a *Agent) command(ctx context.Context, dir string, m mq.Message, result *Result) (int, string, error) {
+	limit := a.timeout()
+	ctx, cancel := context.WithTimeout(ctx, limit)
+	defer cancel()
+	overBudget := false
+	var meter *Meter
+	if a.Role.Kind == roles.AI {
+		meter = NewMeter(a.maxTokens(), func() { overBudget = true; cancel() })
+	}
+	started := a.Now()
+	defer func() { result.Seconds = a.Now().Sub(started).Seconds() }()
 	input, err := json.Marshal(m)
 	if err != nil {
 		return -1, "", err
@@ -330,6 +400,9 @@ func (a *Agent) command(ctx context.Context, dir string, m mq.Message) (int, str
 	cmd.Stdin = bytes.NewReader(input)
 	var output bytes.Buffer
 	cmd.Stdout = io.MultiWriter(&output, a.Out)
+	if meter != nil {
+		cmd.Stdout = io.MultiWriter(&output, a.Out, meter)
+	}
 	cmd.Stderr = io.MultiWriter(&output, a.Err)
 	cmd.Env = append(os.Environ(),
 		ownerVariable+"="+a.Worker,
@@ -341,14 +414,27 @@ func (a *Agent) command(ctx context.Context, dir string, m mq.Message) (int, str
 		"HEPHAESTUS_MESSAGE_ISSUE="+m.Issue,
 	)
 	err = cmd.Run()
+	text := output.String()
+	if meter != nil {
+		usage := meter.Usage()
+		result.Usage = &usage
+		text = meter.Text(text)
+		if a.maxTokens() > 0 && !usage.Reported {
+			fmt.Fprintf(a.Err, "Warning: the runner of %s reported no usage, so its limit of %d tokens could not be kept. Give a runner that prints JSON lines with usage, for example claude -p --output-format stream-json --verbose.\n", a.Role.Name, a.maxTokens())
+		}
+	}
 	var exit *exec.ExitError
 	switch {
+	case overBudget:
+		return -1, text, fmt.Errorf("the task passed its limit of %d tokens, so it was stopped", a.maxTokens())
+	case errors.Is(ctx.Err(), context.DeadlineExceeded):
+		return -1, text, fmt.Errorf("the task ran longer than its limit of %s, so it was stopped", limit)
 	case err == nil:
-		return 0, output.String(), nil
+		return 0, text, nil
 	case errors.As(err, &exit):
-		return exit.ExitCode(), output.String(), nil
+		return exit.ExitCode(), text, nil
 	}
-	return -1, output.String(), fmt.Errorf("`%s` could not start: %v", a.commandLine(), err)
+	return -1, text, fmt.Errorf("`%s` could not start: %v", a.commandLine(), err)
 }
 
 // commandLine is the command of a tool role, or the runner of an AI role with its role.

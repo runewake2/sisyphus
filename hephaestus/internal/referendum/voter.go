@@ -234,11 +234,15 @@ func (rv *RoleVoter) runModel(ctx context.Context, role roles.Role, dir string, 
 		return "", err
 	}
 	line := strings.ReplaceAll(rv.Runner, "{role}", role.Flat())
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	overBudget := false
+	meter := toolagent.NewMeter(role.MaxTokens, func() { overBudget = true; cancel() })
 	cmd := toolagent.Shell(ctx, line)
 	cmd.Dir = dir
 	cmd.Stdin = strings.NewReader(prompt)
 	var output bytes.Buffer
-	cmd.Stdout = io.MultiWriter(&output, rv.out())
+	cmd.Stdout = io.MultiWriter(&output, rv.out(), meter)
 	cmd.Stderr = rv.out()
 	cmd.Env = append(os.Environ(),
 		"SISYPHUS_OWNER="+role.Flat()+"-reviewer",
@@ -247,6 +251,9 @@ func (rv *RoleVoter) runModel(ctx context.Context, role roles.Role, dir string, 
 		"HEPHAESTUS_REFERENDUM="+r.ID,
 	)
 	err := cmd.Run()
+	if overBudget {
+		return "", fmt.Errorf("`%s` passed the limit of %d tokens of the role %s, so it was stopped", line, role.MaxTokens, role.Name)
+	}
 	var exit *exec.ExitError
 	switch {
 	case errors.As(err, &exit):
@@ -254,7 +261,7 @@ func (rv *RoleVoter) runModel(ctx context.Context, role roles.Role, dir string, 
 	case err != nil:
 		return output.String(), fmt.Errorf("`%s` could not start: %v", line, err)
 	}
-	return output.String(), nil
+	return meter.Text(output.String()), nil
 }
 
 // lastJSON reads the last line of output that is a JSON object for which ok returns true. A model

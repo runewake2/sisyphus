@@ -13,7 +13,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // Kinds of role.
@@ -57,6 +59,10 @@ type Role struct {
 	AllowedTools []string `json:"allowed-tools,omitempty"`
 	// Model is the model of an AI role, for example sonnet. Empty: the model of the session.
 	Model string `json:"model,omitempty"`
+	// Timeout is the longest time that one task of the role may run. Zero: the default of the worker.
+	Timeout time.Duration `json:"timeout,omitempty"`
+	// MaxTokens is the most tokens that one task of an AI role may use. Zero: no limit.
+	MaxTokens int `json:"max-tokens,omitempty"`
 	// Charter is the text of the Charter section, for a summary.
 	Charter  string `json:"charter"`
 	sections map[string]string
@@ -280,6 +286,23 @@ func read(dir, file string) (Role, []string) {
 		}
 	}
 	role.Model = fields["model"]
+	if value := fields["timeout"]; value != "" {
+		timeout, err := time.ParseDuration(value)
+		if err != nil || timeout <= 0 {
+			problems = append(problems, fmt.Sprintf("timeout %q is not a time, for example 30m or 2h", value))
+		}
+		role.Timeout = timeout
+	}
+	if value := fields["max-tokens"]; value != "" {
+		tokens, err := strconv.Atoi(value)
+		if err != nil || tokens <= 0 {
+			problems = append(problems, fmt.Sprintf("max-tokens %q is not a number of tokens, for example 2000000", value))
+		}
+		role.MaxTokens = tokens
+		if role.Kind == Tool {
+			problems = append(problems, "max-tokens is for an AI role; a tool role uses no model")
+		}
+	}
 	if role.Kind == Tool && (len(role.AllowedTools) > 0 || role.Model != "") {
 		problems = append(problems, "allowed-tools and model are for an AI role; a tool role runs its command")
 	}

@@ -26,6 +26,8 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 	}
 	var as, runner string
 	var once, asJSON bool
+	var taskTimeout time.Duration
+	var maxTokens int
 	run := &cobra.Command{
 		Use:   "run <role>",
 		Short: "Run a worker of a role: do the task of each message that it gets.",
@@ -40,7 +42,11 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 			"prompt of the task on its standard input: the role file, the rules of every role, and the message. {role} " +
 			"in the runner becomes the name of the role, for example: claude -p --agent {role}. The model closes or stops " +
 			"the issue itself; an issue that it leaves in progress is stopped for a human. hephaestus never starts a " +
-			"model without a runner. --once handles the messages that wait now, and stops.",
+			"model without a runner. --once handles the messages that wait now, and stops.\n\n" +
+			"Each task has a time limit (--task-timeout, or timeout in the role file, or 1h), and a task of an AI role " +
+			"can have a token limit (--max-tokens, or max-tokens in the role file). A task that passes a limit stops, " +
+			"with every program that it started, and goes to a human. When the runner reports usage as JSON lines, the " +
+			"tokens, cost, and turns of each run go into the result and the Notes of the issue.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir, err := w.roles()
@@ -72,6 +78,7 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 			agent := &toolagent.Agent{
 				Role: role, Runner: runner, Worker: name, Dir: w.directory(), Queue: client, Sisyphus: sisyphus.Run,
 				Out: cmd.ErrOrStderr(), Err: cmd.ErrOrStderr(), Now: time.Now,
+				TaskTimeout: taskTimeout, MaxTokens: maxTokens,
 			}
 			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
 			defer stop()
@@ -91,6 +98,8 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 	run.Flags().BoolVar(&once, "once", false, "Handle the messages that wait now, and stop.")
 	run.Flags().StringVar(&runner, "runner", "", "For an AI role: the command that runs the model, with the prompt on its standard input, for example \"claude -p --agent {role}\". Default: "+toolagent.RunnerVariable+".")
 	run.Flags().BoolVar(&asJSON, "json", false, "Print the result of each message as JSON when it stops.")
+	run.Flags().DurationVar(&taskTimeout, "task-timeout", 0, "The longest time that one task may run; then it stops, with every program that it started, and goes to a human. Default: timeout of the role file, or "+toolagent.DefaultTaskTimeout.String()+".")
+	run.Flags().IntVar(&maxTokens, "max-tokens", 0, "For an AI role: the most tokens that one task may use; then it stops. The runner must report usage as JSON lines, as claude -p --output-format stream-json --verbose does. Default: max-tokens of the role file, or no limit.")
 	var reviewJSON bool
 	var reviewBase string
 	review := &cobra.Command{
