@@ -14,7 +14,7 @@ This file adds the rules that apply only to agents. If this file and `CONTRIBUTI
 
 ## Versioning
 
-**Agents only ever increment the SHAME version.** Only a human bumps PROUD or DEFAULT (see [[CONTRIBUTING#Versioning]]).
+**Agents never pick a version.** Write an unreleased changelog entry, and do not change `VERSION` or `CHANGELOG.md`: the merge queue gives the version when the work lands, and it only ever increments SHAME. Only a human bumps PROUD or DEFAULT (see [[CONTRIBUTING#Versioning]]).
 
 ## Writing style
 
@@ -96,7 +96,7 @@ Complete the checklist in [[CONTRIBUTING#Checklist for every change]]. Also:
 - [ ] Exactly one bookmark, `samw/ai/<workspace-name>`, on the head change
 - [ ] One linear chain of changes in this workspace
 - [ ] The issue was free before you started it
-- [ ] Only the SHAME version changed
+- [ ] No version changed: the change has an unreleased changelog entry
 - [ ] No push and no change on the code host, unless a human asked
 - [ ] Reports to humans use Simplified Technical English
 - [ ] Once `main..samw/ai/<workspace-name>` is empty: workspace forgotten and its directory removed

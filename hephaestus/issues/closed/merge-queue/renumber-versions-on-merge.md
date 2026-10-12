@@ -1,16 +1,16 @@
 ---
 title: "Renumber versions, changelogs, and decision records when work merges"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: high         # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [merge-queue, hephaestus] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-11
-closed:                # YYYY-MM-DD. Set this only when state is closed.
-owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
+closed: 2026-10-12     # YYYY-MM-DD. Set this only when state is closed.
+owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+bookmark: samw/ai/ux-fixes # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: [ux-fixes] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent: "[[merge-queue/merge-queue-agent]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
@@ -26,7 +26,7 @@ When two lines of work pick the same next SHAME version or decision record numbe
 
 ## Context
 
-`CONTRIBUTING.md` (Changelog) says: when you rebase onto `main`, renumber your changelog file, your `CHANGELOG.md` entry, `VERSION`, and the `Version:` lines of your decision records to the next free SHAME version. In practice, this also touches:
+[[CONTRIBUTING#Changelog]] says: when you rebase onto `main`, renumber your changelog file, your `CHANGELOG.md` entry, `VERSION`, and the `Version:` lines of your decision records to the next free SHAME version. In practice, this also touches:
 
 - every `[[0.0.N]]` link to the renumbered versions, in issues, changelogs, and docs,
 - decision record files `NNNN-<title>.md` that have the same number as one on `main`, and the links to them,
@@ -50,6 +50,5 @@ These are the rules of the repo, not of issues, so this is hephaestus code, not 
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed in [[unreleased-renumber-versions-on-merge]]. A human decided that versions come from the merge queue ([[0001-versions-come-from-the-merge-queue]]), so versions no longer collide: `hephaestus version assign` gives each unreleased changelog entry its version in the order of the merge, with every link to it. Decision record numbers still can collide; `hephaestus decisions renumber --onto main` renumbers the record that the base does not have.
+

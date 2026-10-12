@@ -42,7 +42,7 @@ Use this structure:
 
 - Status: Accepted | Proposed | Superseded by [[<NNNN>-<short-title>]]
 - Date: YYYY-MM-DD
-- Version: <the changelog version that introduced it>
+- Version: <the changelog version that introduced it, or [[unreleased-<topic>]] until it lands>
 
 ## Context
 What problem or question forced a decision, and what constraints apply.
@@ -67,20 +67,23 @@ The repo uses [Pride Versioning](https://pridever.org/), with versions in the fo
 
 Bumping one part resets the parts to its right to `0`. A normal change bumps SHAME: if the latest version is `0.3.4`, the change is `0.3.5`. The maintainers decide when to bump PROUD or DEFAULT.
 
-The `VERSION` file pins the latest version. It holds a single line, for example `0.0.1`, with nothing else. Each version bump updates `VERSION` in the same change that adds the new changelog entry.
+The `VERSION` file pins the latest version. It holds a single line, for example `0.0.1`, with nothing else.
+
+**The merge queue is the source of truth for versions.** A line of work never picks a version and never changes `VERSION`: it writes an unreleased changelog entry (see [[#Changelog]]). When the merge queue lands the work on the linear history, it gives each entry the next SHAME version, in the order of the merge, with `hephaestus version assign`. Two lines of work therefore never pick the same version. See [[0001-versions-come-from-the-merge-queue]].
 
 ## Changelog
 
-Each change that adds or changes a feature, component, design, or decision gets a new version, recorded in two places:
+Each change that adds or changes a feature, component, design, or decision gets a changelog entry, and a version when it lands:
 
-1. **`changelog/<version>.md`**: a new file, for example `changelog/0.0.5.md`. It holds the verbose record, with more detail than a change description can hold:
+1. **`changelog/unreleased/unreleased-<topic>.md`**: a new file in the change, for example `changelog/unreleased/unreleased-filter-by-metadata.md`. `<topic>` is usually the name of the main issue. The name must start with `unreleased-`, so that a link to it is unique. It holds the verbose record, with more detail than a change description can hold, and the line for `CHANGELOG.md`:
 
    ```markdown
-   # <version>
+   # Unreleased: <title>
 
    - Date: YYYY-MM-DD
    - Bookmark: <the jj bookmark of the work>
    - Components: <affected components>
+   - Changelog: <one-line summary of the change, for CHANGELOG.md>
 
    ## Summary
    One or two sentences on what changed.
@@ -99,16 +102,22 @@ Each change that adds or changes a feature, component, design, or decision gets 
    Open questions, follow-up work, and anything a reviewer should know.
    ```
 
-2. **`CHANGELOG.md`**: a short entry for the version, newest at the top, linking to its file:
+   Link to the entry as `[[unreleased-<topic>]]`, for example in the `Resolution` of an issue and the `Version:` line of a decision record. Do not change `CHANGELOG.md` or `VERSION`.
 
-   ```markdown
-   ## [[0.0.5]] - YYYY-MM-DD
-   - One-line summary of each notable change.
-   ```
+2. **When the work lands**, the merge queue runs `hephaestus version assign`. For each entry, in the order of the merge, it:
+   - moves the entry to **`changelog/<version>.md`**, for example `changelog/0.0.5.md`, with the heading `# <version>` and no `Changelog:` line;
+   - adds a short entry to **`CHANGELOG.md`**, newest at the top:
 
-Never edit an existing `changelog/<version>.md` to describe new work. Add a new version instead.
+     ```markdown
+     ## [[0.0.5]] - YYYY-MM-DD
+     - One-line summary of each notable change.
+     ```
 
-**Concurrent work:** two lines of work can pick the same next version at the same time. When you rebase onto `main`, check whether `main` already has your version. If it does, renumber your changelog file, your `CHANGELOG.md` entry, `VERSION`, and any `Version:` lines in your decision records to the next free SHAME version.
+   - sets `VERSION`, and changes every link to the entry, for example `[[unreleased-filter-by-metadata]]`, to `[[0.0.5]]`.
+
+You can change your own unreleased entry until it lands. Never edit an existing `changelog/<version>.md` to describe new work. Add a new entry instead.
+
+**Concurrent work:** versions do not collide, because only the merge queue gives them. Decision record numbers can collide: two lines of work can each take the next free number. The merge queue renumbers the one that the base does not have with `hephaestus decisions renumber --onto main`, and changes every link to it.
 
 A change that only creates an issue or moves an issue to `in-progress` does not need a new version. A cleanup that does not change behavior does not need one either.
 
@@ -327,4 +336,4 @@ If this prints nothing, the work is complete.
 - [ ] `sisyphus lint` reports no problems
 - [ ] The tests of the repo pass
 - [ ] A new or changed command has a page `docs/sisyphus-<command>.md` with the sections Usage, Flags, Behavior, Output, and Examples, and its `--help` examples are lines of that page (a test checks both)
-- [ ] SHAME version bumped, with a new `changelog/<version>.md`, a `CHANGELOG.md` entry, and `VERSION` updated
+- [ ] A new `changelog/unreleased/unreleased-<topic>.md` with a `Changelog:` line; `VERSION` and `CHANGELOG.md` not changed

@@ -4,7 +4,7 @@ hephaestus is a worker manager: it provisions and manages agents, each with one 
 them sisyphus issues to resolve. It depends on sisyphus, and uses sisyphus issues as its record of
 work. It is a separate project that lives beside sisyphus, in this directory of the sisyphus repo.
 
-> **Status:** design. No code yet. [[agent-delegation]] is the design, and
+> **Status:** early. The versioning tools work; the workers do not exist yet. [[agent-delegation]] is the design, and
 > [[delegate-issues-to-agents]] is the first epic.
 
 hephaestus is a Go module of its own, in this directory. It runs as a CLI tool, `hephaestus`, and as
@@ -24,11 +24,29 @@ All agent-specific work is in hephaestus. The only sisyphus work that hephaestus
 generic issue data that any client can use, for example a filter on a `metadata` key. See
 [[0029-sisyphus-does-not-manage-agents]].
 
+## Commands
+
+Build it with `go build ./cmd/hephaestus` in this directory. Every command takes `-C <directory>`,
+as `git -C` does.
+
+| Command | What it does |
+|---|---|
+| `hephaestus version list` | List the unreleased changelog entries, in the order that `assign` uses by default. |
+| `hephaestus version assign [<entry>...]` | Give the next SHAME versions to unreleased changelog entries, in the given order: move each to `changelog/<version>.md`, add the `CHANGELOG.md` entry, set `VERSION`, and change every link to it. `--dry-run` and `--json` show the plan. |
+| `hephaestus decisions renumber [--onto main]` | Give a new number to each decision record that has the number of another one in its directory and that the base does not have, and change every link to it. `--dry-run` and `--json` show the plan. |
+
+The merge queue runs `version assign` and `decisions renumber` as it lands work: versions come
+from the merge queue ([[0001-versions-come-from-the-merge-queue]]).
+A human who lands work by hand runs them too.
+
 ## Layout
 
 ```
 hephaestus/
   README.md     This page
+  go.mod        The Go module of hephaestus
+  cmd/          The hephaestus command
+  internal/     Its packages
   design/       Design documents of hephaestus
   issues/       The issues of hephaestus, a sisyphus tracker of its own
 ```
