@@ -7,7 +7,7 @@ spend less for the same result. Each is an AI role for one kind of cost.
 |---|---|---|
 | `economist/tokens` | The tokens and the money that AI agents use: role runs, referendums, subagents, and model calls of the tools | the usage that runners report, session logs, and the provider's usage and cost reports |
 | `economist/cloud` | The money that cloud services cost, for example AWS: compute, storage, network, and managed models | the cost reports of the cloud provider, read only |
-| `economist/compute` | The raw resources of the machines: CPU, RAM, GPU and VRAM, and storage | measurements of the commands, system tools, and the sizes of files and directories |
+| `economist/compute` | The raw resources of the machines: CPU, RAM, GPU and VRAM, storage, and network, and the messages that the agents send | measurements of the commands, system tools, the sizes of files and directories, network bytes, and the message log |
 
 The role files: [[roles/economist/tokens/role]], [[roles/economist/cloud/role]], and
 [[roles/economist/compute/role]].

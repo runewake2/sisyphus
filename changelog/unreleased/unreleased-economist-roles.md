@@ -20,6 +20,9 @@ a budget, reports it with evidence, and proposes savings as issues. A human deci
 - `hephaestus/roles/economist/compute/role.md`: the time, CPU, RAM, GPU and VRAM, and disk of each
   command, worker, and stored file. It runs one heavy measurement at a time, with at most 20
   threads.
+- `economist/compute` also measures network bandwidth (downloads, their caches, and calls to
+  services) and the traffic of the message queue (messages by kind and task, broadcasts and the
+  workers that each starts, deliveries that came again, and the growth of the log).
 - `hephaestus/roles/economist/README.md`: the rules of every economist.
 - [[agent-delegation#The government]] has the family. Its subagents are in `.claude/agents/`.
 

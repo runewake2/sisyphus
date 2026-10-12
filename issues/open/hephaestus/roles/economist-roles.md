@@ -44,7 +44,7 @@ Requested by a human on 2026-10-12: an economist who specializes in budget analy
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-12, from the human: economist/compute also optimizes network bandwidth and the messages that the agents send. Its role file now measures network bytes, downloads and their caches, and the traffic of the message queue: messages by kind and task, broadcasts and the workers that each starts, deliveries that came again, and the growth of the log.
 
 ## Resolution
 
