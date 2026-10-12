@@ -1,12 +1,12 @@
 ---
 title: "Add a merge queue agent that merges parallel work in the best order"
-state: in-progress     # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: high         # critical | high | medium | low
 effort: large          # small | medium | large | x-large
 tags: [merge-queue, hephaestus] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-11
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-12     # YYYY-MM-DD. Set this only when state is closed.
 owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark: samw/ai/ux-fixes # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -44,7 +44,7 @@ The merge queue is a tool agent, so it depends on [[tool-agents]], which runs it
 - [x] Each run records a report: the order, the renumbering, and what was left out and why.
 - [x] It never moves `main` and never pushes (Q3).
 - [x] It makes no model call (Q10). A conflict that is not mechanical stops it, and it sends a message about it to the `engineer` role or a human.
-- [ ] A test run merges the work of at least three real tasks of this repo, and a human checks the result.
+- [x] A test run merges the work of at least three real tasks of this repo, and a human checks the result.
 
 ## Out of scope
 
@@ -61,8 +61,9 @@ The merge queue is a tool agent, so it depends on [[tool-agents]], which runs it
 
 2026-10-12: implemented in [[0.0.114]] ([[0001-merge-with-git-in-a-scratch-worktree]]). A real run merged the work of [[nested-tracker-links]], [[filter-by-metadata]], and [[rename-issue-command]] (bookmark samw/ai/ux-fixes, 22 changes) onto the bookmark merge-queue/2026-10-12, with the versions 0.0.107 to 0.0.113 in one commit, and passed the checks of the repo. main did not change. The first real run left the work out: jj had not exported the bookmark to git from this workspace, so git saw an old commit; the merge queue now runs jj git export first. Remaining: a human checks merge-queue/2026-10-12.
 
+2026-10-12, from the human: the result of the first real run is accepted; the human moved main to merge-queue/2026-10-12.
+
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed. `hephaestus merge-queue` makes one linear history from the work of a set of tasks, gives the versions, renumbers decision records, runs the checks, and never moves main ([[0001-merge-with-git-in-a-scratch-worktree]]). A human checked the first real run and moved main to merge-queue/2026-10-12. A second run made merge-queue/2026-10-12-2.
+
