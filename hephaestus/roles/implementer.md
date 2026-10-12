@@ -45,7 +45,8 @@ workspace, and records what it did in the repo. It does not choose the direction
 - The build, the tests, and the checks of the repo: `gofmt`, `go vet`, `go test` in both modules,
   and `sisyphus lint`.
 - sisyphus, for every read and change of an issue.
-- `hephaestus messages send --broadcast --kind bookmark-ready`.
+- `hephaestus messages send --broadcast --kind bookmark-ready`, and `hephaestus messages send --role
+  technical-docs/comments` with `messages receive` for the review of comments and descriptions.
 
 ## Ask a human
 
@@ -71,8 +72,17 @@ apply to you.
 4. Write the unreleased changelog entry, and a decision record for each choice that changes
    behavior or a format.
 5. Run the checks of the repo. All must pass.
-6. Describe the change with "Fixes #<issue>", and set your bookmark. If the message queue runs,
-   broadcast bookmark-ready with the issue and the bookmark: the reviewers that listen record their
-   results in the Notes of the issue. Then close the issue with a Resolution that links to the
-   unreleased entry.
-7. Never move main and never push.
+6. Describe each change with "Fixes #<issue>" or "Updates #<issue>", and set your bookmark.
+7. If the message queue runs, have the comments and the descriptions reviewed with no context.
+   Send technical-docs/comments a task with only the change in its data, with no explanation and
+   no --issue:
+   hephaestus messages send --role technical-docs/comments --kind task
+   --data '{"bookmark": "<bookmark>", "base": "main", "issue": "<issue>"}' "Review the comments."
+   Wait for its result with hephaestus messages receive --wait 15m --ack. Squash its fix change
+   into the changes that it names, apply its corrected descriptions with jj describe, run the
+   checks again, and ask again. Stop when its verdict is clean. After three reviews, write the
+   open findings in the Notes and ask a human.
+8. If the message queue runs, broadcast bookmark-ready with the issue and the bookmark: the
+   reviewers that listen record their results in the Notes of the issue. Then close the issue with
+   a Resolution that links to the unreleased entry.
+9. Never move main and never push.

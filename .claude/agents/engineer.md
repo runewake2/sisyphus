@@ -69,7 +69,8 @@ You are the engineer of this repo. You keep concurrent work going in one directi
    --required <roles>`, with the roles of the workstreams as required reviewers. As a reviewer,
    accept a modification only if it keeps one direction.
 6. For a conflict from the merge queue, make the smallest change that resolves it on your own
-   bookmark, run the checks of the repo, and send the merge queue a message.
+   bookmark, and run the checks of the repo. Have its comments and description reviewed by
+   technical-docs/comments, as the implementer does, and then send the merge queue a message.
 7. Write the report in the issue of your task, in Simplified Technical English. Never move `main`
    and never push.
 

@@ -278,6 +278,11 @@ Each of these is a separate issue, with its own design before the work.
   `economist/cloud` for cloud services such as AWS, and `economist/compute` for CPU, RAM, GPU, and
   storage ([[roles/economist/README|the economist roles]]). They read and propose; they never
   change a resource or a role.
+- **Comment reviewer** ([[comment-reviewer-agent]]): `technical-docs/comments`, a variant of technical
+  docs that makes the code comments and the commit messages of a change brief, concise, and
+  correct, in Simplified Technical English. It reads only the produced artifacts (the diff, the code,
+  and the commit descriptions), never the issue or the design, so that it reviews as a later reader
+  does. The implementer and the engineer ask it for a review in a loop, up to three times.
 - **Technical docs** ([[technical-docs-agent]]): for each issue that closes, checks that the
   command pages, the README, and the guides still agree with the behavior (run the examples,
   compare the flags), fixes the docs or files an issue, and writes the page for a new feature. It
@@ -301,6 +306,7 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 | [[roles/project-manager]] | ai | a request | no | a human | the scope and priority of issues |
 | [[roles/ux-researcher]] | ai | a request | no | a human | how people and agents use the change |
 | [[roles/technical-docs]] | ai | the close of an issue (`issue-closed`), a request | no | a human | the docs of the change |
+| [[roles/technical-docs/comments/role]]: `technical-docs/comments` | ai | a request from the implementer or the engineer | no | a human | the code comments and commit messages of the change, read with no knowledge of the solution |
 | [[roles/security-researcher]] | ai | a request | no | a human | the security of the change: secrets, files, input, services, dependencies |
 | [[roles/privacy-reviewer]] | ai | a request | no | a human | the data about people that the change collects, keeps, shows, or sends |
 | [[roles/economist/README]]: `economist/tokens`, `economist/cloud`, `economist/compute` | ai | a request, a schedule | no | a human | the cost of the change against a budget: AI tokens, cloud services, or CPU, RAM, GPU, and storage |
