@@ -1,12 +1,15 @@
 // Package roles reads the role files of hephaestus: one Markdown file for each role,
-// roles/<role>.md, with YAML frontmatter that hephaestus reads and sections that describe the role to
+// roles/<role>.md, or roles/<family>/<variant>/role.md for a role of a family, for example
+// roles/formatter/golang/role.md for the role formatter/golang. A role file has YAML frontmatter that hephaestus reads and sections that describe the role to
 // people and, for an AI role, to the model. design/role-file.md describes the format.
 package roles
 
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
@@ -26,11 +29,13 @@ var (
 	Sections = []string{"Charter", "Inputs", "Outputs", "Tools", "Ask a human"}
 
 	namePattern    = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+	rolePattern    = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$`)
 	headingPattern = regexp.MustCompile(`^##\s+(.+?)\s*$`)
 )
 
 // Role is one role file.
 type Role struct {
+	// Name is the path of the role in the roles directory: merge-queue, or formatter/golang.
 	Name              string   `json:"name"`
 	Path              string   `json:"path"`
 	Title             string   `json:"title"`
@@ -63,20 +68,38 @@ func Dir(root string) string {
 	return filepath.Join(root, "hephaestus", "roles")
 }
 
-// Load reads every role file of dir, sorted by name. It returns the roles that it could read, and
-// one error that lists every problem of every file.
+// RoleFile is the name of the role file in the directory of a role of a family.
+const RoleFile = "role.md"
+
+// Load reads every role file of dir, sorted by name: each <role>.md of dir, and each role.md below
+// it. Other files below dir, for example a README or a script, belong to the roles and are not role
+// files. It returns the roles that it could read, and one error that lists every problem of every
+// file.
 func Load(dir string) ([]Role, error) {
-	files, err := filepath.Glob(filepath.Join(dir, "*.md"))
-	if err != nil {
+	var files []string
+	err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() || filepath.Ext(path) != ".md" {
+			return nil
+		}
+		if filepath.Dir(path) == filepath.Clean(dir) || (entry.Name() == RoleFile && filepath.Dir(path) != filepath.Clean(dir)) {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
 	var roles []Role
 	var problems []string
 	for _, file := range files {
-		role, fileProblems := read(file)
+		role, fileProblems := read(dir, file)
 		if len(fileProblems) > 0 {
+			rel, _ := filepath.Rel(dir, file)
 			for _, p := range fileProblems {
-				problems = append(problems, fmt.Sprintf("%s: %s", filepath.Base(file), p))
+				problems = append(problems, fmt.Sprintf("%s: %s", filepath.ToSlash(rel), p))
 			}
 			continue
 		}
@@ -91,9 +114,9 @@ func Load(dir string) ([]Role, error) {
 			target := slices.IndexFunc(roles, func(r Role) bool { return r.Name == role.OnFailure })
 			switch {
 			case target < 0:
-				problems = append(problems, fmt.Sprintf("%s.md: on-failure names the role %q, which has no role file. Use needs-human or a role.", role.Name, role.OnFailure))
+				problems = append(problems, fmt.Sprintf("%s: on-failure names the role %q, which has no role file. Use needs-human or a role.", role.File(), role.OnFailure))
 			case roles[target].Kind != AI:
-				problems = append(problems, fmt.Sprintf("%s.md: on-failure names %q, which is not an AI role. Work that a tool cannot do goes to an AI role or a human.", role.Name, role.OnFailure))
+				problems = append(problems, fmt.Sprintf("%s: on-failure names %q, which is not an AI role. Work that a tool cannot do goes to an AI role or a human.", role.File(), role.OnFailure))
 			}
 		}
 	}
@@ -104,10 +127,21 @@ func Load(dir string) ([]Role, error) {
 	return roles, nil
 }
 
-// Find returns the role named name in dir.
+// Find returns the role named name in dir: dir/<name>.md, or dir/<name>/role.md.
 func Find(dir, name string) (Role, error) {
-	file := filepath.Join(dir, name+".md")
-	if _, err := os.Stat(file); err != nil {
+	file := ""
+	if rolePattern.MatchString(name) {
+		for _, candidate := range []string{filepath.Join(dir, name+".md"), filepath.Join(dir, filepath.FromSlash(name), RoleFile)} {
+			if strings.Contains(name, "/") && !strings.HasSuffix(candidate, RoleFile) {
+				continue // a file below dir is a role file only when its name is role.md
+			}
+			if _, err := os.Stat(candidate); err == nil {
+				file = candidate
+				break
+			}
+		}
+	}
+	if file == "" {
 		known, _ := Load(dir)
 		var names []string
 		for _, r := range known {
@@ -118,21 +152,56 @@ func Find(dir, name string) (Role, error) {
 		}
 		return Role{}, fmt.Errorf("No role %q in %s. The roles are: %s.", name, dir, strings.Join(names, ", "))
 	}
-	role, problems := read(file)
+	role, problems := read(dir, file)
 	if len(problems) > 0 {
-		return Role{}, fmt.Errorf("%s.md: %s", name, strings.Join(problems, "; "))
+		return Role{}, fmt.Errorf("%s: %s", role.File(), strings.Join(problems, "; "))
 	}
 	return role, nil
 }
 
-// read reads one role file, and returns its problems.
-func read(file string) (Role, []string) {
+// nameOf returns the name of the role of a role file of dir: its path without .md, or the path of
+// its directory for a role.md.
+func nameOf(dir, file string) string {
+	rel, err := filepath.Rel(dir, file)
+	if err != nil {
+		rel = filepath.Base(file)
+	}
+	rel = filepath.ToSlash(rel)
+	if strings.Contains(rel, "/") && path.Base(rel) == RoleFile {
+		return path.Dir(rel)
+	}
+	return strings.TrimSuffix(rel, ".md")
+}
+
+// File returns the path of the role file from the roles directory, for a message: merge-queue.md,
+// or formatter/golang/role.md.
+func (r Role) File() string {
+	if strings.Contains(r.Name, "/") {
+		return r.Name + "/" + RoleFile
+	}
+	return r.Name + ".md"
+}
+
+// Flat returns the name of the role with "-" for "/", for a file name or a worker name:
+// formatter-golang for formatter/golang.
+func (r Role) Flat() string {
+	return strings.ReplaceAll(r.Name, "/", "-")
+}
+
+// Dir returns the directory of the role file. A role of a family keeps the files of its
+// implementation there, for example a script.
+func (r Role) Dir() string {
+	return filepath.Dir(r.Path)
+}
+
+// read reads one role file of dir, and returns its problems.
+func read(dir, file string) (Role, []string) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return Role{}, []string{err.Error()}
 	}
 	text := strings.ReplaceAll(string(data), "\r\n", "\n")
-	role := Role{Name: strings.TrimSuffix(filepath.Base(file), ".md"), Path: file, OnFailure: "needs-human", sections: map[string]string{}}
+	role := Role{Name: nameOf(dir, file), Path: file, OnFailure: "needs-human", sections: map[string]string{}}
 	var problems []string
 	front, body, ok := splitFrontmatter(text)
 	if !ok {
@@ -152,10 +221,10 @@ func read(file string) (Role, []string) {
 		fields[strings.TrimSpace(key)] = unquote(strings.TrimSpace(value))
 	}
 	if fields["role"] != role.Name {
-		problems = append(problems, fmt.Sprintf("role is %q, but the file name is %s.md: they must be the same", fields["role"], role.Name))
+		problems = append(problems, fmt.Sprintf("role is %q, but the path of the file gives %q: they must be the same", fields["role"], role.Name))
 	}
-	if !namePattern.MatchString(role.Name) {
-		problems = append(problems, "the role name must be lowercase words in kebab-case, for example merge-queue")
+	if !rolePattern.MatchString(role.Name) {
+		problems = append(problems, "the role name must be lowercase words in kebab-case, for example merge-queue, or a path of them for a role of a family, for example formatter/golang")
 	}
 	role.Kind = fields["kind"]
 	if role.Kind != AI && role.Kind != Tool {

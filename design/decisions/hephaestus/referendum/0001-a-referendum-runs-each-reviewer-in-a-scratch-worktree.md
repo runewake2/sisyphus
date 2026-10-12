@@ -29,10 +29,16 @@ answers left open.
 - **Isolation.** Each reviewer works in its own scratch git worktree at the commit of the version.
   Worktrees are made in the git directory of the repo, as the merge queue makes them
   ([[0001-merge-with-git-in-a-scratch-worktree]]). All the reviewers of a round start at the same
-  time (`--parallel` limits them). Thus no reviewer sees another ballot, and none changes the working
+  time (`--parallel` limits them). The adds and removes of worktrees are serialized, because one
+  reviewer's `git worktree prune` can remove the worktree that another reviewer is making. Thus no reviewer sees another ballot, and none changes the working
   copy of the user.
 - **Ballots.** A tool reviewer votes with `hephaestus agent review`: `yes` for exit code 0, `no` for
-  another code, and `modify` with the changes that its command made. An AI reviewer runs the runner
+  another code, and `modify` with the changes that its command made. Its command gets the base in
+  `HEPHAESTUS_BASE`. At the gate, a tool runs on the version and on the modified version. It
+  rejects only when the modification makes its result worse. The order from best to worst is
+  `yes`, `modify`, `no`. A `modify` is also worse when it needs to change a new file. Without this
+  rule, one formatter would reject the modification of another, because of the files of its own
+  language that are still not formatted. An AI reviewer runs the runner
   ([[0004-ai-roles-run-as-claude-code-subagents]]) with a ballot prompt. Its output must end with one
   line of JSON: `{"vote": ..., "reasons": ..., "modification": ...}`. Optionally the line has
   `"section"` and `"text"` for an edit of the issue text. At the gate, the line is

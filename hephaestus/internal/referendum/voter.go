@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/runewake2/sisyphus/hephaestus/internal/roles"
 	"github.com/runewake2/sisyphus/hephaestus/internal/toolagent"
@@ -30,6 +31,9 @@ type RoleVoter struct {
 	Runner string
 	// Out gets the output of the reviewers, for a person to follow the run.
 	Out io.Writer
+	// worktrees serializes the changes to the worktrees of the git directory: reviewers run at the
+	// same time, and git worktree add and remove of one must not see half of another.
+	worktrees sync.Mutex
 }
 
 // Ballot asks one reviewer for its ballot on v.
@@ -47,14 +51,14 @@ func (rv *RoleVoter) Ballot(ctx context.Context, r *Referendum, reviewer Reviewe
 	}
 	defer w.remove()
 	if role.Kind == roles.Tool {
-		ballot, err := toolagent.Review(ctx, role, w.dir, rv.out())
+		ballot, err := toolagent.Review(ctx, role, w.dir, r.BaseID, rv.out())
 		if err != nil {
 			b.Error = err.Error()
 			return b
 		}
 		b.Vote, b.Reasons = ballot.Vote, ballot.Reasons
 		if ballot.Vote == Modify {
-			b.Change = &Modification{Summary: fmt.Sprintf("The changes of `%s` to %s.", role.Command, strings.Join(ballot.Files, ", "))}
+			b.Change = &Modification{Summary: fmt.Sprintf("The changes of the command of the tool role %s to %s.", role.Name, strings.Join(ballot.Files, ", "))}
 			if b.Change.Commit, b.Change.Diff, err = w.commit(v.Commit, fmt.Sprintf("referendum %s: modification of %s", r.ID, role.Name)); err != nil {
 				b.Error = err.Error()
 			}
@@ -112,15 +116,28 @@ func (rv *RoleVoter) Gate(ctx context.Context, r *Referendum, reviewer Reviewer,
 	}
 	defer w.remove()
 	if role.Kind == roles.Tool {
-		ballot, err := toolagent.Review(ctx, role, w.dir, rv.out())
+		// A tool judges only what the modification makes worse in its scope: what it finds on the
+		// version already is not caused by the modification.
+		after, err := toolagent.Review(ctx, role, w.dir, r.BaseID, rv.out())
 		if err != nil {
 			vote.Error = err.Error()
 			return vote
 		}
-		vote.Accept, vote.Reasons = ballot.Vote == Yes, ballot.Reasons
-		if ballot.Vote == Modify {
-			vote.Reasons = strings.TrimSpace(fmt.Sprintf("`%s` would change %s again. %s", role.Command, strings.Join(ballot.Files, ", "), ballot.Reasons))
+		before := toolagent.Ballot{Vote: Yes}
+		if after.Vote != Yes {
+			wv, err := rv.worktree(v.Commit)
+			if err != nil {
+				vote.Error = err.Error()
+				return vote
+			}
+			before, err = toolagent.Review(ctx, role, wv.dir, r.BaseID, rv.out())
+			wv.remove()
+			if err != nil {
+				vote.Error = err.Error()
+				return vote
+			}
 		}
+		vote.Accept, vote.Reasons = toolGate(role, before, after)
 		return vote
 	}
 	output, err := rv.runModel(ctx, role, w.dir, r, GatePrompt(r, reviewer, role, v, m))
@@ -138,6 +155,31 @@ func (rv *RoleVoter) Gate(ctx context.Context, r *Referendum, reviewer Reviewer,
 	}
 	vote.Accept, vote.Reasons = reply.Gate == "accept", reply.Reasons
 	return vote
+}
+
+// toolGate decides the gate vote of a tool from its ballots on the version (before) and on the
+// modified version (after): it rejects only when the modification makes its result worse. A no is
+// worse than a modify, and a modify is worse than a yes; a modify is also worse when it would change
+// a file that it would not change before.
+func toolGate(role roles.Role, before, after toolagent.Ballot) (bool, string) {
+	rank := map[string]int{Yes: 0, Modify: 1, No: 2}
+	switch {
+	case after.Vote == Yes:
+		return true, after.Reasons
+	case rank[after.Vote] > rank[before.Vote]:
+		return false, strings.TrimSpace(fmt.Sprintf("The modification makes the result of %s worse: %s before, %s after. %s", role.Name, before.Vote, after.Vote, after.Reasons))
+	case after.Vote == Modify:
+		var added []string
+		for _, file := range after.Files {
+			if !slices.Contains(before.Files, file) {
+				added = append(added, file)
+			}
+		}
+		if len(added) > 0 {
+			return false, fmt.Sprintf("%s would change %s, which the modification changed.", role.Name, strings.Join(added, ", "))
+		}
+	}
+	return true, fmt.Sprintf("The modification does not make the result of %s worse: %s before and after.", role.Name, after.Vote)
 }
 
 // NewVersion keeps the commit of v on the branch referendum/<id>/v<number>.
@@ -162,7 +204,7 @@ func (rv *RoleVoter) runModel(ctx context.Context, role roles.Role, dir string, 
 	if err := toolagent.Validate(role, rv.Runner); err != nil {
 		return "", err
 	}
-	line := strings.ReplaceAll(rv.Runner, "{role}", role.Name)
+	line := strings.ReplaceAll(rv.Runner, "{role}", role.Flat())
 	cmd := toolagent.Shell(ctx, line)
 	cmd.Dir = dir
 	cmd.Stdin = strings.NewReader(prompt)
@@ -170,7 +212,7 @@ func (rv *RoleVoter) runModel(ctx context.Context, role roles.Role, dir string, 
 	cmd.Stdout = io.MultiWriter(&output, rv.out())
 	cmd.Stderr = rv.out()
 	cmd.Env = append(os.Environ(),
-		"SISYPHUS_OWNER="+role.Name+"-reviewer",
+		"SISYPHUS_OWNER="+role.Flat()+"-reviewer",
 		"HEPHAESTUS_ROLE="+role.Name,
 		"HEPHAESTUS_REVIEW=1",
 		"HEPHAESTUS_REFERENDUM="+r.ID,
@@ -241,6 +283,8 @@ func (rv *RoleVoter) worktree(commit string) (*scratch, error) {
 		return nil, err
 	}
 	os.Remove(dir) // git worktree add makes it
+	rv.worktrees.Lock()
+	defer rv.worktrees.Unlock()
 	if _, err := rv.git("", "worktree", "add", "--detach", "--quiet", dir, commit); err != nil {
 		return nil, err
 	}
@@ -248,9 +292,12 @@ func (rv *RoleVoter) worktree(commit string) (*scratch, error) {
 }
 
 func (s *scratch) remove() {
-	s.rv.git("", "worktree", "remove", "--force", s.dir)
-	os.RemoveAll(s.dir)
-	s.rv.git("", "worktree", "prune")
+	s.rv.worktrees.Lock()
+	defer s.rv.worktrees.Unlock()
+	if _, err := s.rv.git("", "worktree", "remove", "--force", s.dir); err != nil {
+		os.RemoveAll(s.dir)
+		s.rv.git("", "worktree", "prune")
+	}
 }
 
 // commit commits the changes of the worktree, if any, and returns the head and the diff from base.

@@ -1,7 +1,7 @@
 ---
 role: repo-check
 kind: tool
-command: cd "$(jj root)" && test -z "$(gofmt -l cmd hephaestus)" && go vet ./... && (cd hephaestus && go vet ./...) && sisyphus lint && echo "gofmt, go vet, and sisyphus lint are clean in both modules and the repo."
+command: cd "$(git rev-parse --show-toplevel 2>/dev/null || jj root)" && test -z "$(gofmt -l cmd hephaestus)" && go vet ./... && (cd hephaestus && go vet ./...) && sisyphus lint && echo "gofmt, go vet, and sisyphus lint are clean in both modules and the repo."
 trigger: request
 on-failure: needs-human
 listens: [bookmark-ready]

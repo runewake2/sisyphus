@@ -148,7 +148,7 @@ func TestRolesReportsEveryProblem(t *testing.T) {
 	res := r.run("roles")
 
 	equal(t, 1, res.exit)
-	contains(t, res.errors, `broken.md: role is "other", but the file name is broken.md`)
+	contains(t, res.errors, `broken.md: role is "other", but the path of the file gives "broken"`)
 	contains(t, res.errors, `broken.md: kind is "robot": use ai or tool`)
 	contains(t, res.errors, `broken.md: trigger "never" is not one of: request, close, schedule`)
 	contains(t, res.errors, `broken.md: the section "## Inputs" is missing or empty`)

@@ -59,7 +59,7 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 			}
 			name := as
 			if name == "" {
-				name = role.Name + "-1"
+				name = role.Flat() + "-1"
 			}
 			r, err := findRepo()
 			if err != nil {
@@ -92,6 +92,7 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 	run.Flags().StringVar(&runner, "runner", "", "For an AI role: the command that runs the model, with the prompt on its standard input, for example \"claude -p --agent {role}\". Default: "+toolagent.RunnerVariable+".")
 	run.Flags().BoolVar(&asJSON, "json", false, "Print the result of each message as JSON when it stops.")
 	var reviewJSON bool
+	var reviewBase string
 	review := &cobra.Command{
 		Use:   "review <role>",
 		Short: "Run a tool role as a reviewer of a referendum, and print its ballot.",
@@ -108,7 +109,7 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 			if err != nil {
 				return err
 			}
-			ballot, err := toolagent.Review(cmd.Context(), role, w.directory(), cmd.ErrOrStderr())
+			ballot, err := toolagent.Review(cmd.Context(), role, w.directory(), reviewBase, cmd.ErrOrStderr())
 			if err != nil {
 				return err
 			}
@@ -123,6 +124,7 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 		},
 	}
 	review.Flags().BoolVar(&reviewJSON, "json", false, "Print the ballot as JSON, with the diff of a modification.")
+	review.Flags().StringVar(&reviewBase, "base", "", "The current implementation, which the command gets in HEPHAESTUS_BASE. Default: none, and the command uses main.")
 	cmd.AddCommand(run, review, exportCommand(w, findRepo))
 	return cmd
 }
@@ -163,7 +165,7 @@ func exportCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comma
 				if role.Kind != roles.AI {
 					continue
 				}
-				path := filepath.Join(dir, role.Name+".md")
+				path := filepath.Join(dir, role.Flat()+".md")
 				content := airole.ClaudeAgent(role)
 				if check {
 					if current, err := os.ReadFile(path); err != nil || string(current) != content {

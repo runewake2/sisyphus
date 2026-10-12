@@ -55,7 +55,7 @@ type TaskData struct {
 type Agent struct {
 	Role roles.Role
 	// Runner is the command line that runs a model for an AI role, with the prompt of the task on its
-	// standard input; {role} in it becomes the name of the role. Empty for a tool role.
+	// standard input; {role} in it becomes the name of its subagent (Role.Flat). Empty for a tool role.
 	Runner   string
 	Worker   string
 	Dir      string
@@ -286,6 +286,7 @@ func (a *Agent) command(ctx context.Context, dir string, m mq.Message) (int, str
 	cmd.Env = append(os.Environ(),
 		ownerVariable+"="+a.Worker,
 		"HEPHAESTUS_ROLE="+a.Role.Name,
+		"HEPHAESTUS_ROLE_DIR="+a.Role.Dir(),
 		"HEPHAESTUS_MESSAGE_ID="+m.ID,
 		"HEPHAESTUS_MESSAGE_KIND="+m.Kind,
 		"HEPHAESTUS_MESSAGE_FROM="+m.From,
@@ -305,7 +306,7 @@ func (a *Agent) command(ctx context.Context, dir string, m mq.Message) (int, str
 // commandLine is the command of a tool role, or the runner of an AI role with its role.
 func (a *Agent) commandLine() string {
 	if a.Role.Kind == roles.AI {
-		return strings.ReplaceAll(a.Runner, "{role}", a.Role.Name)
+		return strings.ReplaceAll(a.Runner, "{role}", a.Role.Flat())
 	}
 	return a.Role.Command
 }
@@ -352,8 +353,10 @@ type Ballot struct {
 }
 
 // Review runs the command of a tool role in dir, as a reviewer of a referendum
-// ([[referendum]]), and returns its ballot. A tool reviewer never abstains.
-func Review(ctx context.Context, role roles.Role, dir string, out io.Writer) (Ballot, error) {
+// ([[referendum]]), and returns its ballot. A tool reviewer never abstains. base is the current
+// implementation, which the command gets in HEPHAESTUS_BASE, so that it can work only on the files
+// that the change touches; empty: main.
+func Review(ctx context.Context, role roles.Role, dir, base string, out io.Writer) (Ballot, error) {
 	if role.Kind != roles.Tool {
 		return Ballot{}, fmt.Errorf("The role %s is an AI role: its ballot comes from a referendum, not from an exit code.", role.Name)
 	}
@@ -370,7 +373,10 @@ func Review(ctx context.Context, role roles.Role, dir string, out io.Writer) (Ba
 	var output bytes.Buffer
 	cmd.Stdout = io.MultiWriter(&output, out)
 	cmd.Stderr = io.MultiWriter(&output, out)
-	cmd.Env = append(os.Environ(), "HEPHAESTUS_ROLE="+role.Name, "HEPHAESTUS_REVIEW=1")
+	cmd.Env = append(os.Environ(), "HEPHAESTUS_ROLE="+role.Name, "HEPHAESTUS_ROLE_DIR="+role.Dir(), "HEPHAESTUS_REVIEW=1")
+	if base != "" {
+		cmd.Env = append(cmd.Env, "HEPHAESTUS_BASE="+base)
+	}
 	ballot := Ballot{Role: role.Name, Reasons: tail(output.String(), outputLines)}
 	runErr := cmd.Run()
 	ballot.Reasons = tail(output.String(), outputLines)

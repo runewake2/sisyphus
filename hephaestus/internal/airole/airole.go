@@ -47,7 +47,7 @@ func Instructions(role roles.Role) string {
 func ClaudeAgent(role roles.Role) string {
 	var b strings.Builder
 	b.WriteString("---\n")
-	fmt.Fprintf(&b, "name: %s\n", role.Name)
+	fmt.Fprintf(&b, "name: %s\n", role.Flat())
 	description := role.Charter + " A hephaestus role: use it for tasks delegated to " + role.Name + "."
 	fmt.Fprintf(&b, "description: %s\n", quote(description))
 	if len(role.AllowedTools) > 0 {
@@ -57,7 +57,7 @@ func ClaudeAgent(role roles.Role) string {
 		fmt.Fprintf(&b, "model: %s\n", role.Model)
 	}
 	b.WriteString("---\n\n")
-	fmt.Fprintf(&b, "<!-- Generated from hephaestus/roles/%s.md by hephaestus agent export claude. Do not edit: change the role file. -->\n\n", role.Name)
+	fmt.Fprintf(&b, "<!-- Generated from hephaestus/roles/%s by hephaestus agent export claude. Do not edit: change the role file. -->\n\n", role.File())
 	b.WriteString(Instructions(role))
 	return b.String()
 }

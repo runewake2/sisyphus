@@ -47,6 +47,7 @@ as `git -C` does.
 | `hephaestus agent review <role>` | Run a tool role as a referendum reviewer, and print its ballot: `yes`, `no`, or `modify` with the changes that it made. |
 | `hephaestus referendum call <issue>` | Let role agents vote on the implementation of an issue: `--question`, `--required` and `--optional` reviewers, and `--runner` for AI reviewers. Each reviewer votes in a scratch worktree. It runs the rounds and the modification gates to the result, and records each round in the issue and in `referendums/<id>.md` ([[referendum]]). Exit code 0 only when it passes. |
 | `hephaestus referendum decide <issue> passed\|failed` | Decide a referendum as a human: after `no-result`, or to overrule its result, with `--reason`. |
+| `hephaestus files [<pattern>...]` | Print the files of the working copy, or with `--changed` the files that the work since `--base` (`HEPHAESTUS_BASE`, or `main`) changes, for a tool role: `--exclude`, `-0` for `xargs -0`, and `--root`. |
 | `hephaestus merge-queue <task>...` | Make one linear history from the work of a set of tasks, onto a new bookmark `merge-queue/<date>`: merge each bookmark in the order of `merge-order`, renumber decision records, give the versions, and run `--checks`. It never moves `main` ([[0001-merge-with-git-in-a-scratch-worktree]]). |
 | `hephaestus version list` | List the unreleased changelog entries, in the order that `assign` uses by default. |
 | `hephaestus version assign [<entry>...]` | Give the next SHAME versions to unreleased changelog entries, in the given order: move each to `changelog/<version>.md`, add the `CHANGELOG.md` entry, set `VERSION`, and change every link to it. `--dry-run` and `--json` show the plan. |
@@ -64,7 +65,8 @@ hephaestus/
   go.mod        The Go module of hephaestus
   cmd/          The hephaestus command
   internal/     Its packages
-  roles/        One role file for each role
+  roles/        One role file for each role: <role>.md, or <family>/<variant>/role.md with its
+                implementation, for example roles/formatter/golang/
 ```
 
 hephaestus shares the issues and the design log of the repo with sisyphus

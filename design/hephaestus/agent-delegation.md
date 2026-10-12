@@ -250,6 +250,18 @@ Each of these is a separate issue, with its own design before the work.
   agent would (a first session, every `--help`, the docs, the MCP tools, and small models), and
   files one issue for each problem, with what it saw. The sisyphus reviews that filed the epics
   [[cli-and-docs-ux]] and [[agent-cooperation]] are examples, as a repeatable role.
+- **Implementer** ([[implementer-agent]]): does the work of one delegated issue on its own
+  bookmark: the code, the tests, the docs, and the unreleased changelog entry. It is the role that
+  does ordinary issues.
+- **Code reviewer** ([[code-reviewer-agent]]): reviews the code of a bookmark for correctness,
+  tests, and fit, and reports each finding with a concrete case. It does not change the code.
+- **Test engineer** ([[test-engineer-agent]]): maps each acceptance criterion to the test that shows
+  it, and writes the missing tests on its own bookmark.
+- **Formatters** ([[formatter-roles]]): a family of tool roles, one for each language:
+  `formatter/golang`, `formatter/csharp`, `formatter/yaml`, `formatter/json`, and
+  `formatter/markdown` ([[roles/formatter/README|the formatter roles]]). Each formats only the files
+  that the work changes. They are the first tool reviewers that submit a modification in a
+  referendum.
 - **Technical docs** ([[technical-docs-agent]]): for each issue that closes, checks that the
   command pages, the README, and the guides still agree with the behavior (run the examples,
   compare the flags), fixes the docs or files an issue, and writes the page for a new feature. It
@@ -265,6 +277,10 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 |---|---|---|---|---|---|
 | [[roles/merge-queue|merge-queue]] | tool | a request with a set of tasks | no | a human; a conflict to `engineer` | none |
 | [[roles/repo-check|repo-check]] | tool | a request, a `bookmark-ready` broadcast | no | a human | the checks of the repo (its exit code) |
+| [[roles/formatter/README|formatter/<language>]] | tool | a request, a `bookmark-ready` broadcast | no | a human | the format of the changed files of its language: Go, C#, YAML, JSON, or Markdown (`modify` with the formatted files) |
+| [[roles/implementer|implementer]] | ai | a request: a delegated issue | no | a human | none: it does the work |
+| [[roles/code-reviewer|code-reviewer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | the code of the change: correctness, tests, and fit |
+| [[roles/test-engineer|test-engineer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | whether the tests show each acceptance criterion |
 | [[roles/engineer|engineer]] | ai | a request, a `conflict` message | yes | a human | the direction of the work |
 | [[roles/project-manager|project-manager]] | ai | a request | no | a human | the scope and priority of issues |
 | [[roles/ux-researcher|ux-researcher]] | ai | a request | no | a human | how people and agents use the change |
@@ -274,10 +290,11 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 
 The path of a piece of work:
 
-1. A human or the project manager delegates an issue to a role (`hephaestus delegate`), and a worker
-   of the role does it on its own bookmark.
-2. `repo-check` checks the bookmark. For a change that more than one scope judges, a human or the
-   engineer calls a referendum, with the reviewers of those scopes.
+1. A human or the project manager delegates an issue to a role (`hephaestus delegate`), normally
+   to `implementer`, and a worker of the role does it on its own bookmark.
+2. The formatters and `repo-check` check the bookmark, and `code-reviewer` and `test-engineer` review
+   it. For a change that more than one scope judges, a human or the engineer calls a referendum,
+   with the reviewers of those scopes: normally `code-reviewer` is a required reviewer.
 3. The merge queue makes a linear history from the finished tasks, with their versions. A conflict
    that needs judgment goes to the engineer, who resolves it on a bookmark of its own.
 4. A human checks the line of the merge queue, and moves `main`.

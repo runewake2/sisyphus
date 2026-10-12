@@ -313,3 +313,42 @@ func (r Repo) GitDir() (string, error) {
 	}
 	return "", errors.New("This directory is in no jj or git repo.")
 }
+
+// ChangedSince returns the paths of the files that exist in the working copy and that the work
+// since base changes: the commits from the fork point of base, and the changes that are not
+// committed, also new files.
+func (r Repo) ChangedSince(base string) ([]string, error) {
+	var files []string
+	switch r.VCS {
+	case JJ:
+		out, err := r.run("diff", "--name-only", "--from", fmt.Sprintf("heads(::@ & ::(%s))", base), "--to", "@")
+		if err != nil {
+			return nil, err
+		}
+		files = lines(out)
+	case Git:
+		fork, err := r.run("merge-base", base, "HEAD")
+		if err != nil {
+			return nil, err
+		}
+		out, err := r.run("diff", "--name-only", strings.TrimSpace(fork))
+		if err != nil {
+			return nil, err
+		}
+		untracked, err := r.run("ls-files", "--others", "--exclude-standard")
+		if err != nil {
+			return nil, err
+		}
+		files = append(lines(out), lines(untracked)...)
+	default:
+		return nil, errors.New("Finding the changed files needs jj or git.")
+	}
+	var existing []string
+	for _, file := range files {
+		if info, err := os.Stat(filepath.Join(r.Root, filepath.FromSlash(file))); err == nil && !info.IsDir() && !slices.Contains(existing, file) {
+			existing = append(existing, file)
+		}
+	}
+	slices.Sort(existing)
+	return existing, nil
+}
