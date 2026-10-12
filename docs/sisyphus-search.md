@@ -11,7 +11,7 @@ sisyphus search [<query>] [flags]
 ## Flags
 
 `search` takes every filter of [[sisyphus-list]] (`--state`, `--priority`, `--tags`, `--owner`,
-`--mine`, `--parent`, `--blocked`, `--ready`), with the same defaults and meaning, plus:
+`--mine`, `--metadata`, `--parent`, `--blocked`, `--ready`), with the same defaults and meaning, plus:
 
 | Flag | Meaning |
 |---|---|
@@ -59,7 +59,7 @@ fix-login-bug: Fix login bug
 ```
 
 Read a whole issue with [[sisyphus-show]]. With `--json`, an array of objects with `name`, `title`,
-`state`, `priority`, `owner`, `bookmark`, `tags` (the empty ones are left out), and:
+`state`, `priority`, `owner`, `bookmark`, `tags`, `metadata` (the empty ones are left out), and:
 
 - `matches`: the matched lines, each with `section` and `text`, and `more-matches`, the number of
   lines after the first 5. Left out when there are none.

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -8,13 +9,45 @@ import (
 
 // listRow is one issue in "sisyphus list".
 type listRow struct {
-	Name     string   `json:"name"`
-	Title    string   `json:"title"`
-	State    string   `json:"state"`
-	Priority string   `json:"priority"`
-	Owner    string   `json:"owner,omitempty"`
-	Bookmark string   `json:"bookmark,omitempty"`
-	Tags     []string `json:"tags,omitempty"`
+	Name     string            `json:"name"`
+	Title    string            `json:"title"`
+	State    string            `json:"state"`
+	Priority string            `json:"priority"`
+	Owner    string            `json:"owner,omitempty"`
+	Bookmark string            `json:"bookmark,omitempty"`
+	Tags     []string          `json:"tags,omitempty"`
+	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// metadataFilter is one --metadata key=value of list or search. any is true for a key with no value.
+type metadataFilter struct {
+	key, value string
+	any        bool
+}
+
+// parseMetadataFilters reads the values of --metadata: key=value, or key alone for any value.
+func parseMetadataFilters(values []string) ([]metadataFilter, error) {
+	var filters []metadataFilter
+	for _, value := range values {
+		key, val, hasValue := strings.Cut(value, "=")
+		key = strings.TrimSpace(key)
+		if key == "" {
+			return nil, fmt.Errorf("--metadata %q has no key. Use key=value, or key for any value, for example --metadata delegate=merge-queue.", value)
+		}
+		filters = append(filters, metadataFilter{key: key, value: strings.TrimSpace(val), any: !hasValue})
+	}
+	return filters, nil
+}
+
+// matchesMetadata reports whether metadata has every filter.
+func matchesMetadata(metadata map[string]string, filters []metadataFilter) bool {
+	for _, f := range filters {
+		value, ok := metadata[f.key]
+		if !ok || !f.any && value != f.value {
+			return false
+		}
+	}
+	return true
 }
 
 // listOptions holds the filters of "sisyphus list". An empty slice or string means the filter is not given.
@@ -29,10 +62,21 @@ type listRow struct {
 type listOptions struct {
 	states, priorities, tags []string
 	owner, parent            string
-	blockedOnly, readyOnly   bool
-	warnings                 io.Writer
+	// metadata narrows to issues whose metadata has every pair; a pair with no value matches any
+	// value of its key.
+	metadata               []metadataFilter
+	blockedOnly, readyOnly bool
+	warnings               io.Writer
 	// withBody reads each matched issue in full; without it, only the frontmatter is read.
 	withBody bool
+}
+
+// nonEmpty returns m, or nil when it is empty, so that JSON leaves it out.
+func nonEmpty(m map[string]string) map[string]string {
+	if len(m) == 0 {
+		return nil
+	}
+	return m
 }
 
 // isBlocked reports whether doc depends on any issue that is not closed.
@@ -121,6 +165,9 @@ func matchingIssues(x *issueIndex, o listOptions) []matchedIssue {
 		if o.owner != "" && doc.get("owner") != o.owner {
 			continue
 		}
+		if len(o.metadata) > 0 && !matchesMetadata(parseMetadata(doc.get("metadata")), o.metadata) {
+			continue
+		}
 		if parentFilter != "" && x.canonical(doc.get("parent")) != parentFilter {
 			continue
 		}
@@ -168,6 +215,7 @@ func listIssues(root string, o listOptions) ([]listRow, error) {
 			Owner:    m.doc.get("owner"),
 			Bookmark: m.doc.get("bookmark"),
 			Tags:     parseList(m.doc.get("tags")),
+			Metadata: nonEmpty(parseMetadata(m.doc.get("metadata"))),
 		})
 	}
 	slices.SortFunc(rows, func(a, b listRow) int {

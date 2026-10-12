@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -92,6 +94,19 @@ func appendPositionals(args []string, values ...string) []string {
 	for _, value := range values {
 		if value != "" {
 			args = append(args, value)
+		}
+	}
+	return args
+}
+
+// appendMetadataFilters appends one --metadata filter for each entry, in key order: key=value, or
+// key alone for an empty value, which matches any value.
+func appendMetadataFilters(args []string, metadata map[string]string) []string {
+	for _, key := range slices.Sorted(maps.Keys(metadata)) {
+		if metadata[key] == "" {
+			args = append(args, "--metadata="+key)
+		} else {
+			args = append(args, "--metadata="+key+"="+metadata[key])
 		}
 	}
 	return args
@@ -367,17 +382,18 @@ func showHandler(ctx context.Context, _ *mcp.CallToolRequest, in showArgs) (*mcp
 }
 
 type listArgs struct {
-	Dir      string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed, or all. Defaults to open and in-progress."`
-	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
-	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
-	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
-	Mine     bool   `json:"mine,omitempty" jsonschema:"Only issues whose owner is the value of SISYPHUS_OWNER in the environment of the server. Cannot be used with owner."`
-	Parent   string `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
-	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
-	Ready    bool   `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
-	Text     bool   `json:"text,omitempty" jsonschema:"Return the human-readable table instead of JSON."`
-	Limit    int    `json:"limit,omitempty" jsonschema:"Return at most this many issues. A warning tells how many were left out."`
+	Dir      string            `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
+	State    string            `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed, or all. Defaults to open and in-progress."`
+	Priority string            `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
+	Tags     string            `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
+	Owner    string            `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
+	Mine     bool              `json:"mine,omitempty" jsonschema:"Only issues whose owner is the value of SISYPHUS_OWNER in the environment of the server. Cannot be used with owner."`
+	Metadata map[string]string `json:"metadata,omitempty" jsonschema:"Only issues whose metadata has every key with its value, for example {\"delegate\": \"merge-queue\"}. An empty value matches any value of the key."`
+	Parent   string            `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
+	Blocked  bool              `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
+	Ready    bool              `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
+	Text     bool              `json:"text,omitempty" jsonschema:"Return the human-readable table instead of JSON."`
+	Limit    int               `json:"limit,omitempty" jsonschema:"Return at most this many issues. A warning tells how many were left out."`
 }
 
 func listHandler(ctx context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp.CallToolResult, any, error) {
@@ -387,6 +403,7 @@ func listHandler(ctx context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp
 	args = appendFlag(args, "--tags", in.Tags)
 	args = appendFlag(args, "--owner", in.Owner)
 	args = appendBoolFlag(args, "--mine", in.Mine)
+	args = appendMetadataFilters(args, in.Metadata)
 	args = appendFlag(args, "--parent", in.Parent)
 	args = appendBoolFlag(args, "--blocked", in.Blocked)
 	args = appendBoolFlag(args, "--ready", in.Ready)
@@ -398,20 +415,21 @@ func listHandler(ctx context.Context, _ *mcp.CallToolRequest, in listArgs) (*mcp
 }
 
 type searchArgs struct {
-	Dir      string `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
-	Query    string `json:"query,omitempty" jsonschema:"Words that the title and body must all have, in any order, without regard to case, for example docs site theme. Put words in double quotes to match an exact phrase. Optional: filters alone also work."`
-	State    string `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed, or all. Defaults to open and in-progress."`
-	Priority string `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
-	Tags     string `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
-	Owner    string `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
-	Mine     bool   `json:"mine,omitempty" jsonschema:"Only issues whose owner is the value of SISYPHUS_OWNER in the environment of the server. Cannot be used with owner."`
-	Parent   string `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
-	Blocked  bool   `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
-	Ready    bool   `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
-	Section  string `json:"section,omitempty" jsonschema:"Restrict the query and the returned content to one section, for example summary."`
-	Content  bool   `json:"content,omitempty" jsonschema:"Return the whole body of each match instead of only the matched lines."`
-	Limit    int    `json:"limit,omitempty" jsonschema:"Return at most this many issues. A warning tells how many were left out."`
-	Text     bool   `json:"text,omitempty" jsonschema:"Return human-readable text instead of JSON."`
+	Dir      string            `json:"dir,omitempty" jsonschema:"Leave this out. Only to act on another repo than the one of the server: the absolute path of a directory in that repo."`
+	Query    string            `json:"query,omitempty" jsonschema:"Words that the title and body must all have, in any order, without regard to case, for example docs site theme. Put words in double quotes to match an exact phrase. Optional: filters alone also work."`
+	State    string            `json:"state,omitempty" jsonschema:"Comma-separated states to include: open, in-progress, closed, or all. Defaults to open and in-progress."`
+	Priority string            `json:"priority,omitempty" jsonschema:"Comma-separated priorities to include: critical, high, medium, low."`
+	Tags     string            `json:"tags,omitempty" jsonschema:"Comma-separated tags, for example bug; matches an issue with any of them. Built-in: bug, feature."`
+	Owner    string            `json:"owner,omitempty" jsonschema:"Only issues with exactly this owner."`
+	Mine     bool              `json:"mine,omitempty" jsonschema:"Only issues whose owner is the value of SISYPHUS_OWNER in the environment of the server. Cannot be used with owner."`
+	Metadata map[string]string `json:"metadata,omitempty" jsonschema:"Only issues whose metadata has every key with its value, for example {\"delegate\": \"merge-queue\"}. An empty value matches any value of the key."`
+	Parent   string            `json:"parent,omitempty" jsonschema:"Only direct sub-issues of this issue."`
+	Blocked  bool              `json:"blocked,omitempty" jsonschema:"Only issues with a depends-on issue that is not yet closed."`
+	Ready    bool              `json:"ready,omitempty" jsonschema:"Only issues that can start now: not closed, with no depends-on issue and no sub-issue that is not closed. Cannot be used with blocked."`
+	Section  string            `json:"section,omitempty" jsonschema:"Restrict the query and the returned content to one section, for example summary."`
+	Content  bool              `json:"content,omitempty" jsonschema:"Return the whole body of each match instead of only the matched lines."`
+	Limit    int               `json:"limit,omitempty" jsonschema:"Return at most this many issues. A warning tells how many were left out."`
+	Text     bool              `json:"text,omitempty" jsonschema:"Return human-readable text instead of JSON."`
 }
 
 func searchHandler(ctx context.Context, _ *mcp.CallToolRequest, in searchArgs) (*mcp.CallToolResult, any, error) {
@@ -421,6 +439,7 @@ func searchHandler(ctx context.Context, _ *mcp.CallToolRequest, in searchArgs) (
 	args = appendFlag(args, "--tags", in.Tags)
 	args = appendFlag(args, "--owner", in.Owner)
 	args = appendBoolFlag(args, "--mine", in.Mine)
+	args = appendMetadataFilters(args, in.Metadata)
 	args = appendFlag(args, "--parent", in.Parent)
 	args = appendBoolFlag(args, "--blocked", in.Blocked)
 	args = appendBoolFlag(args, "--ready", in.Ready)

@@ -811,3 +811,21 @@ func TestRenameToolMovesAnIssueAndItsLinks(t *testing.T) {
 		t.Errorf("the parent link did not change: %s", shown)
 	}
 }
+
+func TestListToolFiltersOnMetadata(t *testing.T) {
+	session := connectedSession(t)
+	dir := t.TempDir()
+	callTool(t, session, "sisyphus_init", map[string]any{"dir": dir})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "fix-login-bug", "metadata": map[string]any{"delegate": "merge-queue"}})
+	callTool(t, session, "sisyphus_new", map[string]any{"dir": dir, "name": "add-dark-mode"})
+
+	value := callTool(t, session, "sisyphus_list", map[string]any{"dir": dir, "metadata": map[string]any{"delegate": "merge-queue"}})
+	anyValue := callTool(t, session, "sisyphus_search", map[string]any{"dir": dir, "metadata": map[string]any{"delegate": ""}})
+
+	if !strings.Contains(value, "fix-login-bug") || strings.Contains(value, "add-dark-mode") {
+		t.Errorf("list: got %s", value)
+	}
+	if !strings.Contains(anyValue, "fix-login-bug") || strings.Contains(anyValue, "add-dark-mode") {
+		t.Errorf("search: got %s", anyValue)
+	}
+}

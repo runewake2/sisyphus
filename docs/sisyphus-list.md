@@ -16,6 +16,7 @@ sisyphus list [flags]
 | `-p`, `--priority` | Comma-separated priorities to include. |
 | `--tags` | Comma-separated tags. An issue matches if it has any of them. |
 | `--owner` | Only issues with exactly this owner. |
+| `--metadata` | Only issues whose `metadata` has `key=value`, or `key` with any value. Repeat it; every pair must match. For example `--metadata delegate=merge-queue`. |
 | `--mine` | Only issues whose owner is the value of `SISYPHUS_OWNER`. Not with `--owner`. An error when `SISYPHUS_OWNER` is not set. |
 | `--parent` | Only direct sub-issues of this issue (any form of its name). A name that gives no issue is an error. |
 | `--blocked` | Only issues that depend on an issue that is not closed yet. |
@@ -54,7 +55,8 @@ add-dark-mode  Add dark mode  in-progress  medium    alice  feature, ui
 ```
 
 With `--json`, an array of objects with `name`, `title`, `state`, `priority`, `owner`, `bookmark`,
-and `tags`. `owner`, `bookmark`, and `tags` are left out when they are empty. The table has no
+`tags`, and `metadata` (an object). `owner`, `bookmark`, `tags`, and `metadata` are left out when
+they are empty. The table has no
 `bookmark` column, so that it stays narrow.
 An empty result is an empty table, or `[]`.
 

@@ -537,6 +537,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 	var state, priority, tags, owner, parent string
 	var asJSON, blocked, ready, wide, mine bool
 	var limit int
+	var metadata []string
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List and filter issues.",
@@ -558,6 +559,10 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			metadataFilters, err := parseMetadataFilters(metadata)
+			if err != nil {
+				return err
+			}
 			root, err := findRoot()
 			if err != nil {
 				return err
@@ -567,6 +572,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 				priorities:  priorityValues,
 				tags:        parseList(tags),
 				owner:       owner,
+				metadata:    metadataFilters,
 				parent:      parent,
 				blockedOnly: blocked,
 				readyOnly:   ready,
@@ -601,6 +607,7 @@ func listCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&owner, "owner", "", "Only issues with exactly this owner.")
 	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
 	flags.BoolVar(&mine, "mine", false, "Only issues whose owner is the value of "+ownerVariable+".")
+	flags.StringArrayVar(&metadata, "metadata", nil, "Only issues whose metadata has key=value, or the key with any value. Repeatable; every pair must match.")
 	flags.BoolVar(&blocked, "blocked", false, "Only issues with a depends-on issue that is not yet closed.")
 	flags.BoolVar(&ready, "ready", false, readyHelp)
 	flags.BoolVar(&wide, "wide", false, "Do not shorten titles to fit the terminal.")
@@ -615,6 +622,7 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 	var state, priority, tags, owner, parent, section string
 	var asJSON, blocked, ready, mine, content bool
 	var limit int
+	var metadata []string
 	cmd := &cobra.Command{
 		Use:   "search [<query>]",
 		Short: "Search issues by frontmatter filters and content.",
@@ -643,6 +651,10 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			metadataFilters, err := parseMetadataFilters(metadata)
+			if err != nil {
+				return err
+			}
 			root, err := findRoot()
 			if err != nil {
 				return err
@@ -653,6 +665,7 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 					priorities:  priorityValues,
 					tags:        parseList(tags),
 					owner:       owner,
+					metadata:    metadataFilters,
 					parent:      parent,
 					blockedOnly: blocked,
 					readyOnly:   ready,
@@ -697,6 +710,7 @@ func searchCommand(findRoot func() (string, error)) *cobra.Command {
 	flags.StringVar(&owner, "owner", "", "Only issues with exactly this owner.")
 	flags.StringVar(&parent, "parent", "", "Only direct sub-issues of this issue.")
 	flags.BoolVar(&mine, "mine", false, "Only issues whose owner is the value of "+ownerVariable+".")
+	flags.StringArrayVar(&metadata, "metadata", nil, "Only issues whose metadata has key=value, or the key with any value. Repeatable; every pair must match.")
 	flags.StringVar(&section, "section", "", `Restrict the query and the returned content to one section, for example "summary".`)
 	flags.BoolVar(&content, "content", false, "Return the whole body of each match, without the sections that hold only template text, instead of the matched lines.")
 	flags.IntVar(&limit, "limit", 0, limitHelp)

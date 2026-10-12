@@ -9,14 +9,15 @@ import (
 
 // searchRow is one matching issue in "sisyphus search".
 type searchRow struct {
-	Name     string   `json:"name"`
-	Title    string   `json:"title"`
-	State    string   `json:"state"`
-	Priority string   `json:"priority"`
-	Owner    string   `json:"owner,omitempty"`
-	Bookmark string   `json:"bookmark,omitempty"`
-	Tags     []string `json:"tags,omitempty"`
-	Section  string   `json:"section,omitempty"`
+	Name     string            `json:"name"`
+	Title    string            `json:"title"`
+	State    string            `json:"state"`
+	Priority string            `json:"priority"`
+	Owner    string            `json:"owner,omitempty"`
+	Bookmark string            `json:"bookmark,omitempty"`
+	Tags     []string          `json:"tags,omitempty"`
+	Metadata map[string]string `json:"metadata,omitempty"`
+	Section  string            `json:"section,omitempty"`
 	// Content is the section of --section, or the body with --content. Otherwise it is left out, and
 	// Matches has the lines that match the query.
 	Content string      `json:"content,omitempty"`
@@ -90,6 +91,7 @@ func searchIssues(root string, o searchOptions) ([]searchRow, error) {
 			Owner:    m.doc.get("owner"),
 			Bookmark: m.doc.get("bookmark"),
 			Tags:     parseList(m.doc.get("tags")),
+			Metadata: nonEmpty(parseMetadata(m.doc.get("metadata"))),
 			Section:  o.section,
 		}
 		switch {

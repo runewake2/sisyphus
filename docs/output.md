@@ -73,7 +73,7 @@ JSON array, and a map is a JSON object.
 | Field | Value |
 |---|---|
 | `name`, `title`, `state`, `priority` | Always. |
-| `owner`, `bookmark`, `tags` | When set. |
+| `owner`, `bookmark`, `tags`, `metadata` | When set. `metadata` is an object. |
 
 ### A search row
 

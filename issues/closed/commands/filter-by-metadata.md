@@ -1,16 +1,16 @@
 ---
 title: "Filter list and search on a metadata key"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: small          # small | medium | large | x-large
 tags: [feature, cli, sisyphus-mcp] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-11
-closed:                # YYYY-MM-DD. Set this only when state is closed.
-owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
+closed: 2026-10-12     # YYYY-MM-DD. Set this only when state is closed.
+owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+bookmark: samw/ai/ux-fixes # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: [ux-fixes] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
@@ -45,6 +45,5 @@ hephaestus records the role of an issue in metadata, for example `sisyphus updat
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed in [[unreleased-filter-by-metadata]]. `list` and `search` take `--metadata key=value` (repeatable, all must match; a key alone matches any value), their JSON rows include `metadata`, and the MCP tools take the filter as an object.
+
