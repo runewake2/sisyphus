@@ -165,17 +165,26 @@ changes.
 | `performance/` | Speed in repos with many issues. |
 | `integrations/` | Plugins, GitHub, and other trackers. |
 | `ux/` | How easy the CLI and the documentation are to learn and use. |
+| `hephaestus/` | The hephaestus project, in its own subdirectories: `core/` (delegation, messages, tool agents, the runner), `merge-queue/`, `roles/`, and `checks/` (tasks of the tool role `repo-check`). |
 
 If no directory fits, add one: a kebab-case name for an area, with a row in this table. A directory
 is not the parent of an issue: set `parent` for that.
 
 ### hephaestus
 
-`hephaestus/` is a separate project beside sisyphus: a worker manager that provisions and manages
-agents and gives them sisyphus issues. It has its own issues tracker in `hephaestus/issues/`; run
-`sisyphus` in `hephaestus/` to work on its issues. sisyphus never manages agents: put all
-agent-specific work in hephaestus, and in sisyphus only generic issue data that any client can use
-([[0029-sisyphus-does-not-manage-agents]]). Both trackers must lint clean.
+hephaestus is a separate project beside sisyphus: a worker manager that provisions and manages
+agents and gives them sisyphus issues. Its code is the Go module in `hephaestus/`, with its role
+files in `hephaestus/roles/`. It shares everything else with sisyphus
+([[0002-one-tracker-and-one-design-log-for-both-projects]]):
+
+- Its issues are in this tracker, in `issues/<state>/hephaestus/`, for example
+  `sisyphus new hephaestus/core/<name>`.
+- Its design documents are in `design/hephaestus/`, and its decision records in
+  `design/decisions/hephaestus/<component>/`.
+- Its changes have unreleased changelog entries in `changelog/unreleased/`, as every change has.
+
+sisyphus never manages agents: put all agent-specific work in hephaestus, and in sisyphus only
+generic issue data that any client can use ([[0029-sisyphus-does-not-manage-agents]]).
 
 ### Issue names
 

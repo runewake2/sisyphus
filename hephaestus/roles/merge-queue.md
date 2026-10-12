@@ -1,7 +1,7 @@
 ---
 role: merge-queue         # The id of the role: the name of this file, and the value of metadata delegate.
 kind: tool                # ai: a model does the work. tool: a program does it, with no model.
-command: hephaestus merge-queue --from-message --checks 'test -z "$(gofmt -l cmd hephaestus)" && go vet ./... && go test ./... && (cd hephaestus && go vet ./... && go test ./...) && go run ./cmd/sisyphus lint && go run ./cmd/sisyphus -C hephaestus lint'
+command: hephaestus merge-queue --from-message --checks 'test -z "$(gofmt -l cmd hephaestus)" && go vet ./... && go test ./... && (cd hephaestus && go vet ./... && go test ./...) && go run ./cmd/sisyphus lint'
 trigger: request          # request, close, or schedule, or a list of them.
 on-failure: needs-human   # needs-human, or an AI role that gets the work that the tool cannot do.
 can-call-referendum: false

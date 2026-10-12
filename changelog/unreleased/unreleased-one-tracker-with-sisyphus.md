@@ -1,0 +1,34 @@
+# Unreleased: Share the issues and the design log with sisyphus
+
+- Date: 2026-10-12
+- Bookmark: samw/ai/ux-fixes
+- Components: hephaestus, repo
+- Changelog: Move the hephaestus issues and design into the tracker and design log of the repo, in hephaestus subdirectories.
+
+## Summary
+
+hephaestus no longer has an issues tracker and design documents of its own. Its issues are in the
+tracker of the repo, in `issues/<state>/hephaestus/`, and its design in `design/hephaestus/` and
+`design/decisions/hephaestus/`, beside those of sisyphus.
+
+## Changes
+
+- The 14 hephaestus issues moved from `hephaestus/issues/<state>/<dir>/` to
+  `issues/<state>/hephaestus/<dir>/`; their `parent` and `depends-on` links have the new full
+  names. The nested tracker (`hephaestus/issues/TEMPLATE.md`) is gone.
+- The design documents moved to `design/hephaestus/`, and the decision records to
+  `design/decisions/hephaestus/<component>/`, with their numbers.
+- The Go module and the role files stay in `hephaestus/`. The checks of the roles `merge-queue` and
+  `repo-check` lint one tracker.
+- CONTRIBUTING.md tells where hephaestus issues and design go, and has the directory `hephaestus/`
+  in its table of issue directories. The hephaestus README describes the layout.
+- [[0029-sisyphus-does-not-manage-agents]] keeps its boundary; its layout of hephaestus is
+  superseded.
+
+## Decisions
+
+- [[0002-one-tracker-and-one-design-log-for-both-projects]]
+
+## Issues
+
+- Closed [[one-tracker-with-sisyphus]].

@@ -1,7 +1,7 @@
 ---
 role: repo-check
 kind: tool
-command: cd "$(jj root)" && test -z "$(gofmt -l cmd hephaestus)" && go vet ./... && (cd hephaestus && go vet ./...) && sisyphus lint && sisyphus -C hephaestus lint && echo "gofmt, go vet, and sisyphus lint are clean in both modules and both trackers."
+command: cd "$(jj root)" && test -z "$(gofmt -l cmd hephaestus)" && go vet ./... && (cd hephaestus && go vet ./...) && sisyphus lint && echo "gofmt, go vet, and sisyphus lint are clean in both modules and the repo."
 trigger: request
 on-failure: needs-human
 listens: [bookmark-ready]
@@ -12,7 +12,7 @@ listens: [bookmark-ready]
 ## Charter
 
 Run the checks of this repo on the working copy of a task: gofmt, `go vet` of the sisyphus and the
-hephaestus modules, and `sisyphus lint` of both trackers.
+hephaestus modules, and `sisyphus lint` of the repo.
 
 It changes nothing. It is a tool role: it uses no model.
 

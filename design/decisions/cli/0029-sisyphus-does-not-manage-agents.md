@@ -1,6 +1,6 @@
 # 0029: sisyphus does not manage agents
 
-- Status: Accepted
+- Status: Accepted. Its layout of hephaestus (an issues tracker and design documents of its own) is superseded by [[0002-one-tracker-and-one-design-log-for-both-projects]].
 - Date: 2026-10-11
 - Version: none (a decision about scope, with no code change)
 

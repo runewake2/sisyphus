@@ -61,11 +61,10 @@ hephaestus/
   cmd/          The hephaestus command
   internal/     Its packages
   roles/        One role file for each role
-  design/       Design documents of hephaestus
-  issues/       The issues of hephaestus, a sisyphus tracker of its own
 ```
 
-The issues of hephaestus are in their own tracker. Run `sisyphus` in this directory to work on
-them, for example `sisyphus list`. The rules of the repo apply ([[AGENTS]] and
-[[CONTRIBUTING]]): `sisyphus lint` must report no problems, here and at the
-root of the repo.
+hephaestus shares the issues and the design log of the repo with sisyphus
+([[0002-one-tracker-and-one-design-log-for-both-projects]]): its issues are in
+`issues/<state>/hephaestus/`, its design documents in `design/hephaestus/`, and its decision
+records in `design/decisions/hephaestus/`. The rules of the repo apply ([[AGENTS]] and
+[[CONTRIBUTING#hephaestus]]).
