@@ -40,7 +40,7 @@ Add a UX researcher role: an agent that uses what is being built as a new person
 
 ## Notes
 
-2026-10-12: the role file [[roles/ux-researcher|ux-researcher]] defines the role: its charter, inputs, outputs, tools, the points where it asks a human, and its prompt ([[unreleased-define-the-ai-roles]]). The runs need [[delegation-runner]], which runs AI roles.
+2026-10-12: the role file [[roles/ux-researcher|ux-researcher]] defines the role: its charter, inputs, outputs, tools, the points where it asks a human, and its prompt ([[0.0.116]]). The runs need [[delegation-runner]], which runs AI roles.
 
 2026-10-12: the role runs now, as a Claude Code subagent (.claude/agents/ux-researcher.md) or a worker with a runner ([[run-ai-roles]]). The run of this issue still needs a human to start it, and a human to check its result.
 

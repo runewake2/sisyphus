@@ -44,5 +44,5 @@ Requested by a human on 2026-10-12: implement the roles. Q4 of [[agent-delegatio
 
 ## Resolution
 
-Completed in [[unreleased-implement-the-ai-roles]]. `hephaestus agent export claude` writes a Claude Code subagent for each AI role (a test keeps them in sync), and `hephaestus agent run <ai-role> --runner <command>` runs a model with the prompt of each task, never without a runner; an issue left in progress or a failed runner goes to a human. See [[0004-ai-roles-run-as-claude-code-subagents]].
+Completed in [[0.0.117]]. `hephaestus agent export claude` writes a Claude Code subagent for each AI role (a test keeps them in sync), and `hephaestus agent run <ai-role> --runner <command>` runs a model with the prompt of each task, never without a runner; an issue left in progress or a failed runner goes to a human. See [[0004-ai-roles-run-as-claude-code-subagents]].
 

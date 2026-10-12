@@ -1,5 +1,17 @@
 # Changelog
 
+## [[0.0.117]] - 2026-10-12
+- Run the AI roles as Claude Code subagents and as workers with a runner, and add the roles security-researcher and privacy-reviewer.
+
+## [[0.0.116]] - 2026-10-12
+- Define the AI roles engineer, project-manager, ux-researcher, and technical-docs, and describe how the roles govern together.
+
+## [[0.0.115]] - 2026-10-12
+- Move the hephaestus issues and design into the tracker and design log of the repo, in hephaestus subdirectories.
+
+## [[0.0.114]] - 2026-10-12
+- Add hephaestus merge-queue, which makes one linear history from the work of a set of tasks and gives the versions as it lands.
+
 ## [[0.0.113]] - 2026-10-12
 - Run tool agents with hephaestus agent run, which do delegated tasks with a program and no model, and add hephaestus agent review.
 

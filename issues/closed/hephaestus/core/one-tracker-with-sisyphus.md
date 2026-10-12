@@ -44,5 +44,5 @@ Requested by a human on 2026-10-12: hephaestus and sisyphus should share a direc
 
 ## Resolution
 
-Completed in [[unreleased-one-tracker-with-sisyphus]]. The hephaestus issues are in issues/<state>/hephaestus/, and its design documents and decision records in design/hephaestus/ and design/decisions/hephaestus/. One sisyphus lint, list, and graph covers both projects. See [[0002-one-tracker-and-one-design-log-for-both-projects]].
+Completed in [[0.0.115]]. The hephaestus issues are in issues/<state>/hephaestus/, and its design documents and decision records in design/hephaestus/ and design/decisions/hephaestus/. One sisyphus lint, list, and graph covers both projects. See [[0002-one-tracker-and-one-design-log-for-both-projects]].
 

@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-12
-- Version: [[unreleased-merge-queue-agent]]
+- Version: [[0.0.114]]
 
 ## Context
 

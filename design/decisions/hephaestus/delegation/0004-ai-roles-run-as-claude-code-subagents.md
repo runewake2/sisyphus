@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-12
-- Version: [[unreleased-implement-the-ai-roles]]
+- Version: [[0.0.117]]
 
 ## Context
 

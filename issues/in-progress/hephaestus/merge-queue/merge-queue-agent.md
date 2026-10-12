@@ -59,7 +59,7 @@ The merge queue is a tool agent, so it depends on [[tool-agents]], which runs it
 
 2026-10-12, from the human: human work, and branches introduced beside the queue, land on the linear branch through the supervised merge queue (Q6).
 
-2026-10-12: implemented in [[unreleased-merge-queue-agent]] ([[0001-merge-with-git-in-a-scratch-worktree]]). A real run merged the work of [[nested-tracker-links]], [[filter-by-metadata]], and [[rename-issue-command]] (bookmark samw/ai/ux-fixes, 22 changes) onto the bookmark merge-queue/2026-10-12, with the versions 0.0.107 to 0.0.113 in one commit, and passed the checks of the repo. main did not change. The first real run left the work out: jj had not exported the bookmark to git from this workspace, so git saw an old commit; the merge queue now runs jj git export first. Remaining: a human checks merge-queue/2026-10-12.
+2026-10-12: implemented in [[0.0.114]] ([[0001-merge-with-git-in-a-scratch-worktree]]). A real run merged the work of [[nested-tracker-links]], [[filter-by-metadata]], and [[rename-issue-command]] (bookmark samw/ai/ux-fixes, 22 changes) onto the bookmark merge-queue/2026-10-12, with the versions 0.0.107 to 0.0.113 in one commit, and passed the checks of the repo. main did not change. The first real run left the work out: jj had not exported the bookmark to git from this workspace, so git saw an old commit; the merge queue now runs jj git export first. Remaining: a human checks merge-queue/2026-10-12.
 
 ## Resolution
 
