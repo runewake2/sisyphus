@@ -105,6 +105,10 @@ func lintRepo(root string) lintResult {
 			if row.Status == "ok" {
 				continue
 			}
+			if row.Status == "alias-in-table" {
+				add(c.relative, row.Line, "the link %s is in a table and has an alias: Markdown reads its | as the end of the cell. Remove the alias", row.Link)
+				continue
+			}
 			detail := ""
 			if row.Resolved != "" {
 				detail = " (" + row.Resolved + ")"

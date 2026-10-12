@@ -275,18 +275,18 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 
 | Role | Kind | Started by | Calls a referendum | Work it cannot do goes to | Scope as a reviewer |
 |---|---|---|---|---|---|
-| [[roles/merge-queue|merge-queue]] | tool | a request with a set of tasks | no | a human; a conflict to `engineer` | none |
-| [[roles/repo-check|repo-check]] | tool | a request, a `bookmark-ready` broadcast | no | a human | the checks of the repo (its exit code) |
-| [[roles/formatter/README|formatter/<language>]] | tool | a request, a `bookmark-ready` broadcast | no | a human | the format of the changed files of its language: Go, C#, YAML, JSON, or Markdown (`modify` with the formatted files) |
-| [[roles/implementer|implementer]] | ai | a request: a delegated issue | no | a human | none: it does the work |
-| [[roles/code-reviewer|code-reviewer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | the code of the change: correctness, tests, and fit |
-| [[roles/test-engineer|test-engineer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | whether the tests show each acceptance criterion |
-| [[roles/engineer|engineer]] | ai | a request, a `conflict` message | yes | a human | the direction of the work |
-| [[roles/project-manager|project-manager]] | ai | a request | no | a human | the scope and priority of issues |
-| [[roles/ux-researcher|ux-researcher]] | ai | a request | no | a human | how people and agents use the change |
-| [[roles/technical-docs|technical-docs]] | ai | the close of an issue (`issue-closed`), a request | no | a human | the docs of the change |
-| [[roles/security-researcher|security-researcher]] | ai | a request | no | a human | the security of the change: secrets, files, input, services, dependencies |
-| [[roles/privacy-reviewer|privacy-reviewer]] | ai | a request | no | a human | the data about people that the change collects, keeps, shows, or sends |
+| [[roles/merge-queue]] | tool | a request with a set of tasks | no | a human; a conflict to `engineer` | none |
+| [[roles/repo-check]] | tool | a request, a `bookmark-ready` broadcast | no | a human | the checks of the repo (its exit code) |
+| [[roles/formatter/README]]: `formatter/<language>` | tool | a request, a `bookmark-ready` broadcast | no | a human | the format of the changed files of its language: Go, C#, YAML, JSON, or Markdown (`modify` with the formatted files) |
+| [[roles/implementer]] | ai | a request: a delegated issue | no | a human | none: it does the work |
+| [[roles/code-reviewer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | the code of the change: correctness, tests, and fit |
+| [[roles/test-engineer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | whether the tests show each acceptance criterion |
+| [[roles/engineer]] | ai | a request, a `conflict` message | yes | a human | the direction of the work |
+| [[roles/project-manager]] | ai | a request | no | a human | the scope and priority of issues |
+| [[roles/ux-researcher]] | ai | a request | no | a human | how people and agents use the change |
+| [[roles/technical-docs]] | ai | the close of an issue (`issue-closed`), a request | no | a human | the docs of the change |
+| [[roles/security-researcher]] | ai | a request | no | a human | the security of the change: secrets, files, input, services, dependencies |
+| [[roles/privacy-reviewer]] | ai | a request | no | a human | the data about people that the change collects, keeps, shows, or sends |
 
 The path of a piece of work:
 

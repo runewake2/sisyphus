@@ -187,3 +187,15 @@ func TestTheRootTrackerChecksTheDocumentsOfANestedOne(t *testing.T) {
 
 	contains(t, res.output, "tools/notes.md:1: the link [[missing-doc]] is missing")
 }
+
+func TestAnAliasInATableRowIsReported(t *testing.T) {
+	r := newTestRepo(t)
+
+	rows := linksOf(t, r, "design/links-doc.md",
+		"# Doc\n\n| Name | Link |\n|---|---|\n| one | [[README|the readme]] |\n| two | [[README]] |\n\nOutside a table: [[README|the readme]].\n")
+
+	equal(t, 3, len(rows))
+	equal(t, linkRow{5, "[[README|the readme]]", "alias-in-table", "README.md"}, rows[0])
+	equal(t, "ok", rows[1].Status)
+	equal(t, linkRow{8, "[[README|the readme]]", "ok", "README.md"}, rows[2])
+}

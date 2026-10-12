@@ -48,7 +48,7 @@ func TestLintReportsEachKindOfProblem(t *testing.T) {
 	r.replaceIn("issues/open/first-issue-test.md", "parent:", `parent: "[[second-issue-test]]"`)
 	r.replaceIn("issues/open/first-issue-test.md", "depends-on: []", `depends-on: ["[[second-issue-test]]", "[[gone-issue-test]]"]`)
 	r.write("issues/closed/loose-issue-test.md", strings.Replace(r.read("issues/open/loose-issue-test.md"), "state: open", "state: closed", 1))
-	r.write("design/notes.md", "# Notes\n\nSee [[nowhere-at-all]] and [[widget-scheduler#No Such Heading]].\n")
+	r.write("design/notes.md", "# Notes\n\nSee [[nowhere-at-all]] and [[widget-scheduler#No Such Heading]].\n\n| Doc |\n|---|\n| [[README|the readme]] |\n")
 
 	res := r.run("lint")
 
@@ -65,6 +65,7 @@ func TestLintReportsEachKindOfProblem(t *testing.T) {
 		"issues/open/first-issue-test.md: its dependencies form a cycle: first-issue-test → second-issue-test → first-issue-test",
 		"design/notes.md:3: the link [[nowhere-at-all]] is missing",
 		"design/notes.md:3: the link [[widget-scheduler#No Such Heading]] is missing-heading",
+		"design/notes.md:7: the link [[README|the readme]] is in a table and has an alias: Markdown reads its | as the end of the cell. Remove the alias",
 	} {
 		contains(t, res.output, want)
 	}

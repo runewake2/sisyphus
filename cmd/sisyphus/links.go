@@ -25,6 +25,8 @@ type linkRow struct {
 type foundLink struct {
 	line int
 	link string
+	// inTable is true for a link in a row of a Markdown table.
+	inTable bool
 }
 
 // wikilink is a parsed link. sameFile is true for a link such as [[#Heading]], which points into its own document.
@@ -254,8 +256,9 @@ func (c *linkChecker) hasHeading(file, heading string) bool {
 	return slices.ContainsFunc(c.headingsOf[file], func(h string) bool { return strings.EqualFold(h, heading) })
 }
 
-// rows returns one row for each wikilink in file, with its status: ok, missing, ambiguous, or
-// missing-heading.
+// rows returns one row for each wikilink in file, with its status: ok, missing, ambiguous,
+// missing-heading, or alias-in-table. A link with an alias (the | of [[target|text]]) in a table row
+// is alias-in-table even when it resolves, because Markdown reads its | as the end of the table cell.
 func (c *linkChecker) rows(file string, absolute bool) ([]linkRow, error) {
 	trace(file)
 	content, err := os.ReadFile(file)
@@ -295,6 +298,9 @@ func (c *linkChecker) rowsOf(file string, lines []string, absolute bool) []linkR
 			!c.hasHeading(matches[0].file, link.heading) {
 			status = "missing-heading"
 		}
+		if status == "ok" && found.inTable && strings.Contains(found.link, "|") {
+			status = "alias-in-table"
+		}
 		rows = append(rows, linkRow{
 			Line:     found.line,
 			Link:     found.link,
@@ -325,8 +331,9 @@ func wikilinks(lines []string) []foundLink {
 	var found []foundLink
 	for _, index := range outsideCodeFences(lines) {
 		text := inlineCodePattern.ReplaceAllString(lines[index], "")
+		inTable := strings.HasPrefix(strings.TrimSpace(text), "|")
 		for _, match := range wikilinkPattern.FindAllStringSubmatch(text, -1) {
-			found = append(found, foundLink{line: index + 1, link: "[[" + match[1] + "]]"})
+			found = append(found, foundLink{line: index + 1, link: "[[" + match[1] + "]]", inTable: inTable})
 		}
 	}
 	return found

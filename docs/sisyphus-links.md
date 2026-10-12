@@ -28,6 +28,7 @@ Every wikilink in the document, in the frontmatter and the body, is resolved the
 | `missing` | No file matches. |
 | `ambiguous` | More than one file matches. |
 | `missing-heading` | The file exists, but has no heading with that name (ignoring case). |
+| `alias-in-table` | The link resolves, but it is in a table row and has an alias (`[[target\|text]]`). Markdown reads the `\|` as the end of the table cell. Remove the alias. |
 
 - Links inside fenced code blocks and inline code are skipped, as Obsidian skips them. Write an
   example link in backticks so it is not checked.

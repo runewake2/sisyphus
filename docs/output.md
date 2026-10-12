@@ -101,7 +101,7 @@ JSON array, and a map is a JSON object.
 |---|---|
 | `line` | The line of the link in the document. |
 | `link` | The link as it is written, for example `[[fix-login-bug#Notes]]`. |
-| `status` | `ok`, `missing`, `ambiguous`, or `missing-heading`. |
+| `status` | `ok`, `missing`, `ambiguous`, `missing-heading`, or `alias-in-table`. |
 | `resolved` | The path of the target from the repo root, or `""`. Always. |
 
 ### A rename plan

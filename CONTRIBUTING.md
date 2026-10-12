@@ -129,12 +129,12 @@ The repo is also an [Obsidian](https://obsidian.md/) vault. In every Markdown fi
 - Obsidian finds the file by name in any directory. So a link to an issue still works after the issue moves between `open/`, `in-progress/`, and `closed/`.
 - If two files have the same name, include the path from the repo root: `[[design/example/README]]`.
 - Link to a section with `#`, for example `[[CONTRIBUTING#Issues]]`. Link to a section of the same file with `[[#Heading]]`.
-- Show different text with `|`: `[[0.0.5|the first release]]`.
+- Show different text with `|`: `[[0.0.5|the first release]]`. Do not use this alias in a table: Markdown reads its `|` as the end of the table cell, and formatters such as prettier split the cell there. In a table, link without an alias, and put other text beside the link.
 - In YAML frontmatter, put a wikilink in quotes: `parent: "[[large-issue]]"`.
 - Do not write `#<name>` in a Markdown file to refer to an issue. Obsidian reads `#word` as a tag.
 - Use normal Markdown links only for files that are not Markdown and for external URLs.
 
-Before you finish a change, run `sisyphus links` on each Markdown file that you edited. Fix each link with the status `missing`, `ambiguous`, or `missing-heading`.
+Before you finish a change, run `sisyphus links` on each Markdown file that you edited. Fix each link with the status `missing`, `ambiguous`, `missing-heading`, or `alias-in-table`.
 
 ## Issues
 

@@ -785,7 +785,8 @@ func linksCommand(findRoot func() (string, error)) *cobra.Command {
 		Use:   "links <document>",
 		Short: "Check every wikilink in a document.",
 		Long: "List every wikilink in a document and the file that each link resolves to. The status of a link is ok, " +
-			"missing, ambiguous, or missing-heading. Links in fenced code blocks and in inline code are ignored, " +
+			"missing, ambiguous, missing-heading, or alias-in-table: a link with an alias ([[target|text]]) in a table " +
+			"row, whose | Markdown reads as the end of the cell. Links in fenced code blocks and in inline code are ignored, " +
 			"because Obsidian ignores them.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -831,7 +832,7 @@ func lintCommand(findRoot func() (string, error)) *cobra.Command {
 			"priority, effort, and resolution are valid; the full name is in one state directory only; no " +
 			"tag has a space; the parent exists and has no cycle above it; and each depends-on issue exists, " +
 			"is not the issue itself, and makes no cycle. For each Markdown file in the repo: every wikilink " +
-			"is ok, not missing, ambiguous, or missing-heading.\n\n" +
+			"is ok, not missing, ambiguous, missing-heading, or an alias in a table row.\n\n" +
 			"Each problem is one line, \"<file>[:<line>]: <problem>\", and the exit code is 1. With no " +
 			"problem, one summary line and exit code 0.",
 		Args: cobra.NoArgs,
