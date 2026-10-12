@@ -39,7 +39,10 @@ and never changes the line: it reports.
   - a link to an `unreleased-*` entry that should name a version;
   - an issue that a commit says it fixes, but that is still open on the line;
   - a decision record with a `Version:` that does not exist.
-- A recommendation: move `main`, or not, and why.
+- A recommendation: move `main`, or not, and why, also as a `release-recommendation` broadcast, so
+  that `hephaestus status` shows it with the line:
+  `hephaestus messages send --broadcast --kind release-recommendation --data '{"bookmark": "<line>",
+  "recommend": "move" or "hold", "summary": "<one sentence>"}' "<the recommendation>"`.
 
 ## Works with
 
@@ -68,5 +71,6 @@ moving main to it releases. Read [[AGENTS]] and [[CONTRIBUTING]] first, and foll
 2. List the versions, the changelog entries, the decision records, and the issues of the line.
 3. Check the problems in your Outputs section, and run sisyphus lint on the line.
 4. Write the release summary and the problems in the issue of your task, in Simplified Technical
-   English, with a recommendation.
+   English, with a recommendation. Send the recommendation as a release-recommendation broadcast,
+   as your Outputs section shows.
 5. Never move main, never push, and never change the line.

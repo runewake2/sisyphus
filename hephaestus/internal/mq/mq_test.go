@@ -381,3 +381,30 @@ func equal[T comparable](t *testing.T, want, got T) {
 		t.Errorf("want %v, got %v", want, got)
 	}
 }
+
+func TestPendingListsWhatWaitsForEachReceiver(t *testing.T) {
+	clock := newClock()
+	s := openServer(t, t.TempDir(), clock)
+	receive(t, s, "check-1", "repo-check", "bookmark-ready")
+	receive(t, s, "human-alice", "")
+	direct := send(t, s, "alice", Address{Worker: "merge-queue-1"}, "task", "merge it")       // no such worker yet
+	toRole := send(t, s, "alice", Address{Role: "engineer"}, "task", "align it")              // no worker of the role yet
+	ready := send(t, s, "impl-1", Address{Broadcast: true}, "bookmark-ready", "ai/fix ready") // check-1's role, and alice
+	equalBodies(t, []string{"ai/fix ready"}, receive(t, s, "check-1", "repo-check", "bookmark-ready"))
+
+	pending := s.Pending()
+
+	var got []string
+	for _, p := range pending {
+		got = append(got, p.ID+" "+p.For+" "+p.LeasedBy)
+	}
+	equalBodies(t, []string{
+		direct.ID + " worker:merge-queue-1 ",
+		toRole.ID + " role:engineer ",
+		ready.ID + " role:repo-check check-1",
+		ready.ID + " worker:human-alice ",
+	}, got)
+
+	ack(t, s, "check-1", ready)
+	equal(t, 3, len(s.Pending()))
+}

@@ -350,6 +350,10 @@ in its section `Works with`, which `hephaestus roles` checks):
    budget. `ux-researcher`, `security-researcher`, `privacy-reviewer`, `performance-engineer`, and
    `model-eval` review the product. Their findings are issues, which go back to step 1.
 
+`hephaestus status` shows a human what waits for one: the issues tagged `needs-human`, the
+referendums that need a decision, the workers that stopped, the messages that no live worker can
+take, and the last line of the merge queue with the recommendation of the release manager.
+
 Humans keep the decisions that no role makes: they move `main`, accept the proposals of the
 project manager, decide a failed referendum, and take each issue tagged `needs-human`.
 

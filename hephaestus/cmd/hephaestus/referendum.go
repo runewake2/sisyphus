@@ -485,3 +485,8 @@ func printReferendum(out io.Writer, ref *referendum.Referendum) {
 	}
 	fmt.Fprintf(out, "  record: %s\n", filepath.ToSlash(filepath.Join(referendum.Dir, ref.ID+".md")))
 }
+
+// isAncestor reports whether commit a is an ancestor of commit b, or the same commit.
+func isAncestor(gitDir, a, b string) bool {
+	return exec.Command("git", "--git-dir="+gitDir, "merge-base", "--is-ancestor", a, b).Run() == nil
+}

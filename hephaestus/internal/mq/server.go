@@ -145,6 +145,13 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /ack", s.handleAck)
 	mux.HandleFunc("POST /renew", s.handleRenew)
 	mux.HandleFunc("GET /workers", s.handleWorkers)
+	mux.HandleFunc("GET /pending", func(w http.ResponseWriter, r *http.Request) {
+		pending := s.Pending()
+		if pending == nil {
+			pending = []Pending{}
+		}
+		reply(w, pending, nil)
+	})
 	mux.HandleFunc("GET /log", s.handleLog)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
 	s.http = &http.Server{Handler: s.authorize(mux), ReadHeaderTimeout: 10 * time.Second}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -390,22 +389,15 @@ func logCommand(findRepo func() (repo.Repo, error)) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			file, err := os.Open(filepath.Join(r.SharedDir(), mq.LogFile))
-			if errors.Is(err, os.ErrNotExist) {
-				fmt.Fprintln(cmd.ErrOrStderr(), "The log is empty: no message was sent in this repo.")
-				return nil
-			}
+			messages, err := mq.ReadLog(r.SharedDir())
 			if err != nil {
 				return err
 			}
-			defer file.Close()
-			messages := []mq.Message{}
-			scanner := bufio.NewScanner(file)
-			scanner.Buffer(make([]byte, 1024*1024), 64*1024*1024)
-			for scanner.Scan() {
-				var e mq.Event
-				if json.Unmarshal(scanner.Bytes(), &e) == nil && e.Type == "message" && e.Message != nil {
-					messages = append(messages, *e.Message)
+			if messages == nil {
+				fmt.Fprintln(cmd.ErrOrStderr(), "The log is empty: no message was sent in this repo.")
+				messages = []mq.Message{}
+				if !asJSON {
+					return nil
 				}
 			}
 			if asJSON {
@@ -414,7 +406,7 @@ func logCommand(findRepo func() (repo.Repo, error)) *cobra.Command {
 			for _, m := range messages {
 				printMessage(cmd.OutOrStdout(), m)
 			}
-			return scanner.Err()
+			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print JSON.")

@@ -87,3 +87,30 @@ func TestAMessageToOneWorkerOfAFamilyWarns(t *testing.T) {
 	equal(t, "", all.errors)
 	equal(t, "", one.errors)
 }
+
+func TestStatusShowsWhatNeedsAHuman(t *testing.T) {
+	r := newNoticeRepo(t, time.Minute)
+	r.mustRunSisyphus("update", "fix-login-bug", "--add-tags", "needs-human")
+	r.mustRunSisyphus("update", "add-dark-mode", "--metadata", "referendum=no-result")
+	r.mustRun("messages", "send", "--from", "alice", "--role", "engineer", "--kind", "task", "align it")
+	main := strings.TrimSpace(r.git("rev-parse", "main"))
+	r.mustRun("messages", "send", "--from", "merge-queue", "--broadcast", "--kind", "merge-queue-done",
+		"--data", `{"bookmark": "merge-queue/2026-10-12", "base": "main", "head": "`+main+`", "merged": ["ai/a"], "left-out": []}`, "made")
+	r.mustRun("messages", "send", "--from", "release-manager-1", "--broadcast", "--kind", "release-recommendation",
+		"--data", `{"bookmark": "merge-queue/2026-10-12", "recommend": "move", "summary": "One version, no problems."}`, "move it")
+
+	res := r.mustRun("status")
+
+	for _, part := range []string{
+		"Issues that wait for a human (1)\n  fix-login-bug  open",
+		"add-dark-mode  no-result. A human decides it",
+		"role:engineer  1 (task)",
+		"no live worker: start one",
+		"merge-queue/2026-10-12 on main",
+		"main has it already.",
+		"release manager (release-manager-1, ",
+		"move. One version, no problems.",
+	} {
+		contains(t, res.output, part)
+	}
+}

@@ -89,6 +89,16 @@ func (c *Client) Workers() ([]WorkerStatus, error) {
 	return workers, err
 }
 
+// Pending returns every delivery that waits, oldest first.
+func (c *Client) Pending() ([]Pending, error) {
+	var pending []Pending
+	err := c.call(context.Background(), http.MethodGet, "/pending", nil, &pending)
+	return pending, err
+}
+
+// Address returns the address of the service.
+func (c *Client) Address() string { return c.discovery.Address }
+
 // Log returns the messages after seq since.
 func (c *Client) Log(since int64) ([]Message, error) {
 	var messages []Message
