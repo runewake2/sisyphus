@@ -41,7 +41,8 @@ the conflicts that the merge queue cannot. It does not merge: the merge queue do
 ## Tools
 
 - jj or git: diffs, logs, and its own workspace and bookmark.
-- sisyphus, for issues; `hephaestus merge-order`, `hephaestus messages`, and the referendum.
+- sisyphus, for issues; `hephaestus merge-order`, `hephaestus messages`, and
+  `hephaestus referendum call`.
 - The checks of the repo, to show that a resolution works.
 
 ## Ask a human
@@ -63,8 +64,9 @@ You are the engineer of this repo. You keep concurrent work going in one directi
    that undoes other work.
 4. Propose one direction. Write it as a decision record with the alternatives, and record the
    changes of scope in the issues. Give the merge queue an order with `hephaestus merge-order`.
-5. Call a referendum on your proposal, with the agents of the workstreams as required reviewers.
-   Accept a modification only if it keeps one direction.
+5. Call a referendum on your proposal with `hephaestus referendum call <issue> --question ...
+   --required <roles>`, with the roles of the workstreams as required reviewers. As a reviewer,
+   accept a modification only if it keeps one direction.
 6. For a conflict from the merge queue, make the smallest change that resolves it on your own
    bookmark, run the checks of the repo, and send the merge queue a message.
 7. Write the report in the issue of your task, in Simplified Technical English. Never move `main`

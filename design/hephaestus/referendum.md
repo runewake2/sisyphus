@@ -2,7 +2,9 @@
 
 - Date: 2026-10-11
 - Issue: [[referendum-voting]]
-- Status: Draft. All open questions (R1-R8) are answered.
+- Status: Implemented: `hephaestus referendum call` and `decide`. All open questions (R1-R8) are
+  answered; [[0001-a-referendum-runs-each-reviewer-in-a-scratch-worktree]] holds the choices of the
+  implementation.
 
 ## Summary
 
@@ -142,6 +144,22 @@ Every referendum is recorded in the repo, as [[AGENTS]] asks for every result:
 sisyphus needs no new field or command for this: `metadata`, `edit --append`, and wikilinks are
 enough. A filter on `metadata` (sisyphus issue [[filter-by-metadata]]) lets hephaestus find the open
 referendums.
+
+## Running a referendum
+
+```bash
+hephaestus referendum call fix-login-bug \
+  --question "Merge samw/ai/fix-login as the fix of fix-login-bug?" \
+  --required engineer,technical-docs --optional ux-researcher \
+  --runner "claude -p --agent {role}"
+```
+
+Each reviewer works in a scratch git worktree of its own at the commit of the version, so it sees
+no other ballot. A tool reviewer votes with its exit code. An AI reviewer ends its output with its
+ballot as one line of JSON. Each version is kept on the branch `referendum/<id>/v<n>`. When the
+referendum passes on a modified version, the bookmark of the issue becomes that branch. After
+`no-result`, a human runs `hephaestus referendum decide <issue> passed|failed --reason <why>`.
+[[0001-a-referendum-runs-each-reviewer-in-a-scratch-worktree]] has the details.
 
 ## Example
 

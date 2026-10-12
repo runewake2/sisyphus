@@ -1,16 +1,16 @@
 ---
 title: "Let delegated agents vote on an implementation in a referendum"
-state: open            # open | in-progress | closed. Must match the directory of the file.
+state: in-progress     # open | in-progress | closed. Must match the directory of the file.
 resolution:            # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: large          # small | medium | large | x-large
 tags: [hephaestus, llm] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-11
 closed:                # YYYY-MM-DD. Set this only when state is closed.
-owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
+owner: claude          # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
-bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
-workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
+bookmark: samw/ai/ux-fixes # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
+workspaces: [ux-fixes] # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent: "[[hephaestus/core/delegate-issues-to-agents]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
@@ -30,12 +30,12 @@ Requested by a human on 2026-10-11. One agent of one role judges a change only i
 
 ## Acceptance criteria
 
-- [ ] A decision record answers R1-R8.
-- [ ] hephaestus can call a referendum on an issue with a set of voters, run its rounds, and record each round in the issue.
-- [ ] A referendum has required and non-required reviewers; it passes only when every required reviewer votes yes, and a non-required no is a concern, not a fail.
-- [ ] A modification goes on only when every required reviewer accepts it; it then makes a new version and a new round with every reviewer, and earlier ballots are void.
-- [ ] Reviewers do not see the ballots of other reviewers in the same round.
-- [ ] After the maximum number of rounds, or with no result, a human decides.
+- [x] A decision record answers R1-R8.
+- [x] hephaestus can call a referendum on an issue with a set of voters, run its rounds, and record each round in the issue.
+- [x] A referendum has required and non-required reviewers; it passes only when every required reviewer votes yes, and a non-required no is a concern, not a fail.
+- [x] A modification goes on only when every required reviewer accepts it; it then makes a new version and a new round with every reviewer, and earlier ballots are void.
+- [x] Reviewers do not see the ballots of other reviewers in the same round.
+- [x] After the maximum number of rounds, or with no result, a human decides.
 - [ ] A test run with three role agents on a real bookmark, checked by a human.
 
 ## Out of scope
@@ -54,6 +54,8 @@ Requested by a human on 2026-10-11. One agent of one role judges a change only i
 2026-10-11, from the human: humans or allowed agents may call referendums (R4 in [[referendum]]). The referendum is the solution for coordinating many concurrent agents: [[agent-delegation]] and [[referendum]] now say so, and the engineer role puts its proposals to the agents of the workstreams as a referendum.
 
 2026-10-11, from the human: for now, referendums are recorded as historical records (R3), and a referendum has at most 3 rounds, to try (R5). All open questions of [[referendum]] are now answered; the decision records come with the implementation.
+
+2026-10-12, from claude: implemented `hephaestus referendum call` and `decide` ([[unreleased-referendum-voting]], [[0001-a-referendum-runs-each-reviewer-in-a-scratch-worktree]]). The tests run the procedure with a scripted voter, and the command end to end with a tool reviewer and two fake AI reviewers. The last criterion is still open: a test run with three real role agents on a real bookmark costs tokens, and a human must check it. The issue stays in progress until then.
 
 ## Resolution
 
