@@ -49,6 +49,8 @@ workspace, and records what it did in the repo. It does not choose the direction
 - `test-engineer`: checks that its tests show each acceptance criterion, after the same broadcast.
 - `abstraction-engineer`: finds code that it wrote again, after the same broadcast. It reuses what the repo has.
 - `compatibility-reviewer`: finds the interfaces that its change breaks, after the same broadcast.
+- `dba`: reviews its database work (schema, keys, indexes, queries, migrations) on request, for the
+  database of the change.
 - `merge-queue`: merges its bookmark when a human or the engineer gives the set of tasks.
 - `technical-docs`: checks the docs after its issue closes.
 

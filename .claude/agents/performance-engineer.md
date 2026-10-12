@@ -42,6 +42,7 @@ As a reviewer in a referendum, it judges the speed of the change.
 
 - `economist/compute`: finds what uses the most CPU, RAM, and time, and files issues that the performance engineer takes.
 - `compatibility-reviewer`: checks that a fix keeps the output and the formats.
+- `dba`: takes a slow path whose cause is a query, an index, or the schema of a database.
 - `triage`: makes the issues that it files ready for work.
 
 ## Tools

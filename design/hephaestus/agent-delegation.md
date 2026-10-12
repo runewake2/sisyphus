@@ -287,6 +287,10 @@ Each of these is a separate issue, with its own design before the work.
   correct, in Simplified Technical English. It reads only the produced artifacts (the diff, the code,
   and the commit descriptions), never the issue or the design, so that it reviews as a later reader
   does. The implementer and the engineer ask it for a review in a loop, up to three times.
+- **Database roles** ([[dba-roles]]): a family of AI roles, one for each database (`dba/sqlite`,
+  `dba/postgres`, `dba/meilisearch`), that make the use of the database correct and fast: keys,
+  indexes, query patterns, data consistency, and safe migrations, with evidence before and after,
+  and never on a database that a person or a service uses.
 - **Technical docs** ([[technical-docs-agent]]): for each issue that closes, checks that the
   command pages, the README, and the guides still agree with the behavior (run the examples,
   compare the flags), fixes the docs or files an issue, and writes the page for a new feature. It
@@ -319,6 +323,7 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 | [[roles/dependency-check/README]]: `dependency-check/<ecosystem>` | tool | a request, a schedule, a `bookmark-ready` broadcast | no | `security-researcher` | the dependencies of its ecosystem: `golang`, `javascript`, `dotnet`, `java`, `docker`, and `github-actions` |
 | [[roles/release-manager]] | ai | a request, a `merge-queue-done` broadcast | no | a human | none: it checks a line of the merge queue for a human |
 | [[roles/performance-engineer]] | ai | a request | no | a human | the speed of the change on large repos |
+| [[roles/dba/README]]: `dba/<database>` | ai | a request, a schedule | no | a human | the database work of the change: keys, indexes, queries, consistency, and migrations, for `sqlite`, `postgres`, or `meilisearch` |
 | [[roles/operations-auditor]] | ai | a request, a schedule | no | a human | none: it reviews how the roles work |
 | [[roles/model-eval/role]]: `model-eval` | tool | a request of a human | no | a human | none: it runs the task suite with one local model |
 | [[roles/economist/README]]: `economist/tokens`, `economist/cloud`, `economist/compute` | ai | a request, a schedule | no | a human | the cost of the change against a budget: AI tokens, cloud services, or CPU, RAM, GPU, and storage |
