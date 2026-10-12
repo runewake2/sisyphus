@@ -39,6 +39,12 @@ itself.
   only listed here, for a human.
 - A `result` message to the sender.
 
+## Works with
+
+- `triage`: makes each new issue ready. The project manager reviews the whole tracker.
+- `operations-auditor`: proposes changes to the roles. The project manager proposes changes to the issues.
+- `implementer`: does the issues that a human delegates from its proposals.
+
 ## Tools
 
 - sisyphus (CLI or MCP), for every read and change of an issue.

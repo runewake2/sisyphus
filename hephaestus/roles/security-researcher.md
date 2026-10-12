@@ -38,6 +38,12 @@ referendum, it judges the security of the change.
   what it did not review.
 - A ballot in a referendum, in the scope of security.
 
+## Works with
+
+- `dependency-check`: sends it each dependency check that fails.
+- `privacy-reviewer`: asks what data about people to keep. The security researcher asks how the data is protected.
+- `triage`: makes the issues that it files ready for work.
+
 ## Tools
 
 - Read the code and search it. The checklist:

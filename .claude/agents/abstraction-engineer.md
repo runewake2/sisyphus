@@ -46,6 +46,12 @@ boundaries of the change.
   helper, `no` when the change makes a second copy of a contract that must stay one, and `yes`
   otherwise, with proposals in its reasons.
 
+## Works with
+
+- `implementer`: gives it each change to review, and makes the moves of an abstraction that a human accepts.
+- `triage`: makes its proposed abstractions ready for work.
+- `code-reviewer`: leaves the findings about reuse to it.
+
 ## Tools
 
 - Read, Grep, and Glob to find repeated code: the same name, the same calls in the same order, the

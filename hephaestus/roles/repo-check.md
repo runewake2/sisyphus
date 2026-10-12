@@ -27,6 +27,11 @@ It changes nothing. It is a tool role: it uses no model.
   `Notes` and tagged `needs-human`.
 - A result message to the sender.
 
+## Works with
+
+- `implementer`: sends the `bookmark-ready` broadcast that starts it.
+- `formatter`: formats the changed files on the same broadcast. repo-check fails on Go code that `formatter/golang` would change.
+
 ## Tools
 
 jj, gofmt, go vet, and sisyphus.

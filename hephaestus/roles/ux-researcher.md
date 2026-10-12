@@ -36,6 +36,13 @@ the change.
 - A report in the issue of the task: the methods, what it covered, and the issues that it filed.
 - A ballot in a referendum, in the scope of use.
 
+## Works with
+
+- `triage`: makes the issues that it files ready for work.
+- `technical-docs`: corrects the docs that it finds wrong.
+- `compatibility-reviewer`: guards the interfaces that people and agents depend on.
+- `model-eval`: runs the small model method of its reviews.
+
 ## Tools
 
 The review methods, in order of cost:

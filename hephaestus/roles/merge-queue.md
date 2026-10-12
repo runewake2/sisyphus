@@ -33,6 +33,12 @@ does nothing else ([[agent-delegation#Merge queue]]).
 - A report in the `Notes` of each task: its place in the order, what was renumbered, or why its
   work was left out.
 
+## Works with
+
+- `implementer`: makes the bookmarks that it merges.
+- `engineer`: gets each conflict that it leaves out, and resolves it on a bookmark of its own.
+- `release-manager`: gets its `merge-queue-done` broadcast, and checks the line for the human who moves `main`.
+
 ## Tools
 
 - `hephaestus merge-queue`, which uses `merge-order`, `version assign`, and `decisions renumber`.

@@ -40,6 +40,7 @@ The body has a title, `# <Role name>`, and these sections, none of them empty:
 | `## Charter` | What the role does, in one paragraph, and what it does not do. The first paragraph is the summary of `hephaestus roles`. |
 | `## Inputs` | What the role gets: the tasks, the messages, and the repo state that it reads. |
 | `## Outputs` | What the role makes: changes, bookmarks, issues, notes, and messages. |
+| `## Works with` | Optional: how the role works with the other roles, one item for each, which starts with the role or family in backticks: who gives it work, who gets its work, and where the scope of each ends. `hephaestus roles` checks that each names a role or family that exists, and an AI role gets the section with its instructions. |
 | `## Tools` | The commands and tools that the role may use. |
 | `## Ask a human` | The points where the role must stop and ask, as the rules of [[agent-delegation#Rules for every role]] ask. |
 | `## Prompt` | An AI role only: the instructions of the model, in addition to the sections above. |

@@ -114,7 +114,8 @@ func TestCollidingDecisionRecordsAreRenumbered(t *testing.T) {
 func TestAConflictLeavesABookmarkOut(t *testing.T) {
 	r := newMergeRepo(t, "left-task-work", "right-task-work")
 	startQueue(t, r)
-	r.mustRun("messages", "receive", "--as", "engineer-1", "--role", "engineer") // the engineer listens
+	r.mustRun("messages", "receive", "--as", "engineer-1", "--role", "engineer", "--kind", "conflict") // the engineer listens
+	r.mustRun("messages", "receive", "--as", "release-1", "--role", "release-manager", "--kind", "merge-queue-done")
 	r.branch("ai/left", "main", "2026-10-09T10:00:00", map[string]string{"README.md": "# Left\n"})
 	r.branch("ai/right", "main", "2026-10-10T10:00:00", map[string]string{"README.md": "# Right\n"})
 	r.task("left-task-work", "ai/left")
@@ -128,10 +129,22 @@ func TestAConflictLeavesABookmarkOut(t *testing.T) {
 	equalStrings(t, []string{"README.md"}, report.LeftOut[0].Files)
 	equal(t, "# Left", r.gitOut("show", "mq/test:README.md"))
 	contains(t, r.showIssue("right-task-work")["body"].(string), "the merge queue left the work of this task (ai/right) out of mq/test")
-	conflict := receivedJSON(t, r, "--as", "engineer-1", "--role", "engineer")
+	conflict := receivedJSON(t, r, "--as", "engineer-1", "--role", "engineer", "--kind", "conflict")
 	equal(t, 1, len(conflict))
 	equal(t, "conflict", conflict[0].Kind)
 	equal(t, "right-task-work", conflict[0].Issue)
+	done := receivedJSON(t, r, "--as", "release-1", "--role", "release-manager", "--kind", "merge-queue-done")
+	equal(t, 1, len(done))
+	equal(t, "merge-queue-done", done[0].Kind)
+	var data struct {
+		Bookmark string   `json:"bookmark"`
+		LeftOut  []string `json:"left-out"`
+	}
+	if err := json.Unmarshal(done[0].Data, &data); err != nil {
+		t.Fatal(err)
+	}
+	equal(t, "mq/test", data.Bookmark)
+	equalStrings(t, []string{"ai/right"}, data.LeftOut)
 }
 
 func TestFailedChecksLeaveABookmarkAndItsDependentsOut(t *testing.T) {

@@ -35,6 +35,11 @@ them.
   tagged `needs-human`.
 - A ballot in a referendum: `yes`, or `modify` with the formatted files.
 
+## Works with
+
+- `implementer`: sends the `bookmark-ready` broadcast that starts it, and squashes the formatting into its change.
+- `repo-check`: checks the format of the Go code. The formatter fixes what repo-check would report.
+
 ## Tools
 
 `format.sh` in the directory of this role file: prettier, on the files of `hephaestus files --changed`.

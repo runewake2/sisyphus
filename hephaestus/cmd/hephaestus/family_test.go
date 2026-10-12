@@ -117,3 +117,16 @@ func execCommandIn(dir, name string, args ...string) *exec.Cmd {
 	cmd.Dir = dir
 	return cmd
 }
+
+func TestWorksWithMustNameRolesThatExist(t *testing.T) {
+	r := newTrackerRepo(t)
+	withPartners := strings.Replace(toolRoleFile("formatter/upper", "true", "", ""), "## Tools", "## Works with\n\n- `lint-runner`: runs the linters.\n- `formatter`: the family.\n- `nobody`: is not a role.\n\n## Tools", 1)
+	r.write("hephaestus/roles/formatter/upper/role.md", withPartners)
+
+	res := r.run("roles")
+
+	equal(t, 1, res.exit)
+	contains(t, res.errors, `formatter/upper/role.md: the section "## Works with" names "nobody", which is no role or family of roles`)
+	notContains(t, res.errors, `"lint-runner"`)
+	notContains(t, res.errors, `names "formatter"`)
+}

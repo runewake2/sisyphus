@@ -37,6 +37,11 @@ that the change works.
 - A ballot in a referendum, in the scope of the tests: `modify` with the missing tests, or `no` when
   a criterion is not met.
 
+## Works with
+
+- `implementer`: gives it the bookmark, and fixes the code when a new test fails.
+- `code-reviewer`: reviews the code. The test engineer reviews the tests.
+
 ## Tools
 
 - The test commands of the repo: `go test ./...` in both modules.

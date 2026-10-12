@@ -39,6 +39,14 @@ the conflicts that the merge queue cannot. It does not merge: the merge queue do
 - For a conflict of the merge queue: a change on its own bookmark, based on the bookmarks in
   conflict, that resolves the conflict, and a message to the merge queue to try again.
 
+## Works with
+
+- `merge-queue`: sends it each conflict that needs judgment. It sends the merge queue a message when the conflict is resolved.
+- `implementer`: does the work of the issues whose scope it changes.
+- `technical-docs/comments`: reviews the comments and the description of each conflict resolution.
+- `code-reviewer`: is a required reviewer of its referendums on code.
+- `compatibility-reviewer`: is a required reviewer of its referendums that change an interface.
+
 ## Tools
 
 - jj or git: diffs, logs, and its own workspace and bookmark.

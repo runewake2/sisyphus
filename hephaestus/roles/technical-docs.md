@@ -34,6 +34,12 @@ reviewer in a referendum, it judges the docs of the change.
   it changed, and what it filed.
 - A ballot in a referendum, in the scope of the docs.
 
+## Works with
+
+- `implementer`: closes the issue whose `issue-closed` broadcast starts it.
+- `technical-docs/comments`: reviews the code comments and the commit messages. Technical docs reviews the docs pages.
+- `ux-researcher`: finds the problems of the docs in use. Technical docs corrects them.
+
 ## Tools
 
 - The commands of the change, built from its bookmark, to run each example of the docs.

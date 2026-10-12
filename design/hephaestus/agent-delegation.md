@@ -314,22 +314,41 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 | [[roles/technical-docs/comments/role]]: `technical-docs/comments` | ai | a request from the implementer or the engineer | no | a human | the code comments and commit messages of the change, read with no knowledge of the solution |
 | [[roles/security-researcher]] | ai | a request | no | a human | the security of the change: secrets, files, input, services, dependencies |
 | [[roles/privacy-reviewer]] | ai | a request | no | a human | the data about people that the change collects, keeps, shows, or sends |
+| [[roles/triage]] | ai | a request, a schedule | no | a human | none: it makes new issues ready, and proposes priority and role |
+| [[roles/compatibility-reviewer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | the interfaces that people, agents, and programs depend on: commands, flags, JSON, formats, MCP tools |
+| [[roles/dependency-check/role]]: `dependency-check` | tool | a request, a schedule, a `bookmark-ready` broadcast | no | `security-researcher` | known vulnerabilities and the integrity of the Go modules |
+| [[roles/release-manager]] | ai | a request, a `merge-queue-done` broadcast | no | a human | none: it checks a line of the merge queue for a human |
+| [[roles/performance-engineer]] | ai | a request | no | a human | the speed of the change on large repos |
+| [[roles/operations-auditor]] | ai | a request, a schedule | no | a human | none: it reviews how the roles work |
+| [[roles/model-eval/role]]: `model-eval` | tool | a request of a human | no | a human | none: it runs the task suite with one local model |
 | [[roles/economist/README]]: `economist/tokens`, `economist/cloud`, `economist/compute` | ai | a request, a schedule | no | a human | the cost of the change against a budget: AI tokens, cloud services, or CPU, RAM, GPU, and storage |
 
-The path of a piece of work:
+The path of a piece of work, and the role that hands it to the next (each role file tells its part
+in its section `Works with`, which `hephaestus roles` checks):
 
-1. A human or the project manager delegates an issue to a role (`hephaestus delegate`), normally
-   to `implementer`, and a worker of the role does it on its own bookmark.
-2. The formatters and `repo-check` check the bookmark, and `code-reviewer` and `test-engineer` review
-   it. For a change that more than one scope judges, a human or the engineer calls a referendum,
-   with the reviewers of those scopes: normally `code-reviewer` is a required reviewer.
-3. The merge queue makes a linear history from the finished tasks, with their versions. A conflict
-   that needs judgment goes to the engineer, who resolves it on a bookmark of its own.
-4. A human checks the line of the merge queue, and moves `main`.
-5. The close of each issue starts the technical docs agent. The project manager, the UX
-   researcher, the security researcher, and the privacy reviewer review the issues and the product
-   on request, and file what they find. The economists report the cost of the work against its
-   budget on request or on a schedule.
+1. **Intake.** A person, a reviewer, or another tracker files an issue. `triage` makes it ready for
+   work: no duplicate, in its area, with acceptance criteria that a worker can check, and a
+   proposed priority and role. A human delegates it (`hephaestus delegate`), normally to
+   `implementer`.
+2. **Work.** A worker of `implementer` does it on its own bookmark. It has its comments and commit
+   descriptions reviewed by `technical-docs/comments`, with no context, in a loop of at most three
+   reviews.
+3. **Review.** The implementer broadcasts `bookmark-ready` before it closes the issue. One worker of
+   each listening role records its result in the Notes of the issue: the formatters, `repo-check`,
+   and `dependency-check` (a failure goes to `security-researcher`), and `code-reviewer`,
+   `test-engineer`, `abstraction-engineer`, and `compatibility-reviewer`. For a change that more
+   than one scope judges, a human or the engineer calls a referendum with the reviewers of those
+   scopes.
+4. **Merge.** The merge queue makes a linear history from the finished tasks, with their versions. A
+   conflict that needs judgment goes to `engineer`, which resolves it and has the resolution
+   reviewed by `technical-docs/comments`. The merge queue broadcasts `merge-queue-done`.
+5. **Release.** `release-manager` checks the line, and writes the summary that a human reads before
+   moving `main`. Only a human moves `main`.
+6. **Docs.** The close of each issue (`issue-closed`) starts `technical-docs`.
+7. **Oversight.** On request or on a schedule, `project-manager` reviews the tracker,
+   `operations-auditor` reviews how the roles work, and the economists report cost against a
+   budget. `ux-researcher`, `security-researcher`, `privacy-reviewer`, `performance-engineer`, and
+   `model-eval` review the product. Their findings are issues, which go back to step 1.
 
 Humans keep the decisions that no role makes: they move `main`, accept the proposals of the
 project manager, decide a failed referendum, and take each issue tagged `needs-human`.

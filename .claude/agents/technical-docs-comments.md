@@ -44,6 +44,12 @@ its corrections, and it reviews again. It changes comments only, never code or b
   fixes, `no` for a commit description that is wrong, and `yes` otherwise, with a proposal for
   style only in its reasons.
 
+## Works with
+
+- `implementer`: asks it for a review, and applies its fixes and descriptions.
+- `engineer`: asks it for a review of each conflict resolution.
+- `technical-docs`: reviews the docs pages. The comment reviewer reviews only comments and commit messages.
+
 ## Tools
 
 - jj or git, to read the change and to make its own bookmark.

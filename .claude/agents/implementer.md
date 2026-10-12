@@ -40,6 +40,19 @@ workspace, and records what it did in the repo. It does not choose the direction
 - When the message queue runs, a `bookmark-ready` broadcast with the issue and the bookmark, before
   the close, so that `repo-check`, the formatters, and the reviewers can start.
 
+## Works with
+
+- `triage`: makes the issues that it gets ready for work, and proposes their delegation to it.
+- `technical-docs/comments`: reviews its comments and commit descriptions with no context, in a loop of at most three reviews.
+- `formatter`: formats the changed files of each language after its `bookmark-ready` broadcast.
+- `repo-check`: runs the checks of the repo on its bookmark after the same broadcast.
+- `code-reviewer`: reviews its code after the same broadcast. It fixes each must-fix finding.
+- `test-engineer`: checks that its tests show each acceptance criterion, after the same broadcast.
+- `abstraction-engineer`: finds code that it wrote again, after the same broadcast. It reuses what the repo has.
+- `compatibility-reviewer`: finds the interfaces that its change breaks, after the same broadcast.
+- `merge-queue`: merges its bookmark when a human or the engineer gives the set of tasks.
+- `technical-docs`: checks the docs after its issue closes.
+
 ## Tools
 
 - jj or git, for its own workspace and bookmark.

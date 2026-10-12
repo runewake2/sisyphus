@@ -27,6 +27,11 @@ var (
 	Triggers = []string{"request", "close", "schedule"}
 	// Sections are the sections that every role file has.
 	Sections = []string{"Charter", "Inputs", "Outputs", "Tools", "Ask a human"}
+	// WorksWith is the optional section that tells how the role works with the other roles: one item
+	// for each role or family, which the item starts with in backticks.
+	WorksWith = "Works with"
+
+	worksWithItem = regexp.MustCompile("^- `([^`]+)`")
 
 	namePattern    = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 	rolePattern    = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$`)
@@ -117,6 +122,14 @@ func Load(dir string) ([]Role, error) {
 				problems = append(problems, fmt.Sprintf("%s: on-failure names the role %q, which has no role file. Use needs-human or a role.", role.File(), role.OnFailure))
 			case roles[target].Kind != AI:
 				problems = append(problems, fmt.Sprintf("%s: on-failure names %q, which is not an AI role. Work that a tool cannot do goes to an AI role or a human.", role.File(), role.OnFailure))
+			}
+		}
+	}
+	for _, role := range roles {
+		for _, partner := range role.Partners() {
+			known := slices.ContainsFunc(roles, func(r Role) bool { return r.Name == partner || strings.HasPrefix(r.Name, partner+"/") })
+			if !known {
+				problems = append(problems, fmt.Sprintf("%s: the section %q names %q, which is no role or family of roles", role.File(), "## "+WorksWith, partner))
 			}
 		}
 	}
@@ -307,6 +320,17 @@ func read(dir, file string) (Role, []string) {
 	}
 	role.Charter = firstParagraph(role.sections["Charter"])
 	return role, problems
+}
+
+// Partners returns the roles and families that the section Works with names, in order.
+func (r Role) Partners() []string {
+	var partners []string
+	for _, line := range strings.Split(r.sections[WorksWith], "\n") {
+		if m := worksWithItem.FindStringSubmatch(line); m != nil {
+			partners = append(partners, m[1])
+		}
+	}
+	return partners
 }
 
 // Section returns the text of a section of the role file.

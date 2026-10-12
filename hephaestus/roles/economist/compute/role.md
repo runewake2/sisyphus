@@ -38,6 +38,12 @@ for one result. The machines are shared, so it runs one heavy measurement at a t
   check that runs twice, a cache, a log or branches to compact or remove, or a smaller model.
 - A ballot in a referendum, in the scope of compute resources.
 
+## Works with
+
+- `performance-engineer`: takes the issues about slow commands that it files.
+- `model-eval`: runs the local models whose GPU, CPU, and RAM it measures.
+- `triage`: makes the savings that it files ready for work.
+
 ## Tools
 
 - `/usr/bin/time -v`, `nproc`, `free`, `df`, `du`, `nvidia-smi`, and `ps`.

@@ -39,6 +39,11 @@ role, a model, or a runner: it proposes. It follows the rules of every economist
   smaller `model` for a role, prompt caching, fewer reviewers or rounds, or a shorter prompt.
 - A ballot in a referendum, in the scope of token cost.
 
+## Works with
+
+- `operations-auditor`: reports how each role works. The token economist reports what each costs.
+- `triage`: makes the savings that it files ready for work.
+
 ## Tools
 
 - `hephaestus messages log`, `hephaestus roles --json`, and the files of `referendums/`, to count

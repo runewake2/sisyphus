@@ -40,6 +40,11 @@ reads. For a change, it estimates the cost from the price list. It never changes
 - For a change: an estimate of its monthly cost, with the prices and the assumptions.
 - A ballot in a referendum, in the scope of cloud cost.
 
+## Works with
+
+- `triage`: makes the savings that it files ready for work.
+- `economist/compute`: analyzes the machines of the repo. The cloud economist analyzes the services that the repo pays for.
+
 ## Tools
 
 - The cost command line tools of the provider, with a read-only profile that a human gives: for AWS

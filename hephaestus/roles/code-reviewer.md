@@ -37,6 +37,13 @@ is normally a required reviewer.
 - An issue for each problem that the change did not cause but that the review found.
 - A ballot in a referendum, in the scope of the code: `no` for a `must fix` finding.
 
+## Works with
+
+- `implementer`: gives it the bookmark to review, and fixes each must-fix finding.
+- `test-engineer`: reviews the tests in depth. The code reviewer leaves the map of criteria to tests to it.
+- `abstraction-engineer`: reviews reuse. The code reviewer leaves findings about reuse to it.
+- `engineer`: calls referendums with the code reviewer as a required reviewer.
+
 ## Tools
 
 - jj or git, to read the change and its history.

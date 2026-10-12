@@ -38,6 +38,11 @@ privacy of the change.
   its flow.
 - A ballot in a referendum, in the scope of privacy.
 
+## Works with
+
+- `security-researcher`: asks how the data is protected. The privacy reviewer asks whether to keep the data at all.
+- `triage`: makes the issues that it files ready for work.
+
 ## Tools
 
 - Read the code and search it. The questions for each kind of data:

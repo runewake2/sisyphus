@@ -104,6 +104,7 @@ func mergeQueueCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 				importer.Run()
 			}
 			recordLeftOut(cmd, w, r, report, conflictsTo)
+			announce(cmd, r, report)
 			if asJSON {
 				return writeJSON(cmd.OutOrStdout(), report)
 			}
@@ -170,6 +171,31 @@ func recordLeftOut(cmd *cobra.Command, w workspace, r repo.Repo, report mergeque
 		if _, err := client.Send(mq.Message{From: "merge-queue", To: mq.Address{Role: conflictsTo}, Kind: "conflict", Issue: first(left.Tasks), Body: body, Data: data}); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: could not send the conflict of %s to %s: %v\n", left.Bookmark, conflictsTo, err)
 		}
+	}
+}
+
+// announce broadcasts merge-queue-done for a run that made a line, so that the roles that check a
+// line before a human moves the base, for example the release manager, can start. With no message
+// queue, it does nothing.
+func announce(cmd *cobra.Command, r repo.Repo, report mergequeue.Report) {
+	if !report.Created {
+		return
+	}
+	client, err := mq.Connect(r.SharedDir())
+	if err != nil {
+		return
+	}
+	merged, leftOut := []string{}, []string{}
+	for _, m := range report.Merged {
+		merged = append(merged, m.Bookmark)
+	}
+	for _, l := range report.LeftOut {
+		leftOut = append(leftOut, l.Bookmark)
+	}
+	data, _ := json.Marshal(map[string]any{"bookmark": report.Name, "base": report.Base, "head": report.Head, "merged": merged, "left-out": leftOut})
+	body := fmt.Sprintf("The merge queue made %s on %s: %d bookmarks merged, %d left out. A human checks it before %s moves.", report.Name, report.Base, len(merged), len(leftOut), report.Base)
+	if _, err := client.Send(mq.Message{ID: "merge-queue-done-" + report.Name, From: "merge-queue", To: mq.Address{Broadcast: true}, Kind: "merge-queue-done", Body: body, Data: data}); err != nil {
+		fmt.Fprintf(cmd.ErrOrStderr(), "Warning: could not broadcast merge-queue-done for %s: %v\n", report.Name, err)
 	}
 }
 

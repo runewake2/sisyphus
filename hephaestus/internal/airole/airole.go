@@ -13,7 +13,7 @@ import (
 )
 
 // sections are the sections of a role file that go into the instructions of the model, in order.
-var sections = []string{"Charter", "Inputs", "Outputs", "Tools", "Ask a human", "Prompt"}
+var sections = []string{"Charter", "Inputs", "Outputs", "Works with", "Tools", "Ask a human", "Prompt"}
 
 // rules are the rules for every role of [[agent-delegation#Rules for every role]], as the model
 // must follow them.
