@@ -57,6 +57,8 @@ Requested by a human on 2026-10-11. One agent of one role judges a change only i
 
 2026-10-12, from claude: implemented `hephaestus referendum call` and `decide` ([[unreleased-referendum-voting]], [[0001-a-referendum-runs-each-reviewer-in-a-scratch-worktree]]). The tests run the procedure with a scripted voter, and the command end to end with a tool reviewer and two fake AI reviewers. The last criterion is still open: a test run with three real role agents on a real bookmark costs tokens, and a human must check it. The issue stays in progress until then.
 
+2026-10-12, from the human: all modifications from reviewers count as one round. If 5 agents return changes, all 5 are voted on to accept or decline, and round 2 starts after all 5 are approved or denied. Implemented: each modification goes to the gate alone; the accepted ones are cherry-picked in the order of the reviewers into one new version; one that conflicts goes back to its author.
+
 ## Resolution
 
 <Complete this section when you close the issue.

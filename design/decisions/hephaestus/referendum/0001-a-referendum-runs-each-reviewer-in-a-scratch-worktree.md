@@ -47,8 +47,13 @@ answers left open.
   become its modification: hephaestus commits what is not committed yet. A modification must be a
   linear line of commits on the version. A `modify` ballot with no change and no issue edit counts as
   `no`. A required reviewer that abstains also counts as `no` (R6).
+- **One round of modifications** (from the human, 2026-10-12). Every modification of a round goes to
+  the gate alone, against the version of the round. Then the accepted ones are applied in the order
+  of the reviewers: the commits of each are cherry-picked on the ones before it, in a scratch
+  worktree. One that conflicts, or that edits a section of the issue that an earlier one edits, is
+  left out and goes back to its author. The others make one new version for the next round.
 - **Versions are branches.** Each version is kept on the branch `referendum/<id>/v<n>`. A new
-  version gets the accepted modification: new commits, an issue edit, or both. Issue edits are
+  version gets the accepted modifications of its round: new commits, issue edits, or both. Issue edits are
   applied to the issue only when the referendum passes, because R7 discards an edited version that
   fails. When the referendum passes on a modified version, the bookmark of the issue becomes the
   branch of that version, so the merge queue takes the accepted implementation.

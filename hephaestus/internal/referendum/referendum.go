@@ -72,9 +72,10 @@ type Version struct {
 	Commit string `json:"commit"`
 	// Ref is the git branch that keeps the commit, for example referendum/<id>/v2.
 	Ref string `json:"ref,omitempty"`
-	// Modification is what made this version from the one before it. v1 has none.
-	Modification *Modification `json:"modification,omitempty"`
-	IssueEdits   []IssueEdit   `json:"issue-edits,omitempty"`
+	// Modifications are what made this version from the one before it, in the order that they were
+	// applied. v1 has none.
+	Modifications []Modification `json:"modifications,omitempty"`
+	IssueEdits    []IssueEdit    `json:"issue-edits,omitempty"`
 }
 
 // Ballot is the vote of one reviewer in one round.
@@ -108,8 +109,8 @@ type Round struct {
 	Version int      `json:"version"`
 	Ballots []Ballot `json:"ballots"`
 	Gates   []Gate   `json:"gates,omitempty"`
-	// Returned are the authors of modifications that did not go to the gate, because an earlier one
-	// made a new version. They can submit them again against it.
+	// Returned are the authors of modifications that the gate accepted, but that conflict with an
+	// earlier accepted one of the round. They can submit them again against the new version.
 	Returned []string `json:"returned,omitempty"`
 	// Outcome tells what the round led to, in one sentence.
 	Outcome string `json:"outcome"`
@@ -160,6 +161,10 @@ type Voter interface {
 	Ballot(ctx context.Context, r *Referendum, reviewer Reviewer, v Version) Ballot
 	// Gate asks one required reviewer to accept or reject a modification of a version.
 	Gate(ctx context.Context, r *Referendum, reviewer Reviewer, v Version, m Modification) GateVote
+	// Combine applies the implementation changes of modifications of v in order, each on the ones
+	// before it, and returns the head and the indexes of the modifications that conflict and are left
+	// out. Each modification has a Commit.
+	Combine(r *Referendum, v Version, mods []Modification) (string, []int, error)
 	// NewVersion keeps the commit of a new version, and returns its ref.
 	NewVersion(r *Referendum, v Version) (string, error)
 }
@@ -247,14 +252,14 @@ func Run(ctx context.Context, r *Referendum, voter Voter, o Options) error {
 			return finish(NoResult, "Not every reviewer gave a valid ballot, so a human decides. "+strings.Join(missing, " "))
 		}
 
-		// The modifications go to the gate one at a time, in the order of the reviewers (R2).
-		var accepted *Modification
+		// Every modification of the round goes to the gate, each alone and against this version, in
+		// the order of the reviewers (R2). The next round starts only after every one is accepted or
+		// rejected.
+		required := map[string]bool{}
+		var accepted []Modification
 		for _, b := range current.Ballots {
+			required[b.Role] = b.Required
 			if b.Vote != Modify || b.Change == nil {
-				continue
-			}
-			if accepted != nil {
-				current.Returned = append(current.Returned, b.Role)
 				continue
 			}
 			gate := Gate{Modification: *b.Change, Votes: gateVotes(ctx, r, voter, version, *b.Change, o.Parallel)}
@@ -273,8 +278,7 @@ func Run(ctx context.Context, r *Referendum, voter Voter, o Options) error {
 				return finish(NoResult, "Not every required reviewer gave a valid vote at the gate, so a human decides. "+strings.Join(gateErrors, " "))
 			}
 			if gate.Accepted {
-				m := gate.Modification
-				accepted = &m
+				accepted = append(accepted, gate.Modification)
 			} else if !b.Required {
 				r.Concerns = append(r.Concerns, fmt.Sprintf("%s (round %d): the gate rejected its modification: %s", b.Role, number, oneLine(b.Change.Summary)))
 			}
@@ -290,23 +294,29 @@ func Run(ctx context.Context, r *Referendum, voter Voter, o Options) error {
 			}
 		}
 
-		if accepted != nil {
-			next := Version{Number: version.Number + 1, Commit: version.Commit, Modification: accepted, IssueEdits: append([]IssueEdit(nil), version.IssueEdits...)}
-			if accepted.Commit != "" {
-				next.Commit = accepted.Commit
-			}
-			if accepted.Edit != nil {
-				next.IssueEdits = append(next.IssueEdits, *accepted.Edit)
-			}
-			ref, err := voter.NewVersion(r, next)
+		// The accepted modifications make one new version together, and every reviewer votes on it.
+		if len(accepted) > 0 {
+			next, conflicts, err := combine(r, voter, version, accepted)
 			if err != nil {
 				return err
 			}
-			next.Ref = ref
-			r.Versions = append(r.Versions, next)
-			current.Outcome = fmt.Sprintf("The gate accepted the modification of %s: v%d. Every reviewer votes again on it.", accepted.Author, next.Number)
-			emit(Event{Kind: "round", Round: current})
-			continue
+			for _, m := range conflicts {
+				current.Returned = append(current.Returned, m.Author)
+				if !required[m.Author] {
+					r.Concerns = append(r.Concerns, fmt.Sprintf("%s (round %d): the gate accepted its modification, but it conflicts with an earlier one: %s", m.Author, number, oneLine(m.Summary)))
+				}
+			}
+			if next != nil {
+				ref, err := voter.NewVersion(r, *next)
+				if err != nil {
+					return err
+				}
+				next.Ref = ref
+				r.Versions = append(r.Versions, *next)
+				current.Outcome = fmt.Sprintf("The gate accepted the %s of %s: v%d. Every reviewer votes again on it.", plural(len(next.Modifications), "modification", "modifications"), authors(next.Modifications), next.Number)
+				emit(Event{Kind: "round", Round: current})
+				continue
+			}
 		}
 
 		// The count (R1): every required yes passes, one required no fails.
@@ -343,6 +353,75 @@ func Run(ctx context.Context, r *Referendum, voter Voter, o Options) error {
 			emit(Event{Kind: "round", Round: current})
 		}
 	}
+}
+
+// combine makes the next version from the accepted modifications of v, in order. A modification that
+// conflicts with an earlier one, in the implementation or in the same section of the issue, is left
+// out and returned. With no modification left, there is no next version.
+func combine(r *Referendum, voter Voter, v Version, accepted []Modification) (*Version, []Modification, error) {
+	var conflicts, kept []Modification
+	sections := map[string]bool{}
+	for _, m := range accepted {
+		if m.Edit != nil {
+			key := strings.ToLower(strings.TrimSpace(m.Edit.Section))
+			if sections[key] {
+				conflicts = append(conflicts, m)
+				continue
+			}
+			sections[key] = true
+		}
+		kept = append(kept, m)
+	}
+	var withCommit []Modification
+	var at []int
+	for i, m := range kept {
+		if m.Commit != "" {
+			withCommit = append(withCommit, m)
+			at = append(at, i)
+		}
+	}
+	head := v.Commit
+	left := map[int]bool{}
+	if len(withCommit) > 0 {
+		var failed []int
+		var err error
+		if head, failed, err = voter.Combine(r, v, withCommit); err != nil {
+			return nil, nil, err
+		}
+		for _, i := range failed {
+			left[at[i]] = true
+		}
+	}
+	next := Version{Number: v.Number + 1, Commit: head, IssueEdits: append([]IssueEdit(nil), v.IssueEdits...)}
+	for i, m := range kept {
+		if left[i] {
+			conflicts = append(conflicts, m)
+			continue
+		}
+		next.Modifications = append(next.Modifications, m)
+		if m.Edit != nil {
+			next.IssueEdits = append(next.IssueEdits, *m.Edit)
+		}
+	}
+	if len(next.Modifications) == 0 {
+		return nil, conflicts, nil
+	}
+	return &next, conflicts, nil
+}
+
+func authors(mods []Modification) string {
+	var names []string
+	for _, m := range mods {
+		names = append(names, m.Author)
+	}
+	return strings.Join(names, ", ")
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
 }
 
 // ballots asks every reviewer for its ballot on v, at the same time, and returns them in the order

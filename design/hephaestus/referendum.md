@@ -69,10 +69,11 @@ implementation. A referendum is hephaestus work. sisyphus only stores the issue 
      modification: a change to the implementation (new changes on the bookmark), or to the text of
      the issue (for example its acceptance criteria), and the reason.
    - `abstain`: only a non-required reviewer, when nothing of the change is in its scope.
-5. **Modifications.** When the round has at least one `modify`, the modifications go through the
-   gate first ([[#Modifications]]). When the required reviewers accept one, it makes a new version,
-   and a new round starts with every reviewer on it: the larger vote. All ballots of the earlier
-   round are void, also the `yes` ballots: they were for other contents.
+5. **Modifications.** When the round has at least one `modify`, every modification of the round
+   goes through the gate ([[#Modifications]]). When every one is accepted or rejected, the accepted
+   ones together make a new version, and a new round starts with every reviewer on it: the larger
+   vote. All ballots of the earlier round are void, also the `yes` ballots: they were for other
+   contents.
 6. **Count.** A round with no modification that the gate accepted has a result ([[#Result]]).
 7. **Result.** hephaestus records the result in the issue, and the next step goes on: for example,
    the bookmark goes to the merge queue, or the issue goes back to its owner.
@@ -95,11 +96,17 @@ The other rules:
 - **In scope.** A reviewer may only modify what is in its scope: `technical-docs` changes the docs,
   `ux-researcher` the help text or the messages, and so on. A modification outside its scope is a
   `no` (or a concern, from a non-required reviewer) with the change as its reason.
-- **One by one, each reviewed alone** (R2, answered by the human on 2026-10-11). Modifications are
-  never combined. When a round has more than one, they go to the gate one at a time, in the order of
-  the reviewers, required reviewers first, and the gate reviews each one alone. The first that the
-  gate accepts makes the next version; the others go back to their authors, who can submit them
-  again against the new version, where each again gets its own gate.
+- **Each reviewed alone, all in one round** (R2, answered by the human on 2026-10-11; the round,
+  answered on 2026-10-12). The modifications of a round are one round of changes. Each goes to the
+  gate alone, against the version of the round, in the order of the reviewers, required reviewers
+  first. When every modification is accepted or rejected, the accepted ones are applied in that
+  order, each on the ones before it, and make one new version. Round 2 starts only then. If 5
+  reviewers modify, the gate votes on all 5, and round 2 votes on one version with every accepted
+  one.
+- **A conflict.** An accepted modification that does not apply on the ones before it (its commits
+  conflict, or it edits the same section of the issue) is left out of the new version, and goes back
+  to its author, who can submit it again against the new version. From a non-required reviewer, it
+  is also a concern.
 - **A rejected modification.** When the gate rejects every modification of a round, the round is
   counted as it is, and a `modify` ballot of a required reviewer counts as not `yes`. So a required
   reviewer whose modification was rejected must vote again on the same version, `yes` or `no`, in

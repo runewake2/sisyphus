@@ -85,11 +85,14 @@ func contents(b *strings.Builder, r *Referendum, v Version) {
 	if len(r.Versions) > 1 {
 		b.WriteString("\n## The versions so far\n\n")
 		for _, version := range r.Versions {
-			if version.Modification == nil {
+			if len(version.Modifications) == 0 {
 				fmt.Fprintf(b, "- v%d: the bookmark as it was called.\n", version.Number)
 				continue
 			}
-			fmt.Fprintf(b, "- v%d: the modification of %s: %s\n", version.Number, version.Modification.Author, oneLine(version.Modification.Summary))
+			fmt.Fprintf(b, "- v%d: the modifications of the round before it:\n", version.Number)
+			for _, m := range version.Modifications {
+				fmt.Fprintf(b, "  - %s: %s\n", m.Author, oneLine(m.Summary))
+			}
 		}
 	}
 	b.WriteString("\n")

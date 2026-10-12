@@ -20,6 +20,8 @@ type script struct {
 	calls   map[string]int
 	// barrier, when set, makes each ballot wait until every reviewer of the round has been asked.
 	barrier *sync.WaitGroup
+	// conflicts are the authors whose commits do not apply on the ones before them.
+	conflicts map[string]bool
 }
 
 func (s *script) Ballot(ctx context.Context, r *Referendum, reviewer Reviewer, v Version) Ballot {
@@ -51,6 +53,22 @@ func (s *script) Gate(ctx context.Context, r *Referendum, reviewer Reviewer, v V
 		return g
 	}
 	return GateVote{Accept: true}
+}
+
+func (s *script) Combine(r *Referendum, v Version, mods []Modification) (string, []int, error) {
+	if len(mods) == 1 {
+		return mods[0].Commit, nil, nil // as RoleVoter: one modification needs no work
+	}
+	head := v.Commit
+	var conflicts []int
+	for i, m := range mods {
+		if s.conflicts[m.Author] {
+			conflicts = append(conflicts, i)
+			continue
+		}
+		head += "+" + m.Commit
+	}
+	return head, conflicts, nil
 }
 
 func (s *script) NewVersion(r *Referendum, v Version) (string, error) {
@@ -116,7 +134,7 @@ func TestTheExampleOfTheDesignPassesWithTwoConcerns(t *testing.T) {
 	equal(t, Passed, r.Result)
 	equal(t, 2, len(r.Versions))
 	equal(t, "c2", r.Current().Commit)
-	equal(t, "technical-docs", r.Current().Modification.Author)
+	equal(t, "technical-docs", r.Current().Modifications[0].Author)
 	equal(t, "referendum/2026-10-12-fix-login-bug/v2", r.Current().Ref)
 	equal(t, 1, s.calls["engineer@v2"]) // engineer votes again, because the contents changed
 	equal(t, 2, len(r.Concerns))
@@ -212,21 +230,60 @@ func TestAReviewerWithNoValidBallotGivesNoResult(t *testing.T) {
 	contains(t, r.Reasons, "technical-docs: its output does not end with a ballot")
 }
 
-func TestModificationsGoToTheGateOneByOne(t *testing.T) {
+func TestEveryModificationOfARoundGoesToTheGateBeforeTheNextRound(t *testing.T) {
 	s := newScript()
 	s.ballots["ux-researcher@v1"] = Ballot{Vote: Modify, Change: &Modification{Summary: "Message.", Commit: "c-ux"}}
 	s.ballots["technical-docs@v1"] = Ballot{Vote: Modify, Change: &Modification{Summary: "Docs.", Commit: "c-docs"}}
+	s.ballots["engineer@v1"] = Ballot{Vote: Modify, Change: &Modification{Summary: "Rename.", Commit: "c-eng"}}
+	s.gates["technical-docs:engineer"] = GateVote{Accept: false, Reasons: "Out of scope."}
 	r := newReferendum(engineer, docs, ux)
 
 	run(t, r, s)
 
-	// Required reviewers first: the docs change makes v2; the message goes back to its author.
+	// Each modification went to the gate alone, required reviewers first; the accepted ones together
+	// made v2, and round 2 voted on it.
 	first := r.Rounds[0]
-	equal(t, 1, len(first.Gates))
-	equal(t, "technical-docs", first.Gates[0].Modification.Author)
-	equal(t, "ux-researcher", strings.Join(first.Returned, ","))
-	equal(t, "c-docs", r.Versions[1].Commit)
+	equal(t, 3, len(first.Gates))
+	equal(t, "engineer", first.Gates[0].Modification.Author)
+	equal(t, false, first.Gates[0].Accepted)
+	equal(t, "technical-docs", first.Gates[1].Modification.Author)
+	equal(t, "ux-researcher", first.Gates[2].Modification.Author)
+	equal(t, 0, len(first.Returned))
+	equal(t, 2, len(r.Versions[1].Modifications))
+	equal(t, "c1+c-docs+c-ux", r.Versions[1].Commit)
+	equal(t, 2, len(r.Rounds))
+	equal(t, 2, r.Rounds[1].Version)
 	equal(t, Passed, r.Result)
+	contains(t, first.Outcome, "The gate accepted the modifications of technical-docs, ux-researcher: v2.")
+}
+
+func TestAnAcceptedModificationThatConflictsGoesBackToItsAuthor(t *testing.T) {
+	s := newScript()
+	s.ballots["technical-docs@v1"] = Ballot{Vote: Modify, Change: &Modification{Summary: "Docs.", Commit: "c-docs"}}
+	s.ballots["ux-researcher@v1"] = Ballot{Vote: Modify, Change: &Modification{Summary: "Message.", Commit: "c-ux"}}
+	s.conflicts = map[string]bool{"ux-researcher": true}
+	r := newReferendum(engineer, docs, ux)
+
+	run(t, r, s)
+
+	equal(t, "ux-researcher", strings.Join(r.Rounds[0].Returned, ","))
+	equal(t, "c1+c-docs", r.Versions[1].Commit) // two went to Combine; one conflicted
+	equal(t, 1, len(r.Versions[1].Modifications))
+	contains(t, strings.Join(r.Concerns, "\n"), "ux-researcher (round 1): the gate accepted its modification, but it conflicts with an earlier one")
+	equal(t, Passed, r.Result)
+}
+
+func TestTwoEditsOfOneIssueSectionConflict(t *testing.T) {
+	s := newScript()
+	s.ballots["engineer@v1"] = Ballot{Vote: Modify, Change: &Modification{Summary: "A.", Edit: &IssueEdit{Section: "Summary", Text: "A"}}}
+	s.ballots["technical-docs@v1"] = Ballot{Vote: Modify, Change: &Modification{Summary: "B.", Edit: &IssueEdit{Section: "summary", Text: "B"}}}
+	r := newReferendum(engineer, docs)
+
+	run(t, r, s)
+
+	equal(t, "technical-docs", strings.Join(r.Rounds[0].Returned, ","))
+	equal(t, "A", r.Versions[1].IssueEdits[0].Text)
+	equal(t, 1, len(r.Versions[1].IssueEdits))
 }
 
 func TestAModifyBallotWithNoModificationIsANo(t *testing.T) {

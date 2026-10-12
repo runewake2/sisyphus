@@ -46,12 +46,14 @@ func Markdown(r *Referendum) string {
 			fmt.Fprintf(&b, " (`%s`)", v.Ref)
 		}
 		b.WriteString("\n")
-		if v.Modification == nil {
+		if len(v.Modifications) == 0 {
 			fmt.Fprintf(&b, "- The bookmark `%s` as it was called.\n", r.Bookmark)
 			continue
 		}
-		fmt.Fprintf(&b, "- The modification of `%s`: %s\n", v.Modification.Author, oneLine(v.Modification.Summary))
-		modification(&b, *v.Modification)
+		for _, m := range v.Modifications {
+			fmt.Fprintf(&b, "- The modification of `%s`: %s\n", m.Author, oneLine(m.Summary))
+			modification(&b, m)
+		}
 	}
 
 	for _, round := range r.Rounds {
@@ -85,7 +87,7 @@ func Markdown(r *Referendum) string {
 			}
 		}
 		if len(round.Returned) > 0 {
-			fmt.Fprintf(&b, "\nModifications that went back to their authors, because an earlier one made a new version: %s.\n", strings.Join(round.Returned, ", "))
+			fmt.Fprintf(&b, "\nAccepted modifications that conflict with an earlier one, and went back to their authors: %s.\n", strings.Join(round.Returned, ", "))
 		}
 		fmt.Fprintf(&b, "\nOutcome: %s\n", round.Outcome)
 	}

@@ -30,6 +30,18 @@ docs)
   *) echo '{"vote": "yes", "reasons": "The docs agree."}';;
   esac;;
 ux) echo '{"vote": "no", "reasons": "The error message is unclear."}';;
+notes)
+  case "$prompt" in *"contents: v1"*)
+    printf 'Notes.\n' > notes.md
+    echo '{"vote": "modify", "reasons": "No notes.", "modification": "Add notes.md."}';;
+  *) echo '{"vote": "yes"}';;
+  esac;;
+clash)
+  case "$prompt" in *"contents: v1"*)
+    printf '# Other docs\n' > docs.md
+    echo '{"vote": "modify", "reasons": "Other docs.", "modification": "Write docs.md another way."}';;
+  *) echo '{"vote": "yes"}';;
+  esac;;
 broken) echo "I forgot the ballot.";;
 esac
 `
@@ -53,6 +65,8 @@ func newReferendumRepo(t *testing.T) (*testRepo, string) {
 	r.write("hephaestus/roles/ux.md", aiRoleFile("ux", ""))
 	r.write("hephaestus/roles/broken.md", aiRoleFile("broken", ""))
 	r.write("hephaestus/roles/lead.md", aiRoleFile("lead", "can-call-referendum: true"))
+	r.write("hephaestus/roles/notes.md", aiRoleFile("notes", ""))
+	r.write("hephaestus/roles/clash.md", aiRoleFile("clash", ""))
 	r.commit("tracker and roles")
 	r.git("checkout", "-q", "-b", "ai/fix")
 	r.write("login.go", "package login // with --reset\n")
@@ -93,8 +107,8 @@ func TestAReferendumRunsItsRoundsAndRecordsThem(t *testing.T) {
 	equal(t, referendum.Passed, ref.Result)
 	equal(t, 2, len(ref.Rounds))
 	equal(t, "a human", ref.CalledBy)
-	equal(t, "Document --reset in docs.md.", ref.Versions[1].Modification.Summary)
-	contains(t, ref.Versions[1].Modification.Diff, "+Use --reset to start again.")
+	equal(t, "Document --reset in docs.md.", ref.Versions[1].Modifications[0].Summary)
+	contains(t, ref.Versions[1].Modifications[0].Diff, "+Use --reset to start again.")
 	equal(t, 2, len(ref.Concerns))
 
 	// The modification is the new version, on its own branch, and the issue now names it.
@@ -242,4 +256,27 @@ func TestAReferendumPastItsDeadlineIsRecordedAsFailed(t *testing.T) {
 	body := r.showIssue("fix-login-bug")["body"].(string)
 	contains(t, body, "referendum result: failed. The referendum timed out: it had no result by its deadline")
 	contains(t, body, "referendum result: passed.")
+}
+
+func TestTheAcceptedModificationsOfARoundMakeOneVersion(t *testing.T) {
+	r, model := newReferendumRepo(t)
+
+	res := r.run("referendum", "call", "fix-login-bug", "-q", "Merge it?", "--required", "docs,notes", "--optional", "clash", "--runner", model, "--json")
+
+	if res.exit != 0 {
+		t.Fatalf("the referendum did not pass: %s", res.errors)
+	}
+	var ref referendum.Referendum
+	if err := json.Unmarshal([]byte(res.output), &ref); err != nil {
+		t.Fatal(err)
+	}
+	equal(t, 2, len(ref.Rounds))
+	equal(t, 3, len(ref.Rounds[0].Gates))
+	equal(t, "clash", strings.Join(ref.Rounds[0].Returned, ","))
+	equal(t, 2, len(ref.Versions[1].Modifications))
+	v2 := ref.Versions[1].Ref
+	equal(t, "# Login\n\nUse --reset to start again. See [[no-such-page]].\n", r.git("show", v2+":docs.md"))
+	equal(t, "Notes.\n", r.git("show", v2+":notes.md"))
+	contains(t, r.git("log", "--format=%s", "main.."+v2), "modification of notes")
+	contains(t, strings.Join(ref.Concerns, "\n"), "clash (round 1): the gate accepted its modification, but it conflicts with an earlier one")
 }

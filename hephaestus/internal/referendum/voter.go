@@ -182,6 +182,35 @@ func toolGate(role roles.Role, before, after toolagent.Ballot) (bool, string) {
 	return true, fmt.Sprintf("The modification does not make the result of %s worse: %s before and after.", role.Name, after.Vote)
 }
 
+// Combine applies the commits of each modification on the ones before it, in a scratch worktree of
+// v. A modification whose commits do not apply is left out. One modification needs no work.
+func (rv *RoleVoter) Combine(r *Referendum, v Version, mods []Modification) (string, []int, error) {
+	if len(mods) == 1 {
+		return mods[0].Commit, nil, nil
+	}
+	w, err := rv.worktree(v.Commit)
+	if err != nil {
+		return "", nil, err
+	}
+	defer w.remove()
+	var conflicts []int
+	for i, m := range mods {
+		head, err := rv.git(w.dir, "rev-parse", "HEAD")
+		if err != nil {
+			return "", nil, err
+		}
+		if _, err := rv.git(w.dir, "cherry-pick", "--allow-empty", "--keep-redundant-commits", v.Commit+".."+m.Commit); err != nil {
+			rv.git(w.dir, "cherry-pick", "--abort")
+			if _, err := rv.git(w.dir, "reset", "--quiet", "--hard", head); err != nil {
+				return "", nil, err
+			}
+			conflicts = append(conflicts, i)
+		}
+	}
+	head, err := rv.git(w.dir, "rev-parse", "HEAD")
+	return head, conflicts, err
+}
+
 // NewVersion keeps the commit of v on the branch referendum/<id>/v<number>.
 func (rv *RoleVoter) NewVersion(r *Referendum, v Version) (string, error) {
 	ref := fmt.Sprintf("referendum/%s/v%d", r.ID, v.Number)

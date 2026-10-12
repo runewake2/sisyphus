@@ -21,8 +21,9 @@ an issue, each in its own scope, and agree or fail through one recorded procedur
   It runs the rounds to the result:
   - Every reviewer of a round votes at the same time, each in a scratch git worktree at the commit
     of the version, so that no reviewer sees another ballot.
-  - Each modification goes to the gate, one at a time. Every required reviewer must accept it. It
-    then makes a new version on the branch `referendum/<id>/v<n>`, and every reviewer votes again.
+  - Every modification of a round goes to the gate, each alone. Every required reviewer must accept
+    it. The accepted ones together make one new version on the branch `referendum/<id>/v<n>`, and
+    every reviewer votes again. One that conflicts with an earlier one goes back to its author.
   - Every required `yes` passes. One required `no` fails, also on an edited version (R7). A
     non-required `no` is a concern.
   - A required reviewer whose modification the gate rejected votes again (R8).
