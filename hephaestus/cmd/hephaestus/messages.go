@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -43,7 +44,7 @@ func messagesCommand(findRepo func() (repo.Repo, error)) *cobra.Command {
 		return mq.Connect(r.SharedDir())
 	}
 	cmd.AddCommand(serveCommand(findRepo), sendCommand(connect), receiveCommand(connect), ackCommand(connect),
-		logCommand(findRepo), listenCommand(connect))
+		renewCommand(connect), workersCommand(connect), logCommand(findRepo), listenCommand(connect))
 	return cmd
 }
 
@@ -270,6 +271,81 @@ func ackCommand(connect func() (*mq.Client, error)) *cobra.Command {
 	return cmd
 }
 
+func renewCommand(connect func() (*mq.Client, error)) *cobra.Command {
+	var as string
+	cmd := &cobra.Command{
+		Use:   "renew <id>...",
+		Short: "Renew the leases of messages that a worker still handles: its keep-alive.",
+		Long: "Renew the leases of messages that the worker received and still handles, so that they do not come " +
+			"again to another worker while it works, and record that the worker is alive. A worker that handles a " +
+			"message for longer than the lease renews well within each lease. hephaestus agent run and messages " +
+			"listen do it by themselves. It fails for a message whose lease the worker lost.",
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name, err := worker(as, "as")
+			if err != nil {
+				return err
+			}
+			client, err := connect()
+			if err != nil {
+				return err
+			}
+			renewal, err := client.Renew(name, args)
+			if err != nil {
+				return err
+			}
+			if len(renewal.Lost) > 0 {
+				return fmt.Errorf("%s does not hold %s now: the lease ended, and another worker may have it.", name, strings.Join(renewal.Lost, ", "))
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Renewed for %s.\n", renewal.Lease)
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&as, "as", "", "The worker that handles the messages. Default: "+ownerVariable+".")
+	return cmd
+}
+
+func workersCommand(connect func() (*mq.Client, error)) *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "workers",
+		Short: "List the workers, when each last spoke to the queue, and the messages that each holds.",
+		Long: "List every worker that the queue knows: its role, the kinds that it listens for, when it last " +
+			"received, acknowledged, or renewed (its keep-alive), and the messages that it holds now, with the end of " +
+			"each lease. The keep-alive is not in the log: after a restart of the queue, it starts empty.",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := connect()
+			if err != nil {
+				return err
+			}
+			workers, err := client.Workers()
+			if err != nil {
+				return err
+			}
+			if asJSON {
+				return writeJSON(cmd.OutOrStdout(), workers)
+			}
+			table := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+			fmt.Fprintln(table, "worker\trole\tlast seen\tholds")
+			for _, w := range workers {
+				seen := "-"
+				if !w.LastSeen.IsZero() {
+					seen = w.LastSeen.Local().Format("2006-01-02 15:04:05")
+				}
+				var holds []string
+				for _, h := range w.Holds {
+					holds = append(holds, fmt.Sprintf("%s until %s", h.ID, h.Until.Local().Format("15:04:05")))
+				}
+				fmt.Fprintf(table, "%s\t%s\t%s\t%s\n", w.Worker, w.Role, seen, strings.Join(holds, ", "))
+			}
+			return table.Flush()
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "Print JSON.")
+	return cmd
+}
+
 func logCommand(findRepo func() (repo.Repo, error)) *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
@@ -324,6 +400,7 @@ func listenCommand(connect func() (*mq.Client, error)) *cobra.Command {
 			"input as JSON, and HEPHAESTUS_MESSAGE_ID, HEPHAESTUS_MESSAGE_KIND, HEPHAESTUS_MESSAGE_FROM, " +
 			"HEPHAESTUS_MESSAGE_ISSUE, and " + ownerVariable + " (the worker) are in its environment. Exit code 0 " +
 			"acknowledges the message. Another exit code leaves it pending, so that it comes again after the lease. " +
+			"While the command runs, the worker renews the lease of the message (its keep-alive). " +
 			"A copy of a message that the command already handled is acknowledged and not run again. --once handles " +
 			"the messages that wait now, and stops.",
 		Args: cobra.MinimumNArgs(1),
@@ -358,7 +435,10 @@ func listenCommand(connect func() (*mq.Client, error)) *cobra.Command {
 						}
 						continue
 					}
-					if err := runForMessage(ctx, cmd, args, name, m); err != nil {
+					stopKeepAlive := mq.KeepAlive(client.Renew, name, []string{m.ID}, cmd.ErrOrStderr())
+					err := runForMessage(ctx, cmd, args, name, m)
+					stopKeepAlive()
+					if err != nil {
 						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %s failed for message %s: %v. It comes again after the lease.\n", args[0], m.ID, err)
 						continue
 					}

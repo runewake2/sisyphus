@@ -76,7 +76,9 @@ func TaskPrompt(role roles.Role, worker string, m mq.Message, workspace string) 
 		}
 	}
 	fmt.Fprintf(&b, "\nWork in %s.\n", workspace)
-	if m.Issue != "" {
+	if m.Issue != "" && (m.To.Broadcast || m.To.All) {
+		fmt.Fprintf(&b, "\nThe message is a notice about the issue %s, to every listener. Do not start, close, or reopen that issue: another worker owns it, or it is closed. Record your result in its Notes (sisyphus edit %s notes \"...\" --append), and file an issue for each piece of work that you find.\n", m.Issue, m.Issue)
+	} else if m.Issue != "" {
 		fmt.Fprintf(&b, "\nThe issue of the task is %s. You have it in progress. When you finish, close it with the result in its Resolution (sisyphus close %s -m \"...\"). When you must stop, stop it as the rules say. Do not end with the issue in progress.\n", m.Issue, m.Issue)
 	}
 	fmt.Fprintf(&b, "\n%s", Instructions(role))

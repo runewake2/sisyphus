@@ -17,11 +17,16 @@ import (
 // startQueue runs the message queue of the repo of r for the test.
 func startQueue(t *testing.T, r *testRepo) string {
 	t.Helper()
+	return startQueueWithLease(t, r, time.Minute)
+}
+
+func startQueueWithLease(t *testing.T, r *testRepo, lease time.Duration) string {
+	t.Helper()
 	found, err := repo.Find(r.root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	server, err := mq.Open(found.SharedDir(), time.Minute)
+	server, err := mq.Open(found.SharedDir(), lease)
 	if err != nil {
 		t.Fatal(err)
 	}

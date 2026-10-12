@@ -5,7 +5,12 @@
 //   - Every event (a message, a worker that registers, an acknowledgement) is appended to a log that
 //     nothing changes or removes. The service rebuilds its state from the log when it starts.
 //   - A message goes to one worker, to one worker of a role, to every worker of a role, or to every
-//     listener as a broadcast. A listener can filter broadcasts by kind.
+//     listener as a broadcast. A listener can filter broadcasts by kind. A role can be in a family,
+//     for example formatter/golang; a message to every worker of the family formatter reaches the
+//     workers of each role in it.
+//   - A broadcast reaches each listening role once: one worker of the role handles it, also a worker
+//     that starts after the send, if a worker of its role listened before. A listener with no role
+//     gets it as a worker of its own.
 //   - Delivery is at least once: a message stays pending for its receiver until the receiver
 //     acknowledges it. A message that is not acknowledged within the lease is given again. Each
 //     message has an id, so that a receiver can ignore a copy.
@@ -20,6 +25,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -27,8 +33,9 @@ import (
 type Address struct {
 	// Worker is the owner name of one worker, for example merge-queue-1.
 	Worker string `json:"worker,omitempty"`
-	// Role is a role, for example engineer. The message goes to one worker of the role, or with All
-	// to every worker of the role.
+	// Role is a role, for example engineer or formatter/golang. The message goes to one worker of the
+	// role, or with All to every worker of the role. With All, a family, for example formatter, also
+	// reaches every worker of each role in it.
 	Role string `json:"role,omitempty"`
 	All  bool   `json:"all,omitempty"`
 	// Broadcast sends the message to every listener.
@@ -63,7 +70,17 @@ type Message struct {
 	Data  json.RawMessage `json:"data,omitempty"`
 }
 
-var namePattern = regexp.MustCompile(`^[a-z0-9]+([._-][a-z0-9]+)*$`)
+var (
+	namePattern = regexp.MustCompile(`^[a-z0-9]+([._-][a-z0-9]+)*$`)
+	// rolePattern is a role name: a name, or a path of names for a role of a family.
+	rolePattern = regexp.MustCompile(`^[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*$`)
+)
+
+// roleMatches reports whether a message to role reaches a worker of workerRole: the same role, or
+// with all, a role in the family role.
+func roleMatches(role, workerRole string, all bool) bool {
+	return workerRole == role || (all && strings.HasPrefix(workerRole, role+"/"))
+}
 
 // validate checks a message before the service accepts it.
 func (m Message) validate() error {
@@ -83,8 +100,8 @@ func (m Message) validate() error {
 	}
 	if m.To.Role != "" {
 		targets++
-		if !namePattern.MatchString(m.To.Role) {
-			problems = append(problems, fmt.Sprintf("role %q is not a role name", m.To.Role))
+		if !rolePattern.MatchString(m.To.Role) {
+			problems = append(problems, fmt.Sprintf("role %q is not a role name: lowercase words, or a path of them for a role of a family, for example formatter/golang", m.To.Role))
 		}
 	}
 	if m.To.Broadcast {
@@ -147,10 +164,15 @@ type state struct {
 	workers  map[string]*worker
 	// roleDone holds the messages to one worker of a role that a worker of the role acknowledged.
 	roleDone map[string]bool
+	// roleSince is the seq of the first registration of a worker of each role: a broadcast after it
+	// reaches the role, also when no worker of the role runs at the send.
+	roleSince map[string]int64
+	// roleHeard holds the broadcasts that a worker of a role acknowledged, as role + "\x00" + id.
+	roleHeard map[string]bool
 }
 
 func newState() *state {
-	return &state{byID: map[string]int{}, workers: map[string]*worker{}, roleDone: map[string]bool{}}
+	return &state{byID: map[string]int{}, workers: map[string]*worker{}, roleDone: map[string]bool{}, roleSince: map[string]int64{}, roleHeard: map[string]bool{}}
 }
 
 // apply changes the state for one event of the log.
@@ -170,6 +192,9 @@ func (s *state) apply(e Event) {
 			s.workers[e.Worker] = w
 		}
 		w.role, w.kinds = e.Role, e.Kinds
+		if _, ok := s.roleSince[e.Role]; e.Role != "" && !ok {
+			s.roleSince[e.Role] = e.Seq
+		}
 	case "ack":
 		w := s.workers[e.Worker]
 		for _, id := range e.IDs {
@@ -177,9 +202,12 @@ func (s *state) apply(e Event) {
 			if !ok {
 				continue
 			}
-			if m := s.messages[index]; m.To.Role != "" && !m.To.All {
+			switch m := s.messages[index]; {
+			case m.To.Role != "" && !m.To.All:
 				s.roleDone[id] = true
-			} else if w != nil {
+			case m.To.Broadcast && w != nil && w.role != "":
+				s.roleHeard[w.role+"\x00"+id] = true
+			case w != nil:
 				w.acked[id] = true
 			}
 		}
@@ -195,17 +223,27 @@ func (s *state) pendingFor(w *worker, m Message) bool {
 	case m.To.Role != "" && !m.To.All:
 		return m.To.Role == w.role && !s.roleDone[m.ID]
 	case m.To.Role != "":
-		return m.To.Role == w.role && m.Seq > w.since && !w.acked[m.ID]
+		return roleMatches(m.To.Role, w.role, true) && m.Seq > w.since && !w.acked[m.ID]
 	}
-	// A broadcast: to every listener but its sender, filtered by kind.
-	return m.From != w.name && m.Seq > w.since && !w.acked[m.ID] && (len(w.kinds) == 0 || slices.Contains(w.kinds, m.Kind))
+	// A broadcast: to every listener but its sender, filtered by kind; once for each role.
+	if m.From == w.name || (len(w.kinds) > 0 && !slices.Contains(w.kinds, m.Kind)) {
+		return false
+	}
+	if w.role != "" {
+		return m.Seq > s.roleSince[w.role] && !s.roleHeard[w.role+"\x00"+m.ID]
+	}
+	return m.Seq > w.since && !w.acked[m.ID]
 }
 
-// leaseKey identifies the delivery of message m to worker w. A message to one worker of a role has
-// one lease for the role, so that only one worker of the role has it at a time.
+// leaseKey identifies the delivery of message m to worker w. A message to one worker of a role, and
+// a broadcast to a worker with a role, have one lease for the role, so that only one worker of the
+// role has it at a time.
 func leaseKey(w *worker, m Message) string {
 	if m.To.Role != "" && !m.To.All {
 		return "role:" + m.To.Role + ":" + m.ID
+	}
+	if m.To.Broadcast && w.role != "" {
+		return "role:" + w.role + ":" + m.ID
 	}
 	return "worker:" + w.name + ":" + m.ID
 }

@@ -43,15 +43,25 @@ type Server struct {
 	lease time.Duration
 	token string
 
-	mu      sync.Mutex
-	log     *os.File
-	state   *state
-	leases  map[string]time.Time
+	mu     sync.Mutex
+	log    *os.File
+	state  *state
+	leases map[string]delivery
+	// seen is the last time that each worker received, acknowledged, or renewed: the keep-alive that
+	// tells a scheduler that a worker still works. It is not in the log.
+	seen    map[string]time.Time
 	changed chan struct{} // closed and replaced when a message arrives
 
 	listener net.Listener
 	http     *http.Server
 	now      func() time.Time
+}
+
+// delivery is the lease of a message to a worker, until a time.
+type delivery struct {
+	worker string
+	id     string
+	until  time.Time
 }
 
 // Open reads the log of dir, or makes an empty one, and returns a server that is not started yet.
@@ -62,7 +72,7 @@ func Open(dir string, lease time.Duration) (*Server, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
-	s := &Server{dir: dir, lease: lease, state: newState(), leases: map[string]time.Time{}, changed: make(chan struct{}), now: time.Now}
+	s := &Server{dir: dir, lease: lease, state: newState(), leases: map[string]delivery{}, seen: map[string]time.Time{}, changed: make(chan struct{}), now: time.Now}
 	path := filepath.Join(dir, LogFile)
 	if file, err := os.Open(path); err == nil {
 		scanner := bufio.NewScanner(file)
@@ -133,6 +143,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /send", s.handleSend)
 	mux.HandleFunc("POST /receive", s.handleReceive)
 	mux.HandleFunc("POST /ack", s.handleAck)
+	mux.HandleFunc("POST /renew", s.handleRenew)
+	mux.HandleFunc("GET /workers", s.handleWorkers)
 	mux.HandleFunc("GET /log", s.handleLog)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
 	s.http = &http.Server{Handler: s.authorize(mux), ReadHeaderTimeout: 10 * time.Second}
@@ -215,8 +227,8 @@ func (s *Server) Receive(ctx context.Context, r Receiver) ([]Message, error) {
 	if !namePattern.MatchString(r.Worker) {
 		return nil, fmt.Errorf("worker %q is not a worker name: lowercase words, for example merge-queue-1.", r.Worker)
 	}
-	if r.Role != "" && !namePattern.MatchString(r.Role) {
-		return nil, fmt.Errorf("role %q is not a role name.", r.Role)
+	if r.Role != "" && !rolePattern.MatchString(r.Role) {
+		return nil, fmt.Errorf("role %q is not a role name: lowercase words, or a path of them for a role of a family, for example formatter/golang.", r.Role)
 	}
 	kinds := slices.Clone(r.Kinds)
 	slices.Sort(kinds)
@@ -233,6 +245,7 @@ func (s *Server) Receive(ctx context.Context, r Receiver) ([]Message, error) {
 			}
 			w = s.state.workers[r.Worker]
 		}
+		s.seen[r.Worker] = s.now()
 		messages := s.deliverable(w, r.Max)
 		changed := s.changed
 		s.mu.Unlock()
@@ -267,7 +280,7 @@ func (s *Server) deliverable(w *worker, max int) []Message {
 			continue
 		}
 		key := leaseKey(w, m)
-		if until, ok := s.leases[key]; ok && now.Before(until) {
+		if held, ok := s.leases[key]; ok && now.Before(held.until) {
 			blocked[m.From] = true
 			continue
 		}
@@ -278,7 +291,7 @@ func (s *Server) deliverable(w *worker, max int) []Message {
 			blocked[m.From] = true // keep the order of this sender for the next receive
 			continue
 		}
-		s.leases[key] = now.Add(s.lease)
+		s.leases[key] = delivery{worker: w.name, id: m.ID, until: now.Add(s.lease)}
 		result = append(result, m)
 	}
 	return result
@@ -293,6 +306,7 @@ func (s *Server) Ack(worker string, ids []string) error {
 	if w == nil {
 		return fmt.Errorf("No worker %q has received a message. Receive first.", worker)
 	}
+	s.seen[worker] = s.now()
 	var fresh []string
 	for _, id := range ids {
 		index, ok := s.state.byID[id]
@@ -315,6 +329,83 @@ func (s *Server) Ack(worker string, ids []string) error {
 	close(s.changed)
 	s.changed = make(chan struct{})
 	return nil
+}
+
+// Renewal is the answer to a keep-alive: the messages whose leases the worker still holds, now
+// longer, and the messages whose leases it lost, because they ended before the renewal and another
+// worker may have them now.
+type Renewal struct {
+	Renewed []string      `json:"renewed"`
+	Lost    []string      `json:"lost"`
+	Lease   time.Duration `json:"lease"`
+}
+
+// Renew is the keep-alive of a worker that still handles messages: it records that the worker is
+// alive, and gives each lease on the ids that the worker holds a new full lease. A worker renews
+// well within the lease (Lease in the answer), so that a long task is not given to another worker.
+func (s *Server) Renew(worker string, ids []string) (Renewal, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	w := s.state.workers[worker]
+	if w == nil {
+		return Renewal{}, fmt.Errorf("No worker %q has received a message. Receive first.", worker)
+	}
+	now := s.now()
+	s.seen[worker] = now
+	renewal := Renewal{Renewed: []string{}, Lost: []string{}, Lease: s.lease}
+	for _, id := range ids {
+		index, ok := s.state.byID[id]
+		if !ok {
+			renewal.Lost = append(renewal.Lost, id)
+			continue
+		}
+		key := leaseKey(w, s.state.messages[index])
+		held, ok := s.leases[key]
+		if !ok || held.worker != worker || !now.Before(held.until) {
+			renewal.Lost = append(renewal.Lost, id)
+			continue
+		}
+		held.until = now.Add(s.lease)
+		s.leases[key] = held
+		renewal.Renewed = append(renewal.Renewed, id)
+	}
+	return renewal, nil
+}
+
+// WorkerStatus is what the service knows of a worker: when it last spoke, and the messages that it
+// holds now.
+type WorkerStatus struct {
+	Worker   string    `json:"worker"`
+	Role     string    `json:"role,omitempty"`
+	Kinds    []string  `json:"kinds,omitempty"`
+	LastSeen time.Time `json:"last-seen,omitzero"`
+	Holds    []Held    `json:"holds"`
+}
+
+// Held is a message that a worker holds, until its lease ends.
+type Held struct {
+	ID    string    `json:"id"`
+	Until time.Time `json:"until"`
+}
+
+// Workers returns every worker that the log knows, by name, with its keep-alive and its leases.
+func (s *Server) Workers() []WorkerStatus {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := s.now()
+	var result []WorkerStatus
+	for _, w := range s.state.workers {
+		status := WorkerStatus{Worker: w.name, Role: w.role, Kinds: w.kinds, LastSeen: s.seen[w.name], Holds: []Held{}}
+		for _, held := range s.leases {
+			if held.worker == w.name && now.Before(held.until) {
+				status.Holds = append(status.Holds, Held{ID: held.id, Until: held.until})
+			}
+		}
+		slices.SortFunc(status.Holds, func(a, b Held) int { return strings.Compare(a.ID, b.ID) })
+		result = append(result, status)
+	}
+	slices.SortFunc(result, func(a, b WorkerStatus) int { return strings.Compare(a.Worker, b.Worker) })
+	return result
 }
 
 // Log returns the messages of the log with a seq after since.
@@ -360,6 +451,26 @@ func (s *Server) handleAck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	reply(w, struct{}{}, s.Ack(req.Worker, req.IDs))
+}
+
+func (s *Server) handleRenew(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Worker string   `json:"worker"`
+		IDs    []string `json:"ids"`
+	}
+	if !decode(w, r, &req) {
+		return
+	}
+	renewal, err := s.Renew(req.Worker, req.IDs)
+	reply(w, renewal, err)
+}
+
+func (s *Server) handleWorkers(w http.ResponseWriter, r *http.Request) {
+	workers := s.Workers()
+	if workers == nil {
+		workers = []WorkerStatus{}
+	}
+	reply(w, workers, nil)
 }
 
 func (s *Server) handleLog(w http.ResponseWriter, r *http.Request) {

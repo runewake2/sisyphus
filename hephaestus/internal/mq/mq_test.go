@@ -298,3 +298,86 @@ func TestTheServiceNeedsTheToken(t *testing.T) {
 		t.Errorf("want a second service refused, got %v", err)
 	}
 }
+
+func TestARoleOfAFamilyGetsItsMessages(t *testing.T) {
+	s := openServer(t, t.TempDir(), newClock())
+	receive(t, s, "formatter-golang-1", "formatter/golang")
+	receive(t, s, "formatter-yaml-1", "formatter/yaml")
+	receive(t, s, "engineer-1", "engineer")
+	send(t, s, "alice", Address{Role: "formatter/golang"}, "task", "format the Go files")
+	send(t, s, "alice", Address{Role: "formatter", All: true}, "info", "to every formatter")
+
+	equalBodies(t, []string{"format the Go files", "to every formatter"}, receive(t, s, "formatter-golang-1", "formatter/golang"))
+	equalBodies(t, []string{"to every formatter"}, receive(t, s, "formatter-yaml-1", "formatter/yaml"))
+	equalBodies(t, nil, receive(t, s, "engineer-1", "engineer"))
+}
+
+func TestAMessageToOneWorkerOfAFamilyNeedsTheRole(t *testing.T) {
+	s := openServer(t, t.TempDir(), newClock())
+	receive(t, s, "formatter-golang-1", "formatter/golang")
+	send(t, s, "alice", Address{Role: "formatter"}, "task", "which formatter?")
+
+	equalBodies(t, nil, receive(t, s, "formatter-golang-1", "formatter/golang"))
+}
+
+func TestABroadcastReachesEachListeningRoleOnce(t *testing.T) {
+	clock := newClock()
+	s := openServer(t, t.TempDir(), clock)
+	receive(t, s, "check-1", "repo-check", "bookmark-ready")
+	receive(t, s, "check-2", "repo-check", "bookmark-ready")
+	receive(t, s, "reviewer-1", "code-reviewer", "bookmark-ready")
+	m := send(t, s, "implementer-1", Address{Broadcast: true}, "bookmark-ready", "ai/fix is ready")
+
+	equalBodies(t, []string{"ai/fix is ready"}, receive(t, s, "check-1", "repo-check", "bookmark-ready"))
+	equalBodies(t, nil, receive(t, s, "check-2", "repo-check", "bookmark-ready")) // one worker of the role
+	equalBodies(t, []string{"ai/fix is ready"}, receive(t, s, "reviewer-1", "code-reviewer", "bookmark-ready"))
+	ack(t, s, "check-1", m)
+	clock.Add(2 * time.Minute)
+	equalBodies(t, nil, receive(t, s, "check-2", "repo-check", "bookmark-ready"))
+}
+
+func TestABroadcastWaitsForAWorkerOfARoleThatListenedBefore(t *testing.T) {
+	s := openServer(t, t.TempDir(), newClock())
+	receive(t, s, "check-1", "repo-check", "bookmark-ready")
+	send(t, s, "alice", Address{Broadcast: true}, "bookmark-ready", "before any role")
+	// check-1 stops; a new worker of the role starts after the send.
+	equalBodies(t, []string{"before any role"}, receive(t, s, "check-9", "repo-check", "bookmark-ready"))
+	// A role that never listened before the send does not get it.
+	equalBodies(t, nil, receive(t, s, "docs-1", "technical-docs", "bookmark-ready"))
+}
+
+func TestAKeepAliveKeepsALongTaskFromOtherWorkers(t *testing.T) {
+	clock := newClock()
+	s := openServer(t, t.TempDir(), clock)
+	receive(t, s, "slow-1", "slow")
+	receive(t, s, "slow-2", "slow")
+	m := send(t, s, "alice", Address{Role: "slow"}, "task", "a long task")
+	equalBodies(t, []string{"a long task"}, receive(t, s, "slow-1", "slow"))
+
+	for range 5 { // five leases long, renewed within each
+		clock.Add(40 * time.Second)
+		renewal, err := s.Renew("slow-1", []string{m.ID})
+		if err != nil || len(renewal.Renewed) != 1 || renewal.Lease != time.Minute {
+			t.Fatalf("want the lease renewed, got %+v, %v", renewal, err)
+		}
+		equalBodies(t, nil, receive(t, s, "slow-2", "slow"))
+	}
+	status := s.Workers()
+	equal(t, "slow-1", status[0].Worker)
+	equal(t, clock.Now(), status[0].LastSeen)
+	equal(t, m.ID, status[0].Holds[0].ID)
+
+	// A worker that stops renewing loses the message to another worker, and is told so.
+	clock.Add(2 * time.Minute)
+	equalBodies(t, []string{"a long task"}, receive(t, s, "slow-2", "slow"))
+	renewal, _ := s.Renew("slow-1", []string{m.ID})
+	equal(t, 0, len(renewal.Renewed))
+	equal(t, m.ID, renewal.Lost[0])
+}
+
+func equal[T comparable](t *testing.T, want, got T) {
+	t.Helper()
+	if want != got {
+		t.Errorf("want %v, got %v", want, got)
+	}
+}

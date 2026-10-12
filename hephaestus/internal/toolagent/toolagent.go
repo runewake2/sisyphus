@@ -39,6 +39,15 @@ type Queue interface {
 	Receive(ctx context.Context, r mq.Receiver) ([]mq.Message, error)
 	Ack(worker string, ids []string) error
 	Send(m mq.Message) (mq.Message, error)
+	Renew(worker string, ids []string) (mq.Renewal, error)
+}
+
+// Notice reports whether a message is a notice: a broadcast or a message to every worker of a role.
+// It tells many workers about an issue, so a worker does not claim, close, or reopen the issue; it
+// records its result in the Notes of the issue. A message to one worker, or to one worker of a role,
+// is a task: the worker claims its issue.
+func Notice(m mq.Message) bool {
+	return m.To.Broadcast || m.To.All
 }
 
 // Sisyphus runs the sisyphus command in a directory.
@@ -140,9 +149,12 @@ func (a *Agent) Run(ctx context.Context, once bool) ([]Result, error) {
 	}
 }
 
-// Handle does the task of one message, and tells its sender the result.
+// Handle does the task of one message, and tells its sender the result. While it works, it renews
+// the lease of the message (the keep-alive), so that the queue does not give it to another worker.
 func (a *Agent) Handle(ctx context.Context, m mq.Message) Result {
+	stop := mq.KeepAlive(a.Queue.Renew, a.Worker, []string{m.ID}, a.Err)
 	result := a.handle(ctx, m)
+	stop()
 	fmt.Fprintf(a.Err, "%s: message %s: %s%s\n", a.Worker, m.ID, result.Status, map[bool]string{true: " (" + result.Issue + ")", false: ""}[result.Issue != ""])
 	if m.From != a.Worker {
 		data, _ := json.Marshal(result)
@@ -172,7 +184,7 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 	if data.Workspace != "" {
 		dir = data.Workspace
 	}
-	if m.Issue != "" {
+	if m.Issue != "" && !Notice(m) {
 		if _, err := a.Sisyphus(dir, "start", m.Issue, "--owner", a.Worker); err != nil {
 			result.Status, result.Detail = "refused", err.Error()
 			if !strings.Contains(err.Error(), "in progress") {
@@ -183,6 +195,9 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 	}
 	exit, output, err := a.command(ctx, dir, m)
 	result.Exit, result.Output = exit, tail(output, outputLines)
+	if Notice(m) {
+		return a.noticeResult(dir, m, result, err)
+	}
 	if err != nil {
 		result.Status, result.Detail = "error", err.Error()
 		a.stop(dir, m, &result)
@@ -222,6 +237,39 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 	}
 	result.Status = "failed"
 	a.stop(dir, m, &result)
+	return result
+}
+
+// noticeResult records the result of a notice in the Notes of its issue, and changes no state: the
+// issue belongs to another worker, or is closed. A failure tags the issue needs-human.
+func (a *Agent) noticeResult(dir string, m mq.Message, result Result, runErr error) Result {
+	switch {
+	case runErr != nil:
+		result.Status, result.Detail, result.Next = "error", runErr.Error(), NeedsHuman
+	case result.Exit != 0:
+		result.Status, result.Next = "failed", NeedsHuman
+	default:
+		result.Status = "done"
+	}
+	if m.Issue == "" {
+		return result
+	}
+	verb := map[string]string{"done": "did", "failed": "failed at", "error": "could not run"}[result.Status]
+	note := fmt.Sprintf("%s: %s (role %s) %s the %s notice of message %s: `%s`, exit code %d.", a.Now().Format("2006-01-02"), a.Worker, a.Role.Name, verb, m.Kind, m.ID, a.commandLine(), result.Exit)
+	if output := strings.TrimSpace(result.Output); output != "" && a.Role.Kind == roles.Tool {
+		note += "\n\n```\n" + output + "\n```"
+	}
+	if result.Detail != "" {
+		note += "\n\n" + result.Detail
+	}
+	if _, err := a.Sisyphus(dir, "edit", m.Issue, "notes", "--append", "--", note); err != nil {
+		fmt.Fprintf(a.Err, "Warning: %s could not record its result in %s: %v\n", a.Worker, m.Issue, err)
+	}
+	if result.Next == NeedsHuman {
+		if _, err := a.Sisyphus(dir, "update", m.Issue, "--add-tags", NeedsHuman); err != nil {
+			fmt.Fprintf(a.Err, "Warning: %s could not tag %s for a human: %v\n", a.Worker, m.Issue, err)
+		}
+	}
 	return result
 }
 

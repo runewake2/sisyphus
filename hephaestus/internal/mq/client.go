@@ -74,6 +74,21 @@ func (c *Client) Ack(worker string, ids []string) error {
 	return c.call(context.Background(), http.MethodPost, "/ack", map[string]any{"worker": worker, "ids": ids}, nil)
 }
 
+// Renew is the keep-alive of a worker: it renews the leases of the messages that the worker still
+// handles, and tells which it lost.
+func (c *Client) Renew(worker string, ids []string) (Renewal, error) {
+	var renewal Renewal
+	err := c.call(context.Background(), http.MethodPost, "/renew", map[string]any{"worker": worker, "ids": ids}, &renewal)
+	return renewal, err
+}
+
+// Workers returns the workers that the service knows, with their keep-alive and leases.
+func (c *Client) Workers() ([]WorkerStatus, error) {
+	var workers []WorkerStatus
+	err := c.call(context.Background(), http.MethodGet, "/workers", nil, &workers)
+	return workers, err
+}
+
 // Log returns the messages after seq since.
 func (c *Client) Log(since int64) ([]Message, error) {
 	var messages []Message

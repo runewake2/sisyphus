@@ -37,8 +37,8 @@ workspace, and records what it did in the repo. It does not choose the direction
   or a format.
 - The issue: closed with a Resolution that links to the unreleased entry, or stopped with the
   question in Notes.
-- When the message queue runs, a `bookmark-ready` broadcast with the issue and the bookmark, so that
-  `repo-check` and the reviewers can start.
+- When the message queue runs, a `bookmark-ready` broadcast with the issue and the bookmark, before
+  the close, so that `repo-check`, the formatters, and the reviewers can start.
 
 ## Tools
 
@@ -72,9 +72,10 @@ apply to you.
 4. Write the unreleased changelog entry, and a decision record for each choice that changes
    behavior or a format.
 5. Run the checks of the repo. All must pass.
-6. Describe the change with "Fixes #<issue>", set your bookmark, and close the issue with a
-   Resolution that links to the unreleased entry. If the message queue runs, broadcast
-   bookmark-ready with the issue and the bookmark.
+6. Describe the change with "Fixes #<issue>", and set your bookmark. If the message queue runs,
+   broadcast bookmark-ready with the issue and the bookmark: the reviewers that listen record their
+   results in the Notes of the issue. Then close the issue with a Resolution that links to the
+   unreleased entry.
 7. Never move main and never push.
 
 ## Rules for every role

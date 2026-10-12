@@ -125,9 +125,20 @@ Answered by the human on 2026-10-11:
   receiver in the order that the sender sent them.
 - **Addressing** (Q13, answered by the human on 2026-10-12): by owner name (one worker), by role
   (any one worker of the role, or all of them, by a flag of the message), or `broadcast` (every
-  listener; a listener can filter by kind).
+  listener; a listener can filter by kind). A role of a family, for example `formatter/golang`, is
+  a role like any other; a message to all workers of a family, for example `formatter`, reaches
+  every role in it (from the human, 2026-10-12).
+- **A broadcast reaches each listening role once** (from the human, 2026-10-12: fix the order of
+  broadcasts, and do not duplicate work). One worker of the role handles it, also a worker that
+  starts after the send, if the role listened before it. A broadcast, and a message to every worker
+  of a role, are notices: a worker does not claim, close, or reopen their issue, and records its
+  result in the Notes of the issue.
+- **Keep-alive** (from the human, 2026-10-12): a worker renews the lease of a message while it
+  handles it, so that a long task is not given to a second worker, and the queue knows when each
+  worker last spoke (`hephaestus messages workers`), for the scheduler.
 
-`hephaestus messages` implements it: [[0001-a-local-service-with-an-append-only-log]] records how.
+`hephaestus messages` implements it: [[0001-a-local-service-with-an-append-only-log]] and
+[[0002-broadcasts-reach-each-role-once-and-workers-keep-their-leases-alive]] record how.
 
 ## The form of hephaestus
 
