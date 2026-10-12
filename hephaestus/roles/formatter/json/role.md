@@ -17,7 +17,9 @@ Format the JSON files that the work changes, with prettier.
 It changes only the layout of the files, never their meaning, and only the files that the work
 since the base changes: `hephaestus files --changed`. It is a tool role: it uses no model. As a
 reviewer in a referendum, it votes `yes` when the files are formatted, and `modify` with the
-formatted files when they are not ([[roles/formatter/README|the formatter roles]]).
+formatted files when they are not ([[roles/formatter/README|the formatter roles]]). It leaves out the raw
+results of the local model benchmark in `design/ollama-local-models/results/`: a program writes
+them.
 
 ## Inputs
 

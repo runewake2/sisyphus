@@ -47,6 +47,8 @@ Requested by a human on 2026-10-12, from a review of the missing roles. Q9 of [[
 
 2026-10-12, from claude: replaced the one Go formatter with five roles in `hephaestus/roles/formatter/<language>/`. A smoke run with all five as required reviewers found two problems, now fixed. First, a tool at the gate judged the problems of other languages, so it rejected every modification; now a tool rejects only what the modification makes worse. Second, two reviewers changed git worktrees at the same time; now the changes are serialized. With four formatters that each modify, the referendum needs five rounds (R2: one modification for each round), so it passed with --max-rounds 6. Prettier puts the cells of Markdown tables in columns, and it splits a table cell at the | of a wikilink alias such as `[[a|b]]`, because GitHub-flavored Markdown reads that | as a column separator. A human must decide this before formatter/markdown runs on the docs of this repo.
 
+2026-10-12, from claude: ran the five formatters on the whole repo in a scratch workspace (base root()). Go, C#, and YAML had nothing to change. JSON changed only whitespace in the 16 raw benchmark results; formatter/json now leaves them out. Markdown changed 57 files: mostly padded tables, but also three changes of meaning: lists of failure modes whose numbers were mode ids were renumbered, sub-bullets under a two-digit number were not nested, and two indented code blocks in [[agent-guide]] became text. The source is corrected: the modes are bullets (Mode 19: ...), and the guide has fenced code blocks.
+
 ## Resolution
 
 <Complete this section when you close the issue.

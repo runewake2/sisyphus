@@ -187,14 +187,14 @@ Every failed run per config:
 
 Examples of the top modes:
 
-13. Gives up after the first error (9 failed runs). The model often names the fix but does not do it:
-   - A t09 rep0: `sisyphus_update {"name": "password-reset", "state": "closed", "resolution": "abandoned"}` returns `No issue named 'password-reset'`. Final: "The issue named `password-reset` does not exist. Could you provide the correct issue name or path?" The issue is `add-password-reset`.
-   - A t03 rep0: "Would you like me to search for issues related to "docs" instead?"
-1. Guessed issue name (8 failed runs, 12 `No issue named` errors in all runs). The guesses: `docs/site` (2), `docs/site/theme-update` (5 calls in 4 runs), `password-reset` (4), `fix-login-issue` (2). In B t07 rep1, the user gave the exact name `fix-login-timeout`, but the model also tried the invented `fix-login-issue` in the same batch.
-19. Parent as a directory (4 runs, all of t13): see "Why multi-step fails". The same shape appears in t06: all 4 runs create `auth/rate-limit-login-api` or `auth/rate-limit-login`. t06 passes because the checker reads the file name, but the user did not ask for a directory.
-20. Claims a write that it did not do (4 runs, all of t14): see "Why multi-step fails".
-21. Misreads an error. A t12 rep0: `sisyphus_update {"name": "migrate-database", "priority": "medium"}` returns `missing properties: ["state"]`. Final: "The issue `migrate-database` does not exist or is not in the current repository's issue tracking system." The error says nothing about a missing issue.
-22. Empty name search. B t12 rep1: `sisyphus_search {"query": "migrate-database", "state": "open,in-progress"}` returns `[]`. Final: "No issue named **migrate-database** exists." The user gave the exact name. Search does not look at issue names.
+- Mode 13: Gives up after the first error (9 failed runs). The model often names the fix but does not do it:
+  - A t09 rep0: `sisyphus_update {"name": "password-reset", "state": "closed", "resolution": "abandoned"}` returns `No issue named 'password-reset'`. Final: "The issue named `password-reset` does not exist. Could you provide the correct issue name or path?" The issue is `add-password-reset`.
+  - A t03 rep0: "Would you like me to search for issues related to "docs" instead?"
+- Mode 1: Guessed issue name (8 failed runs, 12 `No issue named` errors in all runs). The guesses: `docs/site` (2), `docs/site/theme-update` (5 calls in 4 runs), `password-reset` (4), `fix-login-issue` (2). In B t07 rep1, the user gave the exact name `fix-login-timeout`, but the model also tried the invented `fix-login-issue` in the same batch.
+- Mode 19: Parent as a directory (4 runs, all of t13): see "Why multi-step fails". The same shape appears in t06: all 4 runs create `auth/rate-limit-login-api` or `auth/rate-limit-login`. t06 passes because the checker reads the file name, but the user did not ask for a directory.
+- Mode 20: Claims a write that it did not do (4 runs, all of t14): see "Why multi-step fails".
+- Mode 21: Misreads an error. A t12 rep0: `sisyphus_update {"name": "migrate-database", "priority": "medium"}` returns `missing properties: ["state"]`. Final: "The issue `migrate-database` does not exist or is not in the current repository's issue tracking system." The error says nothing about a missing issue.
+- Mode 22: Empty name search. B t12 rep1: `sisyphus_search {"query": "migrate-database", "state": "open,in-progress"}` returns `[]`. Final: "No issue named **migrate-database** exists." The user gave the exact name. Search does not look at issue names.
 
 ### Tool-calling format notes (Mistral template in Ollama)
 

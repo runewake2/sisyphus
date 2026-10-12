@@ -214,21 +214,21 @@ Every failed run per config:
 
 Examples:
 
-17. Invents a field that the tool output does not have. All 4 think-off t03 runs:
-   - `sisyphus_search {"query": "docs site"}` returns one row with `"owner": "alice"` and no bookmark.
-   - Final (A rep0, B rep0, B rep1): "The docs site issue is owned by **alice** and is on bookmark **update-docs-site**."
-   - This differs from qwen3:8b mode 14. qwen3:8b invented whole issues after an empty result. qwen3.5:9b reads empty results correctly (t05 passes in 6 of 6 think-off runs: "No, there is no issue about payment processing"). It only fills one missing field.
-18. "Start" done with state `open`. The model sets owner and bookmark, but keeps the state:
-   - A t14 rep0: `sisyphus_update {"name": "migrate-database", "state": "open", "owner": "carol", "bookmark": "ai/db"}`. Final: "I've started it with owner carol and bookmark ai/db." The answer says "started", but the issue is still open. Both A t14 runs do this.
-   - B t07 rep1: final "It remains in the \"open\" state." The model knows that it did not change the state.
-   - The detailed prompt has the line "To start work: sisyphus_update with state in-progress". It fixes t14 (A 0/2 to B 2/2), but not t07 (B 0/2). In t07, the model goes to `sisyphus_new` first (mode 19), and after that error it keeps `"state": "open"` from its first call.
-19. `sisyphus_new` on an existing issue. "Start work on fix-login-timeout" is read as "create":
-   - B t07 rep0: `sisyphus_new {"name": "fix-login-timeout", "title": "Fix login timeout issue", "state": "open", "priority": "medium", "effort": "medium", "tags": "", "owner": "bob", "bookmark": "ai/login-timeout"}` returns `Error: Issue 'fix-login-timeout' already exists: issues/open/fix-login-timeout.md.` Then `sisyphus_show`, then `sisyphus_update {"name": "fix-login-timeout", "state": "open", "owner": "bob", "bookmark": "ai/login-timeout"}`.
-   - The `already exists` error does not say which tool changes an existing issue.
-   - `sisyphus_new` accepts `owner` and `bookmark`, so the call looks valid to the model.
-15. Update without state:
-   - A t12 rep0 and rep1, A t07 rep1: `missing properties: ["state"]`. The model recovers in all 3 cases. In t12 rep1 it calls `sisyphus_show` first to read the current state. In t07 rep1 it recovers with the wrong state (mode 18).
-   - With the detailed prompt (B, C), this error does not occur.
+- Mode 17: Invents a field that the tool output does not have. All 4 think-off t03 runs:
+  - `sisyphus_search {"query": "docs site"}` returns one row with `"owner": "alice"` and no bookmark.
+  - Final (A rep0, B rep0, B rep1): "The docs site issue is owned by **alice** and is on bookmark **update-docs-site**."
+  - This differs from qwen3:8b mode 14. qwen3:8b invented whole issues after an empty result. qwen3.5:9b reads empty results correctly (t05 passes in 6 of 6 think-off runs: "No, there is no issue about payment processing"). It only fills one missing field.
+- Mode 18: "Start" done with state `open`. The model sets owner and bookmark, but keeps the state:
+  - A t14 rep0: `sisyphus_update {"name": "migrate-database", "state": "open", "owner": "carol", "bookmark": "ai/db"}`. Final: "I've started it with owner carol and bookmark ai/db." The answer says "started", but the issue is still open. Both A t14 runs do this.
+  - B t07 rep1: final "It remains in the \"open\" state." The model knows that it did not change the state.
+  - The detailed prompt has the line "To start work: sisyphus_update with state in-progress". It fixes t14 (A 0/2 to B 2/2), but not t07 (B 0/2). In t07, the model goes to `sisyphus_new` first (mode 19), and after that error it keeps `"state": "open"` from its first call.
+- Mode 19: `sisyphus_new` on an existing issue. "Start work on fix-login-timeout" is read as "create":
+  - B t07 rep0: `sisyphus_new {"name": "fix-login-timeout", "title": "Fix login timeout issue", "state": "open", "priority": "medium", "effort": "medium", "tags": "", "owner": "bob", "bookmark": "ai/login-timeout"}` returns `Error: Issue 'fix-login-timeout' already exists: issues/open/fix-login-timeout.md.` Then `sisyphus_show`, then `sisyphus_update {"name": "fix-login-timeout", "state": "open", "owner": "bob", "bookmark": "ai/login-timeout"}`.
+  - The `already exists` error does not say which tool changes an existing issue.
+  - `sisyphus_new` accepts `owner` and `bookmark`, so the call looks valid to the model.
+- Mode 15: Update without state:
+  - A t12 rep0 and rep1, A t07 rep1: `missing properties: ["state"]`. The model recovers in all 3 cases. In t12 rep1 it calls `sisyphus_show` first to read the current state. In t07 rep1 it recovers with the wrong state (mode 18).
+  - With the detailed prompt (B, C), this error does not occur.
 
 Other observations (no failed run):
 

@@ -8,7 +8,7 @@ a program does its work, with no model ([[0003-a-tool-agent-runs-its-command-for
 | `formatter/golang` | `*.go` | `gofmt` |
 | `formatter/csharp` | `*.cs` | `dotnet format whitespace`, in folder mode |
 | `formatter/yaml` | `*.yaml`, `*.yml` | prettier |
-| `formatter/json` | `*.json` | prettier |
+| `formatter/json` | `*.json`, but not the benchmark results in `design/ollama-local-models/results/` | prettier |
 | `formatter/markdown` | `*.md`, but not `issues/`, `.claude/`, or `referendums/` | prettier |
 
 The role files: [[roles/formatter/golang/role]], [[roles/formatter/csharp/role]],
@@ -34,6 +34,7 @@ prettier 3.3.3 through `npx`.
   not touch.
 - When no file of the language changed, end with exit code 0, and do not need the tool.
 - When the tool is not installed, end with exit code 1, and tell how to install it.
-- Change only the layout, never the meaning.
+- Change only the layout, never the meaning. `formatter/markdown` does not format the code blocks
+  of a document, because their text is an example of exact input or output.
 
 To add a language, add a directory with a `role.md` and a `format.sh`, and a row to the table.

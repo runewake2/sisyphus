@@ -30,6 +30,16 @@ or the tests of a change. Four roles fill these gaps.
 
   Each formats only the files that the work changes. Each ends with exit code 0 when no file of its
   language changed. In a referendum, each votes `yes`, or `modify` with the formatted files.
+- `formatter/json` leaves out the raw benchmark results in `design/ollama-local-models/results/`.
+- A run of the formatters on the whole repo found Markdown whose meaning prettier would change.
+  These docs are corrected so that they keep their meaning:
+  - The lists of failure modes in `design/ollama-local-models/notes/` used the mode ids as list
+    numbers, so Markdown showed them as 1, 2, 3, and their sub-items were not nested. They are now
+    bullets, "Mode 19: ...".
+  - The steps of [[agent-guide]] have fenced code blocks, in an example block with four backticks:
+    prettier changed the indent of the list items, and two indented code blocks became text.
+  - `formatter/markdown` does not format code blocks: prettier had changed the JSON and YAML
+    examples of [[sisyphus-show]] and [[issue-format]], so they no longer showed the real output.
 - `hephaestus files [--changed] [<pattern>...]` prints the files of the working copy, or the files
   that the work since the base changes, with jj or git.
 - A tool reviewer gets the base of a referendum in `HEPHAESTUS_BASE`. At the gate, it rejects only

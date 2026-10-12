@@ -18,7 +18,7 @@ instructions of your agents, and tells how several agents work together.
 
 ## Instructions for a shell
 
-```markdown
+````markdown
 ## Issues
 
 This repo tracks its issues with sisyphus, in `issues/`. Do not edit the issue files by hand; use
@@ -27,33 +27,43 @@ warnings.
 
 1. Find work that can start now, and see what other agents work on:
 
-       sisyphus list --ready --state open
-       sisyphus claims
+   ```sh
+   sisyphus list --ready --state open
+   sisyphus claims
+   ```
 
 2. Read the issue before you start: `sisyphus show <name>`.
 3. Start it with your name and branch. This claims the issue:
 
-       sisyphus start <name> --owner <you> --bookmark <branch>
+   ```sh
+   sisyphus start <name> --owner <you> --bookmark <branch>
+   ```
 
    If `start` fails because another owner or workspace has the issue, select another issue. Do not
    use `--take` unless a human tells you to.
 4. Record progress and findings in the Notes section:
 
-       sisyphus edit <name> notes "<date>: <text>" --append
+   ```sh
+   sisyphus edit <name> notes "<date>: <text>" --append
+   ```
 
    Never run `sisyphus edit <name>` without a section: it opens an editor and waits.
 5. For work that you find but that is out of scope, create an issue:
 
-       sisyphus new --title "<title>" --deferred-from <name>
+   ```sh
+   sisyphus new --title "<title>" --deferred-from <name>
+   ```
 
 6. When the work is complete, close the issue and tell what was done. If the work stops, abandon
    it and tell why:
 
-       sisyphus close <name> -m "<what was done>"
-       sisyphus abandon <name> -m "<why the work stopped>"
+   ```sh
+   sisyphus close <name> -m "<what was done>"
+   sisyphus abandon <name> -m "<why the work stopped>"
+   ```
 
 7. Check the repo: `sisyphus lint`.
-```
+````
 
 The short version, for a file that has little space:
 
