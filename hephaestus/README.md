@@ -7,6 +7,9 @@ work. It is a separate project that lives beside sisyphus, in this directory of 
 > **Status:** design. No code yet. [[agent-delegation]] is the design, and
 > [[delegate-issues-to-agents]] is the first epic.
 
+hephaestus is a Go module of its own, in this directory. It runs as a CLI tool, `hephaestus`, and as
+a background scheduler daemon that starts the workers on their triggers.
+
 ## hephaestus and sisyphus
 
 The two tools must not overlap:

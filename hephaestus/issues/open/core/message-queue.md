@@ -34,7 +34,7 @@ Requested by a human on 2026-10-11: agents must be able to send information to e
 - [ ] Any worker (a human, an AI agent, or a tool agent) can send a message to one worker, to a role, or as a broadcast, and the receivers get it.
 - [ ] A tool agent can listen for broadcasts of one kind, and starts its task from the message.
 - [ ] The message queue is a service that the workers connect to, and keeps every message in an append-only log.
-- [ ] Each message reaches each receiver at least once, across the workspaces of one repo, and a receiver can ignore a copy by its id.
+- [ ] Each message reaches each receiver at least once and in the order that its sender sent it, across the workspaces of one repo, and a receiver can ignore a copy by its id.
 - [ ] Tests cover direct messages, role messages, broadcasts, and a copy of a message.
 
 ## Out of scope
@@ -45,6 +45,8 @@ Requested by a human on 2026-10-11: agents must be able to send information to e
 ## Notes
 
 2026-10-11, from the human: messages are kept in an append-only log (Q11), are passed through a service (Q12), and have at-least-once delivery (Q14). Q13 and the order of messages are still open in [[agent-delegation]].
+
+2026-10-12, from the human: addressing is by owner name, by role, or broadcast, as proposed (Q13), and the messages of one sender are ordered (Q14).
 
 ## Resolution
 

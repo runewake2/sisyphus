@@ -44,6 +44,8 @@ The proposal is to start with Claude Code subagents that a human starts, made fr
 
 2026-10-11, from the human: Q4 is correct: AI agents start as Claude Code subagents, then the Agent SDK. hephaestus must also run tool agents, which do not use AI, for large refactors, lints, and other work, to avoid large token spend ([[tool-agents]]).
 
+2026-10-12, from the human: hephaestus runs as a CLI tool and as a background scheduler daemon (Q7); the daemon starts the workers on their triggers (Q5).
+
 ## Resolution
 
 <Complete this section when you close the issue.

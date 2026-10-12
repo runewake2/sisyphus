@@ -2,7 +2,7 @@
 
 - Date: 2026-10-11
 - Issue: [[delegate-issues-to-agents]]
-- Status: Draft. Q1-Q5, Q9-Q12 are answered, and Q8 and Q14 in part; Q6, Q7, and Q13 are not.
+- Status: Draft. All open questions (Q1-Q14) are answered.
 
 ## Summary
 
@@ -118,8 +118,22 @@ Answered by the human on 2026-10-11:
 - **At-least-once delivery** (Q14): each receiver gets each message at least once. A receiver can get
   a copy, so each message has an id, and a receiver ignores an id that it already handled.
 
-How a receiver is addressed (Q13), and whether the messages of one sender keep their order (Q14),
-are still open.
+- **Ordered** (Q14, answered by the human on 2026-10-12): the messages of one sender reach each
+  receiver in the order that the sender sent them.
+- **Addressing** (Q13, answered by the human on 2026-10-12): by owner name (one worker), by role
+  (any one worker of the role, or all of them, by a flag of the message), or `broadcast` (every
+  listener; a listener can filter by kind).
+
+## The form of hephaestus
+
+hephaestus is a Go module of its own, in `hephaestus/` (Q7, answered by the human on 2026-10-12).
+It uses sisyphus only through the `sisyphus` CLI and `sisyphus-mcp`, as any other client does. It
+runs in two forms:
+
+- **A CLI tool**, `hephaestus`, for people and agents: for example to delegate a task, to call a
+  referendum, to give the merge queue a set of tasks, and to see what the workers do.
+- **A background scheduler daemon**, which starts the workers on their triggers ([[#How an issue gets to an agent]],
+  Q5) and keeps them running.
 
 ## How an issue gets to an agent
 
@@ -169,7 +183,9 @@ choose the tasks, push, or change the work beyond the merge.
 
 **Input:** a set of tasks: sisyphus issues, each with the bookmark of its work (the `bookmark`
 field), whose tests pass and whose lint is clean. A human or an allowed agent gives the set, or
-delegates the tasks to `merge-queue`.
+delegates the tasks to `merge-queue`. The set can hold the work of humans, and branches made beside
+the queue: they land on the linear branch through the same supervised merge queue (Q6), whoever did
+the work.
 
 **Order:** the merge queue merges the bookmark of one task at a time, in an order that keeps the work correct
 and the conflicts small ([[merge-order-planner]]):
@@ -243,12 +259,12 @@ A human answers a question with a reply such as "Q1 yes", or another answer.
 | Q3 | May the merge queue move `main`, or only prepare a bookmark? | [[merge-queue-agent]] | Answered by the human on 2026-10-11: the merge queue never moves `main`. Its only job is to make a linear history from a set of tasks. |
 | Q4 | What runs the agents: Claude Code subagents, the Claude Agent SDK, Claude Managed Agents, or local models? | [[delegation-runner]] | Answered by the human on 2026-10-11: AI agents start as Claude Code subagents, started by a human, then hephaestus on the Agent SDK. Local models only for roles that a task suite shows they can do. hephaestus also runs tool agents, which use no AI ([[#AI agents and tool agents]]). |
 | Q5 | Which roles start by themselves, and on what trigger? | [[delegation-runner]] | Answered by the human on 2026-10-11, for now: the merge queue on a human request, later on a schedule; technical docs on each close; the others on a human request. |
-| Q6 | Does the merge queue merge the work of humans too, or only of agents? | [[merge-queue-agent]] | With Q3, its input is a set of tasks, so: every task in the set, whoever did its work. |
-| Q7 | Is hephaestus a Go program in the sisyphus module (`cmd/hephaestus`) or a module of its own in `hephaestus/`? | [[delegate-issues-to-agents]] | A module of its own in `hephaestus/`, so that it can only use sisyphus through its CLI and MCP server, as any other client. |
-| Q8 | How does a tool agent get its task and report its result? | [[tool-agents]] | Context answered by the human on 2026-10-11: a tool agent gets its context as a message, which any agent can send or broadcast ([[#Messages between workers]]). Result, proposed: hephaestus runs the command in the workspace of the task with the message; exit code 0 closes the issue with the summary that the command prints; another exit code stops it with the output in `Notes`, tagged `needs-human`, unless the role file names an AI role to delegate the rest to. |
+| Q6 | Does the merge queue merge the work of humans too, or only of agents? | [[merge-queue-agent]] | Answered by the human on 2026-10-12: yes. Human work, and branches made beside the queue, land on the linear branch through the supervised merge queue: every task in the set, whoever did its work. |
+| Q7 | Is hephaestus a Go program in the sisyphus module (`cmd/hephaestus`) or a module of its own in `hephaestus/`? | [[delegate-issues-to-agents]] | Answered by the human on 2026-10-12: a Go module of its own in `hephaestus/`, which runs as a CLI tool and as a background scheduler daemon ([[#The form of hephaestus]]). |
+| Q8 | How does a tool agent get its task and report its result? | [[tool-agents]] | Answered by the human: the context on 2026-10-11, the result on 2026-10-12. A tool agent gets its context as a message, which any agent can send or broadcast ([[#Messages between workers]]). hephaestus runs the command in the workspace of the task with the message; exit code 0 closes the issue with the summary that the command prints; another exit code stops it with the output in `Notes`, tagged `needs-human`, unless the role file names an AI role to delegate the rest to. |
 | Q9 | Can a tool agent be a reviewer in a referendum ([[referendum]])? | [[tool-agents]] | Answered by the human on 2026-10-11: yes. A check, for example a lint or the tests, votes with its exit code, `yes` for 0 and `no` for another code. A formatter can submit its changes as a modification. A tool reviewer never abstains. |
 | Q10 | Is the merge queue a tool agent? Its order, rebases, renumbering, and checks follow fixed rules. | [[merge-queue-agent]] | Answered by the human on 2026-10-11: yes. It stops at a conflict that is not mechanical, records it, and sends a message to the engineer or a human. |
 | Q11 | Where are messages kept: only in the message queue, or also in the repo? | [[message-queue]] | Answered by the human on 2026-10-11: in an append-only log. A message that matters to an issue is also recorded in its `Notes` by the receiver. |
 | Q12 | How do messages travel? | [[message-queue]] | Answered by the human on 2026-10-11: through a service, the message queue, that the workers connect to. |
-| Q13 | How is a receiver addressed? | [[message-queue]] | By owner name (one worker), by role (any one worker of the role, or all of them, by a flag of the message), or `broadcast` (every listener; a listener can filter by kind). |
-| Q14 | What does the message queue promise? | [[message-queue]] | Answered by the human on 2026-10-11: at-least-once delivery; each message has an id, so that a receiver can ignore a copy. Still open: whether the messages of one sender arrive in the order that it sent them (proposed: yes). |
+| Q13 | How is a receiver addressed? | [[message-queue]] | Answered by the human on 2026-10-12: by owner name (one worker), by role (any one worker of the role, or all of them, by a flag of the message), or `broadcast` (every listener; a listener can filter by kind). |
+| Q14 | What does the message queue promise? | [[message-queue]] | Answered by the human on 2026-10-11: at-least-once delivery; each message has an id, so that a receiver can ignore a copy. On 2026-10-12: the messages of one sender arrive in the order that it sent them. |

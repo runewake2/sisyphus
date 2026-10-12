@@ -57,6 +57,8 @@ The merge queue is a tool agent, so it depends on [[tool-agents]], which runs it
 
 2026-10-11, from the human: the merge queue is a tool agent (Q10): it uses no model. A conflict that is not mechanical stops it, and it sends a message to the engineer or a human ([[message-queue]]).
 
+2026-10-12, from the human: human work, and branches introduced beside the queue, land on the linear branch through the supervised merge queue (Q6).
+
 ## Resolution
 
 <Complete this section when you close the issue.

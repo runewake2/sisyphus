@@ -44,6 +44,8 @@ Requested by a human on 2026-10-11, with the answer to Q4: AI agents start as Cl
 
 2026-10-11, from the human: tool agents can be referendum reviewers (Q9). Tool agents get their context as a message, which other agents can broadcast (Q8, the context part); the message queue is another tool agent ([[message-queue]]). The merge queue is a tool agent (Q10).
 
+2026-10-12, from the human: the proposal for the result of a tool agent is accepted (Q8): exit code 0 closes the issue with the summary of the command; another exit code stops it with the output in Notes, tagged needs-human, unless the role file names an AI role to delegate the rest to.
+
 ## Resolution
 
 <Complete this section when you close the issue.

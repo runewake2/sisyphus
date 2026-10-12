@@ -54,6 +54,8 @@ Sub-issues:
 
 2026-10-11, from the human: the referendum ([[referendum-voting]]) is how hephaestus coordinates many concurrent agents.
 
+2026-10-12, from the human: hephaestus is a Go module of its own, and operates as a CLI tool and a background scheduler daemon (Q7). With Q6, Q8, Q13, and Q14 answered on the same day, [[agent-delegation]] has no open question left.
+
 ## Resolution
 
 <Complete this section when you close the issue.
