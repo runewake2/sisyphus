@@ -316,7 +316,7 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 | [[roles/privacy-reviewer]] | ai | a request | no | a human | the data about people that the change collects, keeps, shows, or sends |
 | [[roles/triage]] | ai | a request, a schedule | no | a human | none: it makes new issues ready, and proposes priority and role |
 | [[roles/compatibility-reviewer]] | ai | a request, a `bookmark-ready` broadcast | no | a human | the interfaces that people, agents, and programs depend on: commands, flags, JSON, formats, MCP tools |
-| [[roles/dependency-check/role]]: `dependency-check` | tool | a request, a schedule, a `bookmark-ready` broadcast | no | `security-researcher` | known vulnerabilities and the integrity of the Go modules |
+| [[roles/dependency-check/README]]: `dependency-check/<ecosystem>` | tool | a request, a schedule, a `bookmark-ready` broadcast | no | `security-researcher` | the dependencies of its ecosystem: `golang`, `javascript`, `dotnet`, `java`, `docker`, and `github-actions` |
 | [[roles/release-manager]] | ai | a request, a `merge-queue-done` broadcast | no | a human | none: it checks a line of the merge queue for a human |
 | [[roles/performance-engineer]] | ai | a request | no | a human | the speed of the change on large repos |
 | [[roles/operations-auditor]] | ai | a request, a schedule | no | a human | none: it reviews how the roles work |
@@ -335,7 +335,7 @@ in its section `Works with`, which `hephaestus roles` checks):
    reviews.
 3. **Review.** The implementer broadcasts `bookmark-ready` before it closes the issue. One worker of
    each listening role records its result in the Notes of the issue: the formatters, `repo-check`,
-   and `dependency-check` (a failure goes to `security-researcher`), and `code-reviewer`,
+   and the dependency checks of each ecosystem (a failure goes to `security-researcher`), and `code-reviewer`,
    `test-engineer`, `abstraction-engineer`, and `compatibility-reviewer`. For a change that more
    than one scope judges, a human or the engineer calls a referendum with the reviewers of those
    scopes.

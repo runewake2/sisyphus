@@ -1,10 +1,10 @@
 ---
-title: "Add a dependency check tool role"
+title: "Pin the GitHub Actions of the CI workflow to commit SHAs"
 state: open            # open | in-progress | closed. Must match the directory of the file.
 resolution:            # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
-effort: medium         # small | medium | large | x-large
-tags: [hephaestus, tool-agents, security] # The components that the work touches, for example [widget-scheduler, plan]
+effort: small          # small | medium | large | x-large
+tags: [ci, security]   # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-12
 closed:                # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
@@ -13,26 +13,25 @@ bookmark:              # samw/ai/<workspace-name> of the agent that does the wor
 workspaces: []         # jj workspaces where local work on the issue has happened, for example [sisyphus-move-commands].
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from:         # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
-parent: "[[hephaestus/core/delegate-issues-to-agents]]" # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
+parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
 depends-on: []           # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example `["[[faster-startup]]"]`.
 remote:                # Optional. A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.
 ---
 
-# Add a dependency check tool role
+# Pin the GitHub Actions of the CI workflow to commit SHAs
 
 ## Summary
 
-Add the tool role dependency-check: govulncheck and go mod verify on each Go module, and the direct dependencies with a newer version. A failure goes to security-researcher.
+Pin each action of .github/workflows/ci.yml to the full commit SHA of its release, with the version in a comment, so that dependency-check/github-actions passes.
 
 ## Context
 
-Requested by a human on 2026-10-12: implement other agents that may be useful, for a government of agents who coordinate and work together. The roles may be removed after a review; a trial run shows how useful each is. The role file is [[roles/dependency-check/role]]; its section Works with tells how it works with the other roles.
+Found on 2026-10-12 by the first run of dependency-check/github-actions ([[dependency-check-roles]]) on this repo: .github/workflows/ci.yml:13 uses actions/checkout@v4, and line 15 uses actions/setup-go@v5. A tag can move to other code, so the workflow can run code that nobody reviewed.
 
 ## Acceptance criteria
 
-- [x] The role file describes the role, its hand-offs in Works with, and the points where it must ask a human.
-- [ ] A run on this repo reports its result; a module with a known vulnerability that the code calls fails it.
-- [ ] A human checks the result of the trial run, and decides whether the role stays.
+- [ ] actions/checkout and actions/setup-go are pinned to the commit SHAs of their releases, with the version in a comment.
+- [ ] hephaestus agent review dependency-check/github-actions passes on the repo.
 
 ## Out of scope
 

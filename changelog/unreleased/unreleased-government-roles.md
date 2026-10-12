@@ -37,6 +37,6 @@ it names exist.
 
 ## Issues
 
-- Created [[triage-agent]], [[compatibility-reviewer-agent]], [[dependency-check-tool]],
+- Created [[triage-agent]], [[compatibility-reviewer-agent]], [[dependency-check-roles]],
   [[release-manager-agent]], [[performance-engineer-agent]], [[operations-auditor-agent]], and
   [[model-eval-tool]].
