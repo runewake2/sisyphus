@@ -263,12 +263,14 @@ the merge queue. Each role is a role file in `hephaestus/roles/` ([[role-file]])
 
 | Role | Kind | Started by | Calls a referendum | Work it cannot do goes to | Scope as a reviewer |
 |---|---|---|---|---|---|
-| [[merge-queue|merge-queue]] | tool | a request with a set of tasks | no | a human; a conflict to `engineer` | none |
-| [[repo-check|repo-check]] | tool | a request, a `bookmark-ready` broadcast | no | a human | the checks of the repo (its exit code) |
-| [[engineer|engineer]] | ai | a request, a `conflict` message | yes | a human | the direction of the work |
-| [[project-manager|project-manager]] | ai | a request | no | a human | the scope and priority of issues |
-| [[ux-researcher|ux-researcher]] | ai | a request | no | a human | how people and agents use the change |
-| [[technical-docs|technical-docs]] | ai | the close of an issue (`issue-closed`), a request | no | a human | the docs of the change |
+| [[roles/merge-queue|merge-queue]] | tool | a request with a set of tasks | no | a human; a conflict to `engineer` | none |
+| [[roles/repo-check|repo-check]] | tool | a request, a `bookmark-ready` broadcast | no | a human | the checks of the repo (its exit code) |
+| [[roles/engineer|engineer]] | ai | a request, a `conflict` message | yes | a human | the direction of the work |
+| [[roles/project-manager|project-manager]] | ai | a request | no | a human | the scope and priority of issues |
+| [[roles/ux-researcher|ux-researcher]] | ai | a request | no | a human | how people and agents use the change |
+| [[roles/technical-docs|technical-docs]] | ai | the close of an issue (`issue-closed`), a request | no | a human | the docs of the change |
+| [[roles/security-researcher|security-researcher]] | ai | a request | no | a human | the security of the change: secrets, files, input, services, dependencies |
+| [[roles/privacy-reviewer|privacy-reviewer]] | ai | a request | no | a human | the data about people that the change collects, keeps, shows, or sends |
 
 The path of a piece of work:
 
@@ -279,14 +281,16 @@ The path of a piece of work:
 3. The merge queue makes a linear history from the finished tasks, with their versions. A conflict
    that needs judgment goes to the engineer, who resolves it on a bookmark of its own.
 4. A human checks the line of the merge queue, and moves `main`.
-5. The close of each issue starts the technical docs agent. The project manager and the UX
-   researcher review the issues and the product on request, and file what they find.
+5. The close of each issue starts the technical docs agent. The project manager, the UX
+   researcher, the security researcher, and the privacy reviewer review the issues and the product
+   on request, and file what they find.
 
 Humans keep the decisions that no role makes: they move `main`, accept the proposals of the
 project manager, decide a failed referendum, and take each issue tagged `needs-human`.
 
-[[delegation-runner]] runs the AI roles, and broadcasts `issue-closed` and `bookmark-ready`; until
-it exists, a human starts each role.
+A human starts an AI role as a Claude Code subagent, or a worker with `hephaestus agent run` and a
+runner ([[role-file#Running an AI role]]). [[delegation-runner]] will start the workers on their
+triggers, and broadcast `issue-closed` and `bookmark-ready`.
 
 ## Open questions
 

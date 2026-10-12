@@ -3,6 +3,7 @@ role: engineer
 kind: ai
 trigger: request
 on-failure: needs-human
+allowed-tools: [Bash, Read, Grep, Glob, Edit, Write]
 can-call-referendum: true
 ---
 

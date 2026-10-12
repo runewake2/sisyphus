@@ -1,8 +1,9 @@
-// Package toolagent runs tool agents: workers of a role with kind tool, which do their work with a
-// program, not a model ([[agent-delegation#AI agents and tool agents]]). A tool agent gets the
-// context of each task as a message ([[message-queue]]), claims the issue of the task, runs the
-// command of its role, and closes or stops the issue from the exit code. It never decides anything:
-// work that its command cannot do goes to a human or to an AI role.
+// Package toolagent runs the workers of a role ([[agent-delegation#AI agents and tool agents]]). A
+// worker gets the context of each task as a message ([[message-queue]]) and claims the issue of the
+// task. A worker of a tool role runs the command of its role, and closes or stops the issue from the
+// exit code: it never decides anything, and work that its command cannot do goes to a human or to an
+// AI role. A worker of an AI role runs the runner command (a model, for example claude -p) with the
+// prompt of the task, and the model closes or stops the issue itself.
 package toolagent
 
 import (
@@ -18,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/runewake2/sisyphus/hephaestus/internal/airole"
 	"github.com/runewake2/sisyphus/hephaestus/internal/mq"
 	"github.com/runewake2/sisyphus/hephaestus/internal/repo"
 	"github.com/runewake2/sisyphus/hephaestus/internal/roles"
@@ -51,7 +53,10 @@ type TaskData struct {
 
 // Agent is one worker of a tool role.
 type Agent struct {
-	Role     roles.Role
+	Role roles.Role
+	// Runner is the command line that runs a model for an AI role, with the prompt of the task on its
+	// standard input; {role} in it becomes the name of the role. Empty for a tool role.
+	Runner   string
 	Worker   string
 	Dir      string
 	Queue    Queue
@@ -77,10 +82,14 @@ type Result struct {
 	Detail string `json:"detail,omitempty"`
 }
 
-// Validate checks that the role can be run as a tool agent.
-func Validate(role roles.Role) error {
-	if role.Kind != roles.Tool {
-		return fmt.Errorf("The role %s is an %s role: a model does its work, and hephaestus does not run models yet. Only tool roles can run here.", role.Name, role.Kind)
+// RunnerVariable names the environment variable of the runner of AI roles.
+const RunnerVariable = "HEPHAESTUS_AI_RUNNER"
+
+// Validate checks that a worker of the role can run: a tool role has its command, and an AI role
+// needs a runner, because a model costs tokens and hephaestus never starts one by itself.
+func Validate(role roles.Role, runner string) error {
+	if role.Kind == roles.AI && strings.TrimSpace(runner) == "" {
+		return fmt.Errorf("The role %s is an AI role: a model does its work, and a model costs tokens. Give the command that runs it with --runner or %s, for example: claude -p --agent {role}", role.Name, RunnerVariable)
 	}
 	return nil
 }
@@ -88,7 +97,7 @@ func Validate(role roles.Role) error {
 // Run receives the messages of the worker and handles each, oldest first, until ctx ends. With once,
 // it handles the messages that wait now, and returns.
 func (a *Agent) Run(ctx context.Context, once bool) ([]Result, error) {
-	if err := Validate(a.Role); err != nil {
+	if err := Validate(a.Role, a.Runner); err != nil {
 		return nil, err
 	}
 	if a.handled == nil {
@@ -179,6 +188,24 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 		a.stop(dir, m, &result)
 		return result
 	}
+	if exit == 0 && a.Role.Kind == roles.AI {
+		// The model closes or stops its issue itself. An issue that it left in progress needs a human.
+		result.Status = "done"
+		if m.Issue != "" {
+			state := a.issueState(dir, m.Issue)
+			switch state {
+			case "closed":
+			case "open":
+				result.Status, result.Detail = "stopped", "The worker stopped the issue."
+			default:
+				result.Status = "failed"
+				result.Detail = "The model ended with the issue still in progress."
+				a.stop(dir, m, &result)
+				result.Next = NeedsHuman
+			}
+		}
+		return result
+	}
 	if exit == 0 {
 		result.Status = "done"
 		if m.Issue != "" {
@@ -202,10 +229,16 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) Result {
 // the AI role of on-failure, with a message.
 func (a *Agent) stop(dir string, m mq.Message, result *Result) {
 	result.Next = a.Role.OnFailure
+	if a.Role.Kind == roles.AI {
+		result.Next = NeedsHuman // a model that failed hands its work to a human, not to another model
+	}
 	if m.Issue == "" {
 		return
 	}
-	note := fmt.Sprintf("%s: the tool agent %s ran `%s`: exit code %d.\n\n```\n%s\n```", a.Now().Format("2006-01-02"), a.Worker, a.Role.Command, result.Exit, strings.TrimSpace(result.Output))
+	note := fmt.Sprintf("%s: the tool agent %s ran `%s`: exit code %d.\n\n```\n%s\n```", a.Now().Format("2006-01-02"), a.Worker, a.commandLine(), result.Exit, strings.TrimSpace(result.Output))
+	if a.Role.Kind == roles.AI {
+		note = strings.Replace(note, "the tool agent", "the AI worker", 1)
+	}
 	if result.Detail != "" {
 		note += "\n\n" + result.Detail
 	}
@@ -213,7 +246,7 @@ func (a *Agent) stop(dir string, m mq.Message, result *Result) {
 		fmt.Fprintf(a.Err, "Warning: %s could not record the failure in %s: %v\n", a.Worker, m.Issue, err)
 	}
 	args := []string{"update", m.Issue, "open"}
-	if a.Role.OnFailure == NeedsHuman {
+	if result.Next == NeedsHuman {
 		args = append(args, "--add-tags", NeedsHuman)
 	} else {
 		args = append(args, "--metadata", "delegate="+a.Role.OnFailure)
@@ -222,7 +255,7 @@ func (a *Agent) stop(dir string, m mq.Message, result *Result) {
 		fmt.Fprintf(a.Err, "Warning: %s could not stop %s: %v\n", a.Worker, m.Issue, err)
 		return
 	}
-	if a.Role.OnFailure == NeedsHuman {
+	if result.Next == NeedsHuman {
 		return
 	}
 	data, _ := json.Marshal(map[string]any{"workspace": dir, "failed": result})
@@ -240,9 +273,13 @@ func (a *Agent) command(ctx context.Context, dir string, m mq.Message) (int, str
 	if err != nil {
 		return -1, "", err
 	}
-	cmd := Shell(ctx, a.Role.Command)
+	input = append(input, '\n')
+	if a.Role.Kind == roles.AI {
+		input = []byte(airole.TaskPrompt(a.Role, a.Worker, m, dir))
+	}
+	cmd := Shell(ctx, a.commandLine())
 	cmd.Dir = dir
-	cmd.Stdin = bytes.NewReader(append(input, '\n'))
+	cmd.Stdin = bytes.NewReader(input)
 	var output bytes.Buffer
 	cmd.Stdout = io.MultiWriter(&output, a.Out)
 	cmd.Stderr = io.MultiWriter(&output, a.Err)
@@ -262,7 +299,26 @@ func (a *Agent) command(ctx context.Context, dir string, m mq.Message) (int, str
 	case errors.As(err, &exit):
 		return exit.ExitCode(), output.String(), nil
 	}
-	return -1, output.String(), fmt.Errorf("`%s` could not start: %v", a.Role.Command, err)
+	return -1, output.String(), fmt.Errorf("`%s` could not start: %v", a.commandLine(), err)
+}
+
+// commandLine is the command of a tool role, or the runner of an AI role with its role.
+func (a *Agent) commandLine() string {
+	if a.Role.Kind == roles.AI {
+		return strings.ReplaceAll(a.Runner, "{role}", a.Role.Name)
+	}
+	return a.Role.Command
+}
+
+// issueState returns the state of an issue, or "" when sisyphus cannot read it.
+func (a *Agent) issueState(dir, issue string) string {
+	out, err := a.Sisyphus(dir, "show", "--json", "--", issue)
+	if err != nil {
+		return ""
+	}
+	var shown struct{ State string }
+	json.Unmarshal([]byte(out), &shown)
+	return shown.State
 }
 
 // Shell returns the command that runs a command line in the shell of the platform.
@@ -298,8 +354,8 @@ type Ballot struct {
 // Review runs the command of a tool role in dir, as a reviewer of a referendum
 // ([[referendum]]), and returns its ballot. A tool reviewer never abstains.
 func Review(ctx context.Context, role roles.Role, dir string, out io.Writer) (Ballot, error) {
-	if err := Validate(role); err != nil {
-		return Ballot{}, err
+	if role.Kind != roles.Tool {
+		return Ballot{}, fmt.Errorf("The role %s is an AI role: its ballot comes from a referendum, not from an exit code.", role.Name)
 	}
 	r, err := repo.Find(dir)
 	if err != nil {

@@ -146,13 +146,15 @@ func TestAToolAgentListensForItsBroadcasts(t *testing.T) {
 	equal(t, "saw bookmark-ready\n", r.read("stamps.txt"))
 }
 
-func TestAnAIRoleCannotRunAsAToolAgent(t *testing.T) {
+func TestAnAIRoleNeedsARunner(t *testing.T) {
 	r := newAgentRepo(t)
+	t.Setenv("HEPHAESTUS_AI_RUNNER", "")
 
 	res := r.run("agent", "run", "code-fixer", "--once")
 
 	equal(t, 1, res.exit)
-	contains(t, res.errors, "The role code-fixer is an ai role")
+	contains(t, res.errors, "The role code-fixer is an AI role: a model does its work, and a model costs tokens.")
+	contains(t, res.errors, "claude -p --agent {role}")
 }
 
 func TestAToolReviewerVotes(t *testing.T) {

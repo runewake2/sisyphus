@@ -3,6 +3,7 @@ role: project-manager
 kind: ai
 trigger: request
 on-failure: needs-human
+allowed-tools: [Bash, Read, Grep, Glob]
 can-call-referendum: false
 ---
 

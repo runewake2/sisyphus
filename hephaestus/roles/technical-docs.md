@@ -3,6 +3,7 @@ role: technical-docs
 kind: ai
 trigger: [close, request]
 on-failure: needs-human
+allowed-tools: [Bash, Read, Grep, Glob, Edit, Write]
 listens: [issue-closed]
 can-call-referendum: false
 ---

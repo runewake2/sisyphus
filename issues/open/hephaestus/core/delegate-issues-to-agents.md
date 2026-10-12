@@ -37,6 +37,8 @@ Sub-issues:
 - [[referendum-voting]]: several role agents vote on an implementation, and a modification reruns the vote.
 - [[tool-agents]]: agents that do delegated work with a program, not a model, so that it costs no tokens.
 - [[message-queue]]: a tool agent that relays messages between workers, and public broadcasts.
+- [[run-ai-roles]]: run the AI roles as Claude Code subagents and as workers.
+- [[security-researcher-agent]] and [[privacy-reviewer-agent]]: two more AI roles.
 
 ## Acceptance criteria
 

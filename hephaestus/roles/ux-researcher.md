@@ -3,6 +3,7 @@ role: ux-researcher
 kind: ai
 trigger: request
 on-failure: needs-human
+allowed-tools: [Bash, Read, Grep, Glob, Write]
 can-call-referendum: false
 ---
 

@@ -42,7 +42,9 @@ It uses `list`, `search`, `graph`, `claims`, and `lint`, and changes issues only
 
 ## Notes
 
-2026-10-12: the role file [[project-manager]] defines the role: its charter, inputs, outputs, tools, the points where it asks a human, and its prompt ([[unreleased-define-the-ai-roles]]). The runs need [[delegation-runner]], which runs AI roles.
+2026-10-12: the role file [[roles/project-manager|project-manager]] defines the role: its charter, inputs, outputs, tools, the points where it asks a human, and its prompt ([[unreleased-define-the-ai-roles]]). The runs need [[delegation-runner]], which runs AI roles.
+
+2026-10-12: the role runs now, as a Claude Code subagent (.claude/agents/project-manager.md) or a worker with a runner ([[run-ai-roles]]). The run of this issue still needs a human to start it, and a human to check its result.
 
 ## Resolution
 

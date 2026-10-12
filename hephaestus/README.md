@@ -42,6 +42,8 @@ as `git -C` does.
 | `hephaestus messages listen -- <command>` | Run a command for each message of a worker, as a tool agent does; exit code 0 acknowledges the message. |
 | `hephaestus messages log` | Print every message of the log, also when the service does not run. |
 | `hephaestus agent run <role>` | Run a worker of a tool role: for each message, claim its issue, run the command of the role, and close or stop the issue from the exit code. No model call ([[0003-a-tool-agent-runs-its-command-for-each-message]]). |
+| `hephaestus agent run <ai-role> --runner <command>` | Run a worker of an AI role: the runner (for example `claude -p --agent {role}`) gets the prompt of each task. Never without a runner. |
+| `hephaestus agent export claude` | Write a Claude Code subagent in `.claude/agents/` for each AI role; `--check` tells whether they are in sync with the role files. |
 | `hephaestus agent review <role>` | Run a tool role as a referendum reviewer, and print its ballot: `yes`, `no`, or `modify` with the changes that it made. |
 | `hephaestus merge-queue <task>...` | Make one linear history from the work of a set of tasks, onto a new bookmark `merge-queue/<date>`: merge each bookmark in the order of `merge-order`, renumber decision records, give the versions, and run `--checks`. It never moves `main` ([[0001-merge-with-git-in-a-scratch-worktree]]). |
 | `hephaestus version list` | List the unreleased changelog entries, in the order that `assign` uses by default. |

@@ -42,6 +42,11 @@ type Role struct {
 	// Listens holds the kinds of broadcast that the role reacts to, for example bookmark-ready. Its
 	// workers also get every message to them and to the role.
 	Listens []string `json:"listens,omitempty"`
+	// AllowedTools are the Claude Code tools that an AI role may use, for example [Bash, Read]. Empty:
+	// the tools of the session.
+	AllowedTools []string `json:"allowed-tools,omitempty"`
+	// Model is the model of an AI role, for example sonnet. Empty: the model of the session.
+	Model string `json:"model,omitempty"`
 	// Charter is the text of the Charter section, for a summary.
 	Charter  string `json:"charter"`
 	sections map[string]string
@@ -186,6 +191,15 @@ func read(file string) (Role, []string) {
 			problems = append(problems, fmt.Sprintf("listens has %q, which is not a kind: lowercase words, for example bookmark-ready", kind))
 		}
 		role.Listens = append(role.Listens, kind)
+	}
+	for _, tool := range strings.Split(strings.Trim(fields["allowed-tools"], "[]"), ",") {
+		if tool = strings.TrimSpace(tool); tool != "" {
+			role.AllowedTools = append(role.AllowedTools, tool)
+		}
+	}
+	role.Model = fields["model"]
+	if role.Kind == Tool && (len(role.AllowedTools) > 0 || role.Model != "") {
+		problems = append(problems, "allowed-tools and model are for an AI role; a tool role runs its command")
 	}
 	switch fields["can-call-referendum"] {
 	case "", "false":
