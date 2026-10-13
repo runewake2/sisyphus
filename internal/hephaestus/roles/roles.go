@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -119,10 +120,7 @@ func Load(dir string) ([]Role, error) {
 		}
 		roles = append(roles, role)
 	}
-	names := map[string]bool{}
-	for _, role := range roles {
-		names[role.Name] = true
-	}
+	problems = append(problems, duplicates(dir, roles)...)
 	for _, role := range roles {
 		if role.OnFailure != "needs-human" {
 			target := slices.IndexFunc(roles, func(r Role) bool { return r.Name == role.OnFailure })
@@ -149,19 +147,56 @@ func Load(dir string) ([]Role, error) {
 	return roles, nil
 }
 
+// duplicates returns a problem for each name that more than one role file gives, for example
+// x.md and x/role.md, and for each flat name that more than one role has, for example a-b.md and
+// a/b/role.md: workers and subagent files are named after the flat name.
+func duplicates(dir string, roles []Role) []string {
+	var problems []string
+	files, names := map[string][]string{}, map[string][]string{}
+	for _, role := range roles {
+		rel, err := filepath.Rel(dir, role.Path)
+		if err != nil {
+			rel = role.Path
+		}
+		files[role.Name] = append(files[role.Name], filepath.ToSlash(rel))
+		if !slices.Contains(names[role.Flat()], role.Name) {
+			names[role.Flat()] = append(names[role.Flat()], role.Name)
+		}
+	}
+	for _, name := range slices.Sorted(maps.Keys(files)) {
+		if len(files[name]) > 1 {
+			slices.Sort(files[name])
+			problems = append(problems, fmt.Sprintf("%s: the role %s has %d role files. Keep one of them.", strings.Join(files[name], ", "), name, len(files[name])))
+		}
+	}
+	for _, flat := range slices.Sorted(maps.Keys(names)) {
+		if len(names[flat]) > 1 {
+			slices.Sort(names[flat])
+			problems = append(problems, fmt.Sprintf("the roles %s have the same worker and subagent name %s. Rename one of them.", strings.Join(names[flat], " and "), flat))
+		}
+	}
+	return problems
+}
+
 // Find returns the role named name in dir: dir/<name>.md, or dir/<name>/role.md.
 func Find(dir, name string) (Role, error) {
-	file := ""
+	var found []string
 	if rolePattern.MatchString(name) {
 		for _, candidate := range []string{filepath.Join(dir, name+".md"), filepath.Join(dir, filepath.FromSlash(name), RoleFile)} {
 			if strings.Contains(name, "/") && !strings.HasSuffix(candidate, RoleFile) {
 				continue // a file below dir is a role file only when its name is role.md
 			}
 			if _, err := os.Stat(candidate); err == nil {
-				file = candidate
-				break
+				found = append(found, candidate)
 			}
 		}
+	}
+	if len(found) > 1 {
+		return Role{}, fmt.Errorf("The role %s has %d role files: %s. Keep one of them.", name, len(found), strings.Join(found, ", "))
+	}
+	file := ""
+	if len(found) == 1 {
+		file = found[0]
 	}
 	if file == "" {
 		known, _ := Load(dir)

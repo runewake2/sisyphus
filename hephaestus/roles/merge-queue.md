@@ -32,6 +32,8 @@ does nothing else ([[agent-delegation#Merge queue]]).
   records with unique numbers (`hephaestus decisions renumber`).
 - A report in the `Notes` of each task: its place in the order, what was renumbered, or why its
   work was left out.
+- Exit code 0 when the work of every task is in the line, and 2 when it left work out. Exit code 2
+  stops the request for a human, with the report in its `Notes`, also when the line was made.
 
 ## Works with
 

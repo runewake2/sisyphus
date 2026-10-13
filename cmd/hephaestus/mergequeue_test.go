@@ -24,9 +24,19 @@ func (r *testRepo) gitOut(args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
+// mergeQueue runs the merge queue, which must merge the work of every bookmark: exit code 0.
 func (r *testRepo) mergeQueue(args ...string) mergequeue.Report {
 	r.t.Helper()
-	res := r.mustRun(append([]string{"merge-queue", "--json"}, args...)...)
+	return r.mergeQueueExit(0, args...)
+}
+
+// mergeQueueExit runs the merge queue, which must end with the exit code want, and returns its report.
+func (r *testRepo) mergeQueueExit(want int, args ...string) mergequeue.Report {
+	r.t.Helper()
+	res := r.run(append([]string{"merge-queue", "--json"}, args...)...)
+	if res.exit != want {
+		r.t.Fatalf("merge-queue %v: want exit code %d, got %d: %s", args, want, res.exit, res.errors)
+	}
 	var report mergequeue.Report
 	if err := json.Unmarshal([]byte(res.output), &report); err != nil {
 		r.t.Fatalf("%v\n%s\n%s", err, res.output, res.errors)
@@ -121,7 +131,7 @@ func TestAConflictLeavesABookmarkOut(t *testing.T) {
 	r.task("left-task-work", "ai/left")
 	r.task("right-task-work", "ai/right")
 
-	report := r.mergeQueue("left-task-work", "right-task-work", "--name", "mq/test")
+	report := r.mergeQueueExit(2, "left-task-work", "right-task-work", "--name", "mq/test")
 
 	equalStrings(t, []string{"ai/left"}, mergedBookmarks(report))
 	equal(t, 1, len(report.LeftOut))
@@ -156,7 +166,7 @@ func TestFailedChecksLeaveABookmarkAndItsDependentsOut(t *testing.T) {
 	r.task("bad-task-work", "ai/bad")
 	r.task("after-bad-work", "ai/after", "bad-task-work")
 
-	report := r.mergeQueue("good-task-work", "bad-task-work", "after-bad-work", "--name", "mq/test", "--checks", `test ! -e bad.txt || { echo "bad.txt is not allowed"; exit 1; }`)
+	report := r.mergeQueueExit(2, "good-task-work", "bad-task-work", "after-bad-work", "--name", "mq/test", "--checks", `test ! -e bad.txt || { echo "bad.txt is not allowed"; exit 1; }`)
 
 	equalStrings(t, []string{"ai/good"}, mergedBookmarks(report))
 	reasons := map[string]string{}

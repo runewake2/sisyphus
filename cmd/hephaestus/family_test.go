@@ -37,6 +37,31 @@ func TestTheNameOfAFamilyRoleMustBeItsPath(t *testing.T) {
 	contains(t, res.errors, `formatter/upper/role.md: role is "upper", but the path of the file gives "formatter/upper"`)
 }
 
+func TestARoleWithTwoRoleFilesIsAnError(t *testing.T) {
+	r := newTrackerRepo(t)
+	r.write("hephaestus/roles/formatter.md", familyRole("formatter"))
+	r.write("hephaestus/roles/formatter/role.md", familyRole("formatter"))
+
+	listed := r.run("roles")
+	delegated := r.run("delegate", "fix-login-bug", "formatter")
+
+	equal(t, 1, listed.exit)
+	contains(t, listed.errors, "formatter.md, formatter/role.md: the role formatter has 2 role files. Keep one of them.")
+	equal(t, 1, delegated.exit)
+	contains(t, delegated.errors, "The role formatter has 2 role files")
+}
+
+func TestRolesWithOneFlatNameAreAnError(t *testing.T) {
+	r := newTrackerRepo(t)
+	r.write("hephaestus/roles/formatter-upper.md", familyRole("formatter-upper"))
+	r.write("hephaestus/roles/formatter/upper/role.md", familyRole("formatter/upper"))
+
+	res := r.run("roles")
+
+	equal(t, 1, res.exit)
+	contains(t, res.errors, "the roles formatter-upper and formatter/upper have the same worker and subagent name formatter-upper")
+}
+
 func TestAFileBelowTheRolesThatIsNotRoleMdIsNoRole(t *testing.T) {
 	r := newTrackerRepo(t)
 	r.write("hephaestus/roles/formatter/upper.md", familyRole("formatter/upper"))

@@ -39,7 +39,11 @@ func mergeQueueCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 			"get a note, and a conflict a message to --conflicts-to. The result is the bookmark --name (default " +
 			"merge-queue/<date>). It never moves --onto, and never pushes. With --from-message, the set of tasks " +
 			"comes from the data of the message on standard input, as a tool agent gives it: " +
-			`{"tasks": [...], "onto": ..., "name": ..., "checks": ...}.`,
+			`{"tasks": [...], "onto": ..., "name": ..., "checks": ...}.\n\n` +
+			"Exit codes: 0 when the work of every bookmark is in the line, or was in --onto already; 2 when the run " +
+			"left a bookmark out, for a conflict, the checks, or another reason in the report (the line of the other " +
+			"bookmarks is still made); 1 when the run could not happen. As a tool agent, exit code 2 stops the task " +
+			"for a human, with the report in its Notes.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			request := runRequest{Tasks: args, Onto: onto, Name: name, Checks: checks}
 			if fromMessage {
@@ -106,10 +110,13 @@ func mergeQueueCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 			recordLeftOut(cmd, w, r, report, conflictsTo)
 			announce(cmd, r, report)
 			if asJSON {
-				return writeJSON(cmd.OutOrStdout(), report)
+				if err := writeJSON(cmd.OutOrStdout(), report); err != nil {
+					return err
+				}
+			} else {
+				printReport(cmd.OutOrStdout(), cmd.ErrOrStderr(), report)
 			}
-			printReport(cmd.OutOrStdout(), cmd.ErrOrStderr(), report)
-			return nil
+			return leftOutError(report)
 		},
 	}
 	cmd.Flags().StringVar(&onto, "onto", "main", "The base of the new line. It does not change.")
@@ -197,6 +204,25 @@ func announce(cmd *cobra.Command, r repo.Repo, report mergequeue.Report) {
 	if _, err := client.Send(mq.Message{ID: "merge-queue-done-" + report.Name, From: "merge-queue", To: mq.Address{Broadcast: true}, Kind: "merge-queue-done", Body: body, Data: data}); err != nil {
 		fmt.Fprintf(cmd.ErrOrStderr(), "Warning: could not broadcast merge-queue-done for %s: %v\n", report.Name, err)
 	}
+}
+
+// leftOutExit is the exit code of a run that left work out.
+const leftOutExit = 2
+
+// leftOutError returns an error with exit code 2 when the run left out a bookmark that has work. A
+// bookmark whose work is in the base already is not left out.
+func leftOutError(report mergequeue.Report) error {
+	var left []string
+	for _, l := range report.LeftOut {
+		if l.Reason != "nothing" {
+			left = append(left, fmt.Sprintf("%s (%s)", l.Bookmark, l.Reason))
+		}
+	}
+	if len(left) == 0 {
+		return nil
+	}
+	total := len(report.Merged) + len(left)
+	return exitError{code: leftOutExit, message: fmt.Sprintf("The merge queue left %d of %d bookmarks out: %s.", len(left), total, strings.Join(left, ", "))}
 }
 
 func first(items []string) string {

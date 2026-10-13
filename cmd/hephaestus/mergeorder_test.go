@@ -160,6 +160,23 @@ func TestTasksWithOneBookmarkMergeTogether(t *testing.T) {
 	equalStrings(t, []string{"first-task-work", "second-task-work"}, plan.Order[0].Tasks)
 }
 
+func TestBookmarksAtOneCommitMergeAsOne(t *testing.T) {
+	r := newMergeRepo(t, "first-task-work", "second-task-work", "third-task-work")
+	r.branch("ai/one", "main", "2026-10-11T10:00:00", map[string]string{"one.txt": "1\n"})
+	r.git("branch", "ai/copy", "ai/one") // made on the head of ai/one, with no change of its own yet
+	r.branch("ai/top", "ai/copy", "2026-10-11T11:00:00", map[string]string{"top.txt": "top\n"})
+	r.task("first-task-work", "ai/one")
+	r.task("second-task-work", "ai/copy")
+	r.task("third-task-work", "ai/top")
+
+	plan := r.mergeOrder("first-task-work", "second-task-work", "third-task-work")
+
+	equalStrings(t, []string{"ai/copy", "ai/top"}, bookmarksOf(plan))
+	equalStrings(t, []string{"second-task-work", "first-task-work"}, plan.Order[0].Tasks)
+	equal(t, "ai/copy", plan.Order[1].After[0].Bookmark)
+	equalStrings(t, []string{"the bookmarks ai/copy and ai/one point at the same commit, so they merge as one, as ai/copy"}, plan.Warnings)
+}
+
 func TestABookmarkWithNoChangeIsLeftOut(t *testing.T) {
 	r := newMergeRepo(t, "done-task-work", "real-task-work")
 	r.git("branch", "ai/done", "main")

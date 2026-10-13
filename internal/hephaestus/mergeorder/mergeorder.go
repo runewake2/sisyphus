@@ -135,6 +135,34 @@ func Compute(vcs VCS, tasks []Task, base string) (Plan, error) {
 		}
 	}
 
+	// Bookmarks at the same commit have the same work, and each is based on the other: they merge as
+	// one, under the first name. For example, an agent made its bookmark on the head of another one,
+	// and has no change of its own yet.
+	sorted := slices.Sorted(maps.Keys(units))
+	for i, a := range sorted {
+		if units[a] == nil {
+			continue
+		}
+		for _, b := range sorted[i+1:] {
+			if units[b] == nil {
+				continue
+			}
+			same, err := sameCommit(vcs, a, b)
+			if err != nil {
+				return plan, err
+			}
+			if !same {
+				continue
+			}
+			units[a].tasks = append(units[a].tasks, units[b].tasks...)
+			for _, task := range units[b].tasks {
+				unitOf[task] = a
+			}
+			delete(units, b)
+			plan.Warnings = append(plan.Warnings, fmt.Sprintf("the bookmarks %s and %s point at the same commit, so they merge as one, as %s", a, b, a))
+		}
+	}
+
 	// Rule 1: dependencies between the tasks of different bookmarks.
 	for _, task := range tasks {
 		u, ok := units[unitOf[task.Name]]
@@ -231,6 +259,14 @@ func Compute(vcs VCS, tasks []Task, base string) (Plan, error) {
 		}
 	}
 	return plan, nil
+}
+
+// sameCommit reports whether a and b are the same commit: each is an ancestor of the other.
+func sameCommit(vcs VCS, a, b string) (bool, error) {
+	if below, err := vcs.IsAncestor(a, b); err != nil || !below {
+		return false, err
+	}
+	return vcs.IsAncestor(b, a)
 }
 
 func addReason(u *unit, before, why string) {

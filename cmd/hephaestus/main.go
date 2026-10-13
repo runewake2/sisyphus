@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -27,10 +28,23 @@ func run(args []string, stdout, stderr io.Writer) int {
 	root.SetErr(stderr)
 	if err := root.Execute(); err != nil {
 		fmt.Fprintf(stderr, "Error: %s\n", err)
+		var coded exitError
+		if errors.As(err, &coded) {
+			return coded.code
+		}
 		return 1
 	}
 	return 0
 }
+
+// exitError is an error with an exit code other than 1, for a result that a script must tell apart
+// from a failure to run.
+type exitError struct {
+	code    int
+	message string
+}
+
+func (e exitError) Error() string { return e.message }
 
 func newRootCommand() *cobra.Command {
 	var directory, rolesDir string

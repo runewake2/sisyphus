@@ -154,7 +154,7 @@ func agentCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 	}
 	review.Flags().BoolVar(&reviewJSON, "json", false, "Print the ballot as JSON, with the diff of a modification.")
 	review.Flags().StringVar(&reviewBase, "base", "", "The current implementation, which the command gets in HEPHAESTUS_BASE. Default: none, and the command uses main.")
-	cmd.AddCommand(run, review, exportCommand(w, findRepo))
+	cmd.AddCommand(run, review, trialCommand(w, findRepo), trialsCommand(findRepo), exportCommand(w, findRepo))
 	return cmd
 }
 
