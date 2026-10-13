@@ -142,8 +142,12 @@ Answered by the human on 2026-10-11:
 
 ## The form of hephaestus
 
-hephaestus is a Go module of its own, in `hephaestus/` (Q7, answered by the human on 2026-10-12).
-It uses sisyphus only through the `sisyphus` CLI and `sisyphus-mcp`, as any other client does. It
+hephaestus was a Go module of its own, in `hephaestus/` (Q7, answered by the human on 2026-10-12).
+On 2026-10-13 the human asked for the commands of the two tools to live side by side: its command
+is now `cmd/hephaestus`, and its packages `internal/hephaestus/`, in the one Go module of the repo
+([[0003-one-go-module-with-the-commands-side-by-side]]). It uses sisyphus only through the
+`sisyphus` CLI and `sisyphus-mcp`, as any other client does, and a test checks that the two share
+no code. It
 runs in two forms:
 
 - **A CLI tool**, `hephaestus`, for people and agents: for example to delegate a task, to call a

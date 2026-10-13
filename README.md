@@ -120,6 +120,9 @@ go install github.com/runewake2/sisyphus/cmd/sisyphus-mcp@latest
 claude mcp add sisyphus -- sisyphus-mcp      # Claude Code
 ```
 
+The repo also holds [hephaestus](hephaestus/README.md), a worker manager that gives sisyphus issues to
+agents, each with one role: `go install github.com/runewake2/sisyphus/cmd/hephaestus@latest`.
+
 [docs/sisyphus-mcp.md](docs/sisyphus-mcp.md) tells how to set up other clients, lists the tools,
 and shows how warnings and errors come back, with an example session and troubleshooting.
 

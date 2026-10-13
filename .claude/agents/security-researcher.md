@@ -25,7 +25,7 @@ referendum, it judges the security of the change.
 ## Inputs
 
 - A task message, with the scope of the review in its data, for example
-  `{"scope": "hephaestus/internal/mq"}`, or a referendum ballot request.
+  `{"scope": "internal/hephaestus/mq"}`, or a referendum ballot request.
 - The code, the configuration, the docs, and the decision records in the scope.
 - The issues of the repo, to find the weaknesses that are filed already.
 

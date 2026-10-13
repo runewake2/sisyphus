@@ -1,6 +1,7 @@
 # 0002: One tracker and one design log for both projects
 
-- Status: Accepted
+- Status: Accepted. Its code layout (a Go module of its own) is replaced by
+  [[0003-one-go-module-with-the-commands-side-by-side]].
 - Date: 2026-10-12
 - Version: [[0.0.115]]
 

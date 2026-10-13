@@ -173,8 +173,10 @@ is not the parent of an issue: set `parent` for that.
 ### hephaestus
 
 hephaestus is a separate project beside sisyphus: a worker manager that provisions and manages
-agents and gives them sisyphus issues. Its code is the Go module in `hephaestus/`, with its role
-files in `hephaestus/roles/`. It shares everything else with sisyphus
+agents and gives them sisyphus issues. Its command is `cmd/hephaestus` and its packages are in
+`internal/hephaestus/`, in the one Go module of the repo, beside the commands of sisyphus; its docs
+and role files are in `hephaestus/` ([[0003-one-go-module-with-the-commands-side-by-side]]). It
+shares no code with sisyphus, and a test checks it. It shares everything else with sisyphus
 ([[0002-one-tracker-and-one-design-log-for-both-projects]]):
 
 - Its issues are in this tracker, in `issues/<state>/hephaestus/`, for example

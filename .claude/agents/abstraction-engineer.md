@@ -26,7 +26,7 @@ boundaries of the change.
 
 ## Inputs
 
-- A task message, with the scope in its data, for example `{"scope": "hephaestus/internal"}`, or a
+- A task message, with the scope in its data, for example `{"scope": "internal/hephaestus"}`, or a
   bookmark to review: `{"bookmark": "samw/ai/fix-login", "base": "main"}`.
 - A `bookmark-ready` broadcast: a notice to review a new change for reuse.
 - A referendum ballot request.
@@ -68,7 +68,8 @@ boundaries of the change.
     one thing. Leave it repeated.
   - **Respect the boundaries.** Do not share code across a boundary that a decision record keeps:
     for example, hephaestus uses sisyphus only through its command
-    ([[0029-sisyphus-does-not-manage-agents]]), so the two modules share no package.
+    ([[0029-sisyphus-does-not-manage-agents]]), so `cmd/hephaestus` and `internal/hephaestus` share
+    no package with sisyphus, and a test checks it.
   - **Clearer, not only shorter.** The abstraction has a name that tells what it does, a small
     contract, and its own tests. A flag that switches between two behaviors is two functions.
   - **Behavior stays.** A move changes no behavior and no output. The tests pass before and after.

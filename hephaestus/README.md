@@ -8,8 +8,12 @@ work. It is a separate project that lives beside sisyphus, in this directory of 
 > queue, and the versioning tools work; the scheduler daemon does not exist yet. [[agent-delegation]]
 > is the design, and [[delegate-issues-to-agents]] is the first epic.
 
-hephaestus is a Go module of its own, in this directory. It runs as a CLI tool, `hephaestus`, and as
-a background scheduler daemon that starts the workers on their triggers.
+Its command is `cmd/hephaestus`, beside `cmd/sisyphus` and `cmd/sisyphus-mcp`, in the one Go module
+of the repo, and its packages are in `internal/hephaestus/`. It shares no code with sisyphus: it uses
+sisyphus only through the `sisyphus` command, and a test checks it
+([[0003-one-go-module-with-the-commands-side-by-side]]). This directory holds its docs and its role
+files. It runs as a CLI tool, `hephaestus`, and as a background scheduler daemon that starts the
+workers on their triggers.
 
 ## hephaestus and sisyphus
 
@@ -27,7 +31,8 @@ generic issue data that any client can use, for example a filter on a `metadata`
 
 ## Commands
 
-Build it with `go build ./cmd/hephaestus` in this directory. Every command takes `-C <directory>`,
+Install it with `go install github.com/runewake2/sisyphus/cmd/hephaestus@latest`, or build it with
+`go build ./cmd/hephaestus` at the root of the repo. Every command takes `-C <directory>`,
 as `git -C` does.
 
 | Command | What it does |
@@ -64,13 +69,12 @@ A human who lands work by hand runs them too.
 ## Layout
 
 ```
+cmd/hephaestus/        The hephaestus command, beside cmd/sisyphus and cmd/sisyphus-mcp
+internal/hephaestus/   Its packages
 hephaestus/
-  README.md     This page
-  go.mod        The Go module of hephaestus
-  cmd/          The hephaestus command
-  internal/     Its packages
-  roles/        One role file for each role: <role>.md, or <family>/<variant>/role.md with its
-                implementation, for example roles/formatter/golang/
+  README.md            This page
+  roles/               One role file for each role: <role>.md, or <family>/<variant>/role.md with
+                       its implementation, for example roles/formatter/golang/
 ```
 
 hephaestus shares the issues and the design log of the repo with sisyphus

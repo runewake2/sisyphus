@@ -57,8 +57,8 @@ workspace, and records what it did in the repo. It does not choose the direction
 ## Tools
 
 - jj or git, for its own workspace and bookmark.
-- The build, the tests, and the checks of the repo: `gofmt`, `go vet`, `go test` in both modules,
-  and `sisyphus lint`.
+- The build, the tests, and the checks of the repo: `gofmt`, `go vet`, `go test`, and
+  `sisyphus lint`.
 - sisyphus, for every read and change of an issue.
 - `hephaestus messages send --role technical-docs/comments` with `messages receive`, for the review
   of comments and descriptions.

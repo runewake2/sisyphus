@@ -44,7 +44,7 @@ that the change works.
 
 ## Tools
 
-- The test commands of the repo: `go test ./...` in both modules.
+- The test commands of the repo: `go test ./...`.
 - jj or git, for its own workspace and bookmark.
 - sisyphus, to read the issue, record the table, and file issues.
 
