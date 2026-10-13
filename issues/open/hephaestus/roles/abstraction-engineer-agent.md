@@ -32,7 +32,7 @@ Requested by a human on 2026-10-12: an agent whose entire objective is clear abs
 
 - [x] `hephaestus/roles/abstraction-engineer.md` describes the role and its rules: reuse first, three or more copies, one reason to change, respect the boundaries, clearer and not only shorter, behavior stays.
 - [x] Its Claude Code subagent is in `.claude/agents/`.
-- [ ] A trial run on `hephaestus/internal` finds the known copies below, and files issues with no duplicates.
+- [ ] A trial run on `internal/hephaestus` finds the known copies below, and files issues with no duplicates.
 - [ ] A human checks the issues of the run and decides whether the role stays.
 
 ## Out of scope
