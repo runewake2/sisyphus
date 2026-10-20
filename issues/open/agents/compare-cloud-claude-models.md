@@ -43,6 +43,8 @@ Nothing.
 
 2026-10-20, triage: checked the repo; the harness (design/ollama-local-models/harness/harness.py) has the anthropic backend, and design/ollama-local-models/results/ has no cloud-model results except the Claude Opus 5.5 subagent run, so the issue is not stale. Clear, in the right directory (agents/, model evaluations), not a duplicate, criteria checkable. Two questions for a human before work can start: (1) an Anthropic API key that is not rate-limited (the sandbox key returned HTTP 429 for every model); (2) approval of the estimated 30 to 50 USD of API cost. Proposal: priority low (keep), role model-eval — but note that the model-eval role file covers only local models today; a human either extends that role file with the cloud backend or runs the suite directly.
 
+2026-10-20, from a human: the spending approval for the cloud runs is blocked for a while. Do not start this issue, and do not delegate it; the trial note of triage above stands (an unthrottled API key is also needed). Revisit when the spend is approved.
+
 ## Resolution
 
 <Complete this section when you close the issue.
