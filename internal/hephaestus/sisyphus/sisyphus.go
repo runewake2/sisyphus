@@ -65,6 +65,7 @@ type Detail struct {
 	State     string            `json:"state"`
 	Owner     string            `json:"owner,omitempty"`
 	Bookmark  string            `json:"bookmark,omitempty"`
+	Tags      []string          `json:"tags,omitempty"`
 	DependsOn []string          `json:"depends-on,omitempty"`
 	Metadata  map[string]string `json:"metadata,omitempty"`
 }

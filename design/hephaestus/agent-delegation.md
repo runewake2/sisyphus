@@ -372,6 +372,12 @@ in its section `Works with`, which `hephaestus roles` checks):
 referendums that need a decision, the workers that stopped, the messages that no live worker can
 take, and the last line of the merge queue with the recommendation of the release manager.
 
+`hephaestus doctor <issue>` diagnoses the task of one issue — whether a worker works on it, lost
+it, or stopped on it, and what makes it run again — and `hephaestus kick <issue>` makes a stuck
+task run again: it reopens the issue, removes `needs-human`, and sends the task back to its role,
+for example after a worker crashed or ran out of API keys. A task that a live worker holds is slow,
+not stuck: the kick refuses it without `--force`, and it never starts a worker.
+
 Humans keep the decisions that no role makes: they move `main`, accept the proposals of the
 project manager, decide a failed referendum, and take each issue tagged `needs-human`.
 
