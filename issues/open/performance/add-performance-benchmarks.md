@@ -51,7 +51,7 @@ bound on the work, the way `TestEveryCommandReadsEachStateDirectoryAndIssueFileO
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+State on 2026-10-20 (sisyphus 0.0.117): cmd/sisyphus/bench_test.go exists with four benchmarks (list --blocked, graph --full, update, list --parent) at one size, 3,000 issues, built by benchmarkRepo. Gaps against the acceptance criteria: no benchmark for lint, search, show, or new; only one size, so growth does not show; the generated repo has no non-issue files, no design documents, no body wikilinks, and no issues in state in-progress, so the link check and the repo walk are not exercised as in a real repo. The 2026-10-20 re-measurement for [[performance/large-repo-performance]] used an external generator (10% epics, 70% sub-issues, 40% with 1-3 dependencies, 30% in subdirectories, 3 body wikilinks per issue, one design document per 20 issues, 1,000 non-issue files, in a git repo) at 1,000, 5,000, and 20,000 issues; porting that shape into benchmarkRepo and adding the missing commands at two sizes would have caught the quadratic node placement loop of [[draw-graph-nodes-in-linear-time]], which only shows with --full on a large connected graph.
 
 ## Resolution
 

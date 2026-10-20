@@ -72,7 +72,28 @@ first fix, so that each fix can show its effect and later changes cannot make it
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+Re-measured on 2026-10-20 with sisyphus 0.0.117 (source at commit 2a29144) on a 32-core AMD Threadripper 7970X, GOMAXPROCS=20, one run at a time. Generated repos of 1,000, 5,000, and 20,000 issues with the shape in the Context, plus 1,000 non-issue files, in a git repo. Times are the median of 3 runs of the command binary, in ms:
+
+| Command | 1,000 | 5,000 | 20,000 | Growth |
+|---|---|---|---|---|
+| lint | 46 | 192 | 765 | linear |
+| graph <epic> --full --json | 21 | 128 | 1,375 | worse than linear |
+| graph <epic> | 18 | 66 | 241 | linear (fails on --max-issues at 5,000 and up) |
+| list --json (all states) | 19 | 72 | 267 | linear |
+| list | 17 | 65 | 228 | linear |
+| search | 23 | 97 | 383 | linear |
+| show (name found without walk) | 2 | 2 | 2 | constant |
+| show (bare name of an issue in a subdirectory) | — | — | 53 | linear (walk only) |
+| new | 9 | 22 | 74 | linear |
+| hephaestus tasks <role> | 19 | 57 | 192 | linear |
+| hephaestus status | 32 | 102 | 342 | linear |
+| hephaestus merge-order (10 tasks) | 71 | 135 | 378 | linear |
+
+The acceptance numbers for 20,000 issues hold: lint 765 ms < 2 s, list 228 ms < 300 ms, show 2 ms < 10 ms. Peak RSS at 20,000 issues: lint 131 MB, search 74 MB, graph --full 74 MB, list 50 MB.
+
+One quadratic path remains: the node placement loop of buildGraph (cmd/sisyphus/graph.go:171-184). It scans every edge for each placed node (graph.go:177) and sorts the whole ready list on every iteration (graph.go:172). The CPU profile of graph <epic> --full --json at 20,000 issues has 70% of the samples in buildGraph: 4.9 s cumulative on the edge scan and 1.5 s in slices.Sort, of 7.5 s. Filed as [[draw-graph-nodes-in-linear-time]].
+
+The CPU profile of lint at 20,000 issues is linear work: 27% file open and read syscalls, 31% in linkChecker.rowsOf (headingsIn 12%, wikilinks 11%, matchTarget 7%; cmd/sisyphus/links.go:274-285), 15% GC, 13% regexp. list and search are bound by the preload file reads (cmd/sisyphus/index.go:56).
 
 ## Resolution
 

@@ -46,6 +46,10 @@ The proposal is to start with Claude Code subagents that a human starts, made fr
 
 2026-10-12, from the human: hephaestus runs as a CLI tool and as a background scheduler daemon (Q7); the daemon starts the workers on their triggers (Q5).
 
+2026-10-20, from the operations auditor: no code fires any trigger today. internal/hephaestus/roles/roles.go only validates the trigger field (lines 301-307), and cmd/hephaestus/delegation.go only displays it. Fourteen roles declare schedule (abstraction-engineer, readability-engineer, operations-auditor, triage, dba/sqlite, dba/postgres, dba/meilisearch, economist/tokens, economist/cloud, economist/compute, and the six dependency-check roles), and technical-docs declares close; none of them starts without a human until this runner exists. The close path has a workaround: hephaestus watch broadcasts issue-closed, and technical-docs listens for it, but a human must keep watch and messages serve running.
+
+2026-10-20, from the operations auditor: a correction of the note above: the count is sixteen roles with the schedule trigger, not fourteen. The list of the note is complete and correct.
+
 ## Resolution
 
 <Complete this section when you close the issue.

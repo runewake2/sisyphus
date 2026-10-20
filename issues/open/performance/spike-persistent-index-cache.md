@@ -53,7 +53,7 @@ Measure each option against the benchmarks of [[add-performance-benchmarks]] aft
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+Evidence from the 2026-10-20 measurement (sisyphus 0.0.117, generated repos, see [[performance/large-repo-performance]]): hephaestus pays the per-command walk and parse once for each sisyphus subprocess it starts. At 20,000 issues: hephaestus tasks <role> = one sisyphus list = 192 ms; hephaestus status = two lists = 342 ms; hephaestus merge-order with 10 tasks = one list --json --state all (267 ms) plus one sisyphus show per task (cmd/hephaestus/mergeorder.go:84) = 378 ms in total. Each show costs 2-6 ms when the reference is found without a walk (issueIndex.exactOf, cmd/sisyphus/index.go:145), and 53 ms when a bare name needs the walk (an issue in a subdirectory), so merge-order over many subdirectory tasks grows as 267 ms + 53 ms per task. A cache that keeps the walk result between commands, or a sisyphus call that returns the details of many issues at once, would cut this N+1 pattern.
 
 ## Resolution
 
