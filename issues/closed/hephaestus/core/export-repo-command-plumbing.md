@@ -1,12 +1,12 @@
 ---
 title: "repo exports Run and Lines, the shared command plumbing of hephaestus"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [hephaestus]     # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-20
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-20     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -63,6 +63,5 @@ Link to design docs and other issues with wikilinks, for example `[[widget-sched
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Done: repo.Run(dir, name, hidden, args...) and repo.Lines are the shared command plumbing. Run returns trimmed stdout and the one error format (name, args, trimmed stderr); the hidden flags (an identity, a --git-dir) run but stay out of the error, so no error text changed. scratch.Git, taskspace.run, jjLine.jjIn, gitLine.git, gitLine.gitDirCmd, and revParse of cmd/hephaestus build on it; mergequeue.lines is gone and line.go uses repo.Lines, which carries the ToSlash that copy missed. Repo.run stays as the untrimmed wrapper over the same core, because WorkingDiff needs the last newline of a diff. Tests cover the error format, the trimming, the hidden flags, and Lines; the full suite passes.
+

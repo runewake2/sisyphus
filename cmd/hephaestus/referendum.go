@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path"
 	"path/filepath"
@@ -145,7 +144,7 @@ func callCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command
 			if err != nil {
 				return err
 			}
-			if err := exportJJ(r); err != nil {
+			if err := r.ExportBookmarks(); err != nil {
 				return err
 			}
 			gitDir, err := r.GitDir()
@@ -187,7 +186,7 @@ func callCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command
 			fmt.Fprintf(cmd.ErrOrStderr(), "referendum %s: %s on %s (%.12s), %d reviewers\n", ref.ID, ref.Issue, bookmark, commit, len(reviewers))
 
 			runErr := referendum.Run(ctx, ref, voter, referendum.Options{Parallel: parallel, On: rec.on})
-			importJJ(r)
+			r.ImportBookmarks()
 			switch {
 			case runErr != nil && ctx.Err() != nil:
 				// A referendum that times out or is stopped fails; the issue stays open for its owner.
@@ -347,31 +346,8 @@ func splitList(values []string) []string {
 	return result
 }
 
-// exportJJ exports the jj bookmarks to git: the referendum reads them with git.
-func exportJJ(r repo.Repo) error {
-	if r.VCS != repo.JJ {
-		return nil
-	}
-	exporter := exec.Command("jj", "git", "export")
-	exporter.Dir = r.Root
-	if out, err := exporter.CombinedOutput(); err != nil {
-		return fmt.Errorf("jj git export: %v: %s", err, strings.TrimSpace(string(out)))
-	}
-	return nil
-}
-
-// importJJ lets jj see the branches of the versions as bookmarks.
-func importJJ(r repo.Repo) {
-	if r.VCS == repo.JJ {
-		importer := exec.Command("jj", "git", "import")
-		importer.Dir = r.Root
-		importer.Run()
-	}
-}
-
 func revParse(gitDir, rev string) (string, error) {
-	out, err := exec.Command("git", "--git-dir="+gitDir, "rev-parse", "--verify", "--quiet", rev+"^{commit}").Output()
-	return strings.TrimSpace(string(out)), err
+	return repo.Run("", "git", []string{"--git-dir=" + gitDir}, "rev-parse", "--verify", "--quiet", rev+"^{commit}")
 }
 
 // freeRecordID returns id, or id-2, id-3, and so on: the first with no record and no branches.

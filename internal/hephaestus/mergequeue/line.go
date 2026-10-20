@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -89,14 +88,7 @@ func (l *jjLine) jj(args ...string) (string, error) {
 }
 
 func (l *jjLine) jjIn(dir string, args ...string) (string, error) {
-	cmd := exec.Command("jj", append(slices.Clone(l.identity), args...)...)
-	cmd.Dir = dir
-	out, errOut := &strings.Builder{}, &strings.Builder{}
-	cmd.Stdout, cmd.Stderr = out, errOut
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("jj %s: %v: %s", strings.Join(args, " "), err, strings.TrimSpace(errOut.String()))
-	}
-	return strings.TrimSpace(out.String()), nil
+	return repo.Run(dir, "jj", l.identity, args...)
 }
 
 // jjIdentity gives jj an author when the user has none, so that a run never fails for it. A
@@ -127,12 +119,12 @@ func (l *jjLine) newCommits(bookmark string, done []string) string {
 
 func (l *jjLine) Commits(bookmark string, done []string) ([]string, error) {
 	out, err := l.jj("log", "--no-graph", "--reversed", "-r", l.newCommits(bookmark, done), "-T", `commit_id ++ "\n"`)
-	return lines(out), err
+	return repo.Lines(out), err
 }
 
 func (l *jjLine) HasMerges(bookmark string, done []string) (bool, error) {
 	out, err := l.jj("log", "--no-graph", "-r", "("+l.newCommits(bookmark, done)+") & merges()", "-T", `commit_id ++ "\n"`)
-	return len(lines(out)) > 0, err
+	return len(repo.Lines(out)) > 0, err
 }
 
 func (l *jjLine) Pick(commit string) ([]string, bool, error) {
@@ -148,7 +140,7 @@ func (l *jjLine) Pick(commit string) ([]string, bool, error) {
 	}
 	list, _ := l.jj("resolve", "--list", "-r", "@-")
 	var files []string
-	for _, file := range lines(list) {
+	for _, file := range repo.Lines(list) {
 		// A line of jj resolve --list is the path, two or more spaces, and what the conflict is.
 		if i := strings.Index(file, "  "); i > 0 {
 			file = file[:i]
@@ -169,12 +161,12 @@ func (l *jjLine) AddedSince(since, dir string) ([]string, error) {
 		return nil, err
 	}
 	var files []string
-	for _, commit := range lines(commits) {
+	for _, commit := range repo.Lines(commits) {
 		summary, err := l.jj("diff", "-r", commit, "--summary")
 		if err != nil {
 			return nil, err
 		}
-		for _, change := range lines(summary) {
+		for _, change := range repo.Lines(summary) {
 			if file, ok := strings.CutPrefix(change, "A "); ok && strings.HasPrefix(file, dir+"/") {
 				files = append(files, file)
 			}
@@ -235,27 +227,14 @@ func newGitLine(r repo.Repo, baseID string) (line, error) {
 func (l *gitLine) Dir() string     { return l.worktree.Dir }
 func (l *gitLine) Repo() repo.Repo { return repo.Repo{Root: l.worktree.Dir, VCS: repo.Git} }
 
-// git runs git in the worktree, and returns its stdout.
+// git runs git in the worktree, and returns its trimmed stdout.
 func (l *gitLine) git(args ...string) (string, error) {
-	cmd := exec.Command("git", append(slices.Clone(l.identity), args...)...)
-	cmd.Dir = l.worktree.Dir
-	out, errOut := &strings.Builder{}, &strings.Builder{}
-	cmd.Stdout, cmd.Stderr = out, errOut
-	if err := cmd.Run(); err != nil {
-		return out.String(), fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, strings.TrimSpace(errOut.String()))
-	}
-	return out.String(), nil
+	return repo.Run(l.worktree.Dir, "git", l.identity, args...)
 }
 
 // gitDirCmd runs git on the git directory, outside the worktree.
 func (l *gitLine) gitDirCmd(args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"--git-dir=" + l.worktree.GitDir}, args...)...)
-	out, errOut := &strings.Builder{}, &strings.Builder{}
-	cmd.Stdout, cmd.Stderr = out, errOut
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, strings.TrimSpace(errOut.String()))
-	}
-	return strings.TrimSpace(out.String()), nil
+	return repo.Run("", "git", []string{"--git-dir=" + l.worktree.GitDir}, args...)
 }
 
 // newCommits is the rev-list arguments of the commits of bookmark that the line does not have yet.
@@ -269,18 +248,18 @@ func (l *gitLine) newCommits(bookmark string, done []string) []string {
 
 func (l *gitLine) Commits(bookmark string, done []string) ([]string, error) {
 	out, err := l.git(append([]string{"rev-list", "--reverse", "--topo-order"}, l.newCommits(bookmark, done)...)...)
-	return lines(out), err
+	return repo.Lines(out), err
 }
 
 func (l *gitLine) HasMerges(bookmark string, done []string) (bool, error) {
 	out, err := l.git(append([]string{"rev-list", "--merges"}, l.newCommits(bookmark, done)...)...)
-	return len(lines(out)) > 0, err
+	return len(repo.Lines(out)) > 0, err
 }
 
 func (l *gitLine) Pick(commit string) ([]string, bool, error) {
 	if _, err := l.git("cherry-pick", "--allow-empty", "--keep-redundant-commits", commit); err != nil {
 		files, _ := l.git("diff", "--name-only", "--diff-filter=U")
-		return lines(files), false, nil
+		return repo.Lines(files), false, nil
 	}
 	return nil, true, nil
 }
@@ -295,12 +274,11 @@ func (l *gitLine) CommitFiles(message string) error {
 
 func (l *gitLine) AddedSince(since, dir string) ([]string, error) {
 	out, err := l.git("log", "--reverse", "--diff-filter=A", "--name-only", "--format=", since+"..HEAD", "--", dir)
-	return lines(out), err
+	return repo.Lines(out), err
 }
 
 func (l *gitLine) Head() (string, error) {
-	head, err := l.git("rev-parse", "HEAD")
-	return strings.TrimSpace(head), err
+	return l.git("rev-parse", "HEAD")
 }
 
 func (l *gitLine) Rollback(to string) error {

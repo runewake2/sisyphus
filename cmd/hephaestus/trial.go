@@ -159,10 +159,8 @@ func runTrial(ctx context.Context, r repo.Repo, role roles.Role, issue string, o
 	if o.Notice != "" {
 		trial.Kind = o.Notice
 	}
-	if r.VCS == repo.JJ {
-		if err := exportJJ(r); err != nil {
-			return trial, err
-		}
+	if err := r.ExportBookmarks(); err != nil {
+		return trial, err
 	}
 	commit, err := r.CommitOf(o.Onto)
 	if err != nil || commit == "" {

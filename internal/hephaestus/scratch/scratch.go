@@ -5,13 +5,13 @@
 package scratch
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
+
+	"github.com/runewake2/sisyphus/internal/hephaestus/repo"
 )
 
 var (
@@ -101,18 +101,12 @@ func (w *Worktree) Commit(base, message string) (string, string, error) {
 // Git runs git on the git directory, in the worktree dir if it is not empty, with a committer when
 // the user has none, and returns its trimmed stdout.
 func Git(gitDir, dir string, args ...string) (string, error) {
-	full := []string{"--git-dir=" + gitDir}
+	hidden := []string{"--git-dir=" + gitDir}
 	if dir != "" {
-		full = []string{"-C", dir}
+		hidden = []string{"-C", dir}
 	}
-	full = append(full, Identity(dir, "hephaestus")...)
-	cmd := exec.Command("git", append(full, args...)...)
-	var out, errOut bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &out, &errOut
-	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, strings.TrimSpace(errOut.String()))
-	}
-	return strings.TrimSpace(out.String()), nil
+	hidden = append(hidden, Identity(dir, "hephaestus")...)
+	return repo.Run("", "git", hidden, args...)
 }
 
 // Identity gives git a committer when the repo of dir has none, so that a commit never fails for

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -93,12 +92,11 @@ func mergeQueueCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 			if err != nil {
 				return err
 			}
-			if r.VCS == repo.JJ && report.Created {
+			if report.Created {
 				// The merge happened with jj; git users of a colocated repo see the new bookmark
-				// only after an export.
-				exporter := exec.Command("jj", "git", "export")
-				exporter.Dir = r.Root
-				exporter.Run()
+				// only after an export. Best effort, as before: the line exists either way, and
+				// the next jj command of a colocated repo exports it too.
+				r.ExportBookmarks()
 			}
 			recordLeftOut(cmd, w, r, report, conflictsTo)
 			announce(cmd, r, report)

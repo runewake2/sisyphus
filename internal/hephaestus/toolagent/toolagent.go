@@ -382,10 +382,8 @@ func (a *Agent) taskSpace(m mq.Message, data TaskData) (taskspace.Space, error) 
 	if base == "" {
 		base = a.base()
 	}
-	if a.Repo.VCS == repo.JJ {
-		if err := exportJJ(a.Repo); err != nil {
-			return taskspace.Space{}, err
-		}
+	if err := a.Repo.ExportBookmarks(); err != nil {
+		return taskspace.Space{}, err
 	}
 	return taskspace.Create(a.Repo, a.Workspaces, name, base, a.BookmarkPrefix+name)
 }
@@ -451,10 +449,8 @@ func (a *Agent) announce(issue string, s taskspace.Space) {
 
 // scratchCopy makes a scratch copy of the bookmark of a notice, at the head that the notice names.
 func (a *Agent) scratchCopy(data TaskData) (*scratch.Worktree, string, error) {
-	if a.Repo.VCS == repo.JJ {
-		if err := exportJJ(a.Repo); err != nil {
-			return nil, "", err
-		}
+	if err := a.Repo.ExportBookmarks(); err != nil {
+		return nil, "", err
 	}
 	gitDir, err := a.Repo.GitDir()
 	if err != nil {
@@ -491,29 +487,12 @@ func (a *Agent) keepFixes(m mq.Message, data TaskData, w *scratch.Worktree, base
 		fmt.Fprintf(a.Err, "Warning: %s could not keep the changes of its notice: %v\n", a.Worker, err)
 		return
 	}
-	if a.Repo.VCS == repo.JJ {
-		importJJ(a.Repo)
-	}
+	a.Repo.ImportBookmarks()
 	result.Fixes = fixes
 	if m.Issue != "" {
 		note := fmt.Sprintf("%s: %s (role %s) made changes to %s in the bookmark %s, on top of it. The author squashes them into the change that they belong to.", a.Now().Format("2006-01-02"), a.Worker, a.Role.Name, data.Bookmark, fixes)
 		a.Sisyphus(a.Dir, "edit", m.Issue, "notes", "--append", "--", note)
 	}
-}
-
-func exportJJ(r repo.Repo) error {
-	cmd := exec.Command("jj", "git", "export")
-	cmd.Dir = r.Root
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("jj git export: %v: %s", err, strings.TrimSpace(string(out)))
-	}
-	return nil
-}
-
-func importJJ(r repo.Repo) {
-	cmd := exec.Command("jj", "git", "import")
-	cmd.Dir = r.Root
-	cmd.Run()
 }
 
 // recordUsage adds a line about what the model of an AI role used to the Notes of the issue of the

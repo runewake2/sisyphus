@@ -62,24 +62,39 @@ func exists(path string) bool {
 	return err == nil
 }
 
-// run runs the VCS command in the root, and returns its stdout. A failure gives the stderr of the
-// command in the error.
+// run runs the VCS command in the root, and returns its stdout, untrimmed: a diff keeps its last
+// newline. A failure gives the stderr of the command in the error.
 func (r Repo) run(args ...string) (string, error) {
 	if r.VCS == None {
 		return "", errors.New("This directory is in no jj or git repo.")
 	}
-	cmd := exec.Command(string(r.VCS), args...)
-	cmd.Dir = r.Root
+	return capture(r.Root, string(r.VCS), nil, args...)
+}
+
+// Run runs the command name with args in dir (empty: the directory of the process), and returns its
+// trimmed stdout. A failure names the command, the args, and the trimmed stderr — the one error
+// format for the commands of hephaestus. hidden are flags that the caller prepends for itself, for
+// example an identity or a --git-dir: they run before args, but stay out of the error, so that a
+// person reads the command that was asked.
+func Run(dir, name string, hidden []string, args ...string) (string, error) {
+	out, err := capture(dir, name, hidden, args...)
+	return strings.TrimSpace(out), err
+}
+
+func capture(dir, name string, hidden []string, args ...string) (string, error) {
+	cmd := exec.Command(name, append(slices.Clone(hidden), args...)...)
+	cmd.Dir = dir
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	if err := cmd.Run(); err != nil {
-		return "", fmt.Errorf("%s %s: %v: %s", r.VCS, strings.Join(args, " "), err, strings.TrimSpace(errOut.String()))
+		return "", fmt.Errorf("%s %s: %v: %s", name, strings.Join(args, " "), err, strings.TrimSpace(errOut.String()))
 	}
 	return out.String(), nil
 }
 
-// lines splits the output of a command into its lines that are not empty.
-func lines(output string) []string {
+// Lines splits the output of a command into its trimmed lines that are not empty, with "/" in
+// place of the path separator — the one line splitter for command output that holds paths.
+func Lines(output string) []string {
 	var result []string
 	for _, line := range strings.Split(output, "\n") {
 		if line = strings.TrimSpace(line); line != "" {
@@ -88,6 +103,9 @@ func lines(output string) []string {
 	}
 	return result
 }
+
+// lines keeps the short name inside the package.
+func lines(output string) []string { return Lines(output) }
 
 // Files returns the paths, from the root and with "/", of the files of the working copy that the VCS
 // tracks or would track: ignored files are left out. Without a VCS, every file below the root except
@@ -203,6 +221,26 @@ func (r Repo) Exists(rev string) bool {
 		return err == nil
 	}
 	return false
+}
+
+// ExportBookmarks exports the jj bookmarks of the repo to its git store (jj git export), so that
+// git sees each bookmark as a branch, for the scratch worktrees and the git side of a colocated
+// repo. Outside a jj repo it does nothing: git has no bookmarks to export.
+func (r Repo) ExportBookmarks() error {
+	if r.VCS != JJ {
+		return nil
+	}
+	_, err := r.run("git", "export")
+	return err
+}
+
+// ImportBookmarks lets jj see the git branches of the store as bookmarks (jj git import). It is
+// best effort, as every caller treats it: a branch that is not imported now is imported by the next
+// jj command of a colocated repo. Outside a jj repo it does nothing.
+func (r Repo) ImportBookmarks() {
+	if r.VCS == JJ {
+		r.run("git", "import")
+	}
 }
 
 // HasBookmark reports whether name is a jj bookmark or a git branch of the repo. In jj, it asks jj,

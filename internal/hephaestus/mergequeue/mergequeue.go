@@ -88,16 +88,6 @@ type Report struct {
 	Warnings []string  `json:"warnings"`
 }
 
-func lines(text string) []string {
-	var result []string
-	for _, line := range strings.Split(text, "\n") {
-		if line = strings.TrimSpace(line); line != "" {
-			result = append(result, line)
-		}
-	}
-	return result
-}
-
 // Run merges the tasks. A task that cannot merge is left out, with the reason in the report; an
 // error stops the run, and changes nothing outside the scratch working copy.
 func Run(ctx context.Context, o Options) (Report, error) {
