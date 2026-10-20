@@ -378,6 +378,13 @@ task run again: it reopens the issue, removes `needs-human`, and sends the task 
 for example after a worker crashed or ran out of API keys. A task that a live worker holds is slow,
 not stuck: the kick refuses it without `--force`, and it never starts a worker.
 
+`hephaestus evict <worker> --force` is the break glass for the one case that kick refuses: a live
+worker that loops and never releases its lease. The queue drops the worker's leases, so another
+worker can take its messages at once, and the worker's next keep-alive stops its task, releases its
+issue, and ends the worker. It always needs `--force`; without it, evict only shows what it would
+do. The ladder is: `doctor` looks, `kick` requeues the work of a worker that stopped, `evict
+--force` stops one that will not.
+
 Humans keep the decisions that no role makes: they move `main`, accept the proposals of the
 project manager, decide a failed referendum, and take each issue tagged `needs-human`.
 

@@ -49,8 +49,10 @@ type Server struct {
 	leases map[string]delivery
 	// seen is the last time that each worker received, acknowledged, or renewed: the keep-alive that
 	// tells a scheduler that a worker still works. It is not in the log.
-	seen    map[string]time.Time
-	changed chan struct{} // closed and replaced when a message arrives
+	seen map[string]time.Time
+	// evictions are the workers that a human evicted, until the marks expire. Not in the log.
+	evictions map[string]eviction
+	changed   chan struct{} // closed and replaced when a message arrives
 
 	listener net.Listener
 	http     *http.Server
@@ -72,7 +74,7 @@ func Open(dir string, lease time.Duration) (*Server, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, err
 	}
-	s := &Server{dir: dir, lease: lease, state: newState(), leases: map[string]delivery{}, seen: map[string]time.Time{}, changed: make(chan struct{}), now: time.Now}
+	s := &Server{dir: dir, lease: lease, state: newState(), leases: map[string]delivery{}, seen: map[string]time.Time{}, evictions: map[string]eviction{}, changed: make(chan struct{}), now: time.Now}
 	path := filepath.Join(dir, LogFile)
 	if file, err := os.Open(path); err == nil {
 		scanner := bufio.NewScanner(file)
@@ -144,6 +146,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("POST /receive", s.handleReceive)
 	mux.HandleFunc("POST /ack", s.handleAck)
 	mux.HandleFunc("POST /renew", s.handleRenew)
+	mux.HandleFunc("POST /evict", s.handleEvict)
 	mux.HandleFunc("GET /workers", s.handleWorkers)
 	mux.HandleFunc("GET /pending", func(w http.ResponseWriter, r *http.Request) {
 		pending := s.Pending()
@@ -244,6 +247,12 @@ func (s *Server) Receive(ctx context.Context, r Receiver) ([]Message, error) {
 	deadline := s.now().Add(wait)
 	for {
 		s.mu.Lock()
+		if reason := s.evictionOf(r.Worker, true); reason != "" {
+			// Refused once: the evicted worker process ends here instead of taking more work, and a
+			// new worker may then start under the name.
+			s.mu.Unlock()
+			return nil, fmt.Errorf("The worker %q was evicted: %s. It stops; start a new worker when the cause is corrected.", r.Worker, reason)
+		}
 		w := s.state.workers[r.Worker]
 		if w == nil || w.role != r.Role || !slices.Equal(w.kinds, kinds) {
 			if err := s.append(Event{Type: "register", Worker: r.Worker, Role: r.Role, Kinds: kinds}); err != nil {
@@ -345,6 +354,10 @@ type Renewal struct {
 	Renewed []string      `json:"renewed"`
 	Lost    []string      `json:"lost"`
 	Lease   time.Duration `json:"lease"`
+	// Evicted tells the worker that a human evicted it: it stops its task, does not acknowledge the
+	// message, and ends. Reason is why.
+	Evicted bool   `json:"evicted,omitempty"`
+	Reason  string `json:"reason,omitempty"`
 }
 
 // Renew is the keep-alive of a worker that still handles messages: it records that the worker is
@@ -358,6 +371,12 @@ func (s *Server) Renew(worker string, ids []string) (Renewal, error) {
 		return Renewal{}, fmt.Errorf("No worker %q has received a message. Receive first.", worker)
 	}
 	now := s.now()
+	// An evicted worker renews nothing: its keep-alive tells it to stop its task. The mark is
+	// consumed by whichever contact comes first, this renewal or a receive, so that a new worker
+	// under the name starts clean.
+	if reason := s.evictionOf(worker, true); reason != "" {
+		return Renewal{Renewed: []string{}, Lost: slices.Clone(ids), Lease: s.lease, Evicted: true, Reason: reason}, nil
+	}
 	s.seen[worker] = now
 	renewal := Renewal{Renewed: []string{}, Lost: []string{}, Lease: s.lease}
 	for _, id := range ids {

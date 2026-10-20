@@ -459,7 +459,7 @@ func listenCommand(connect func() (*mq.Client, error)) *cobra.Command {
 						}
 						continue
 					}
-					stopKeepAlive := mq.KeepAlive(client.Renew, name, []string{m.ID}, cmd.ErrOrStderr())
+					stopKeepAlive := mq.KeepAlive(client.Renew, name, []string{m.ID}, cmd.ErrOrStderr(), nil)
 					err := runForMessage(ctx, cmd, args, name, m)
 					stopKeepAlive()
 					if err != nil {

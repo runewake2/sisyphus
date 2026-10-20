@@ -18,6 +18,7 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/runewake2/sisyphus/internal/hephaestus/airole"
@@ -99,6 +100,15 @@ type Agent struct {
 	// Base is the base of a task workspace, normally main.
 	Base    string
 	handled map[string]bool
+	// evictedReason is why a human evicted the worker during the current task, or "". The keep-alive
+	// goroutine writes it; the task reads it after its command stopped.
+	evictedReason atomic.Value
+}
+
+// evicted returns why a human evicted the worker during the current task, or "".
+func (a *Agent) evicted() string {
+	reason, _ := a.evictedReason.Load().(string)
+	return reason
 }
 
 // DefaultTaskTimeout is the time limit of a task when neither the worker nor the role gives one.
@@ -192,6 +202,10 @@ func (a *Agent) Run(ctx context.Context, once bool) ([]Result, error) {
 			}
 			result := a.Handle(ctx, m)
 			results = append(results, result)
+			if result.Status == "evicted" {
+				// No acknowledgement: the queue gives the task to another worker. The worker ends.
+				return results, fmt.Errorf("a human evicted %s: %s", a.Worker, result.Detail)
+			}
 			if result.Status == "error" && ctx.Err() != nil {
 				return results, nil
 			}
@@ -208,8 +222,16 @@ func (a *Agent) Run(ctx context.Context, once bool) ([]Result, error) {
 
 // Handle does the task of one message, and tells its sender the result. While it works, it renews
 // the lease of the message (the keep-alive), so that the queue does not give it to another worker.
+// When a human evicts the worker, the keep-alive stops the task, with every program that it
+// started; the worker releases the issue, does not acknowledge the message, and ends.
 func (a *Agent) Handle(ctx context.Context, m mq.Message) Result {
-	stop := mq.KeepAlive(a.Queue.Renew, a.Worker, []string{m.ID}, a.Err)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	a.evictedReason.Store("")
+	stop := mq.KeepAlive(a.Queue.Renew, a.Worker, []string{m.ID}, a.Err, func(reason string) {
+		a.evictedReason.Store(reason)
+		cancel()
+	})
 	result := a.handle(ctx, m)
 	stop()
 	fmt.Fprintf(a.Err, "%s: message %s: %s%s\n", a.Worker, m.ID, result.Status, map[bool]string{true: " (" + result.Issue + ")", false: ""}[result.Issue != ""])
@@ -217,6 +239,7 @@ func (a *Agent) Handle(ctx context.Context, m mq.Message) Result {
 		data, _ := json.Marshal(result)
 		body := fmt.Sprintf("%s %s the task of message %s.", a.Worker, map[string]string{
 			"done": "did", "failed": "could not do", "refused": "did not start", "error": "could not run",
+			"evicted": "was evicted during",
 		}[result.Status], m.ID)
 		if result.Detail != "" {
 			body += " " + result.Detail
@@ -285,6 +308,20 @@ func (a *Agent) handle(ctx context.Context, m mq.Message) (result Result) {
 	}
 	exit, output, err := a.command(ctx, dir, m, &result, space)
 	result.Exit, result.Output = exit, tail(output, outputLines)
+	if reason := a.evicted(); reason != "" {
+		// A human evicted the worker: the task stopped. The issue goes back to open, with its
+		// delegation and without needs-human, because the human already acts; the message is not
+		// acknowledged, so the queue gives the task to another worker.
+		result.Status, result.Detail = "evicted", reason
+		if m.Issue != "" && !Notice(m) {
+			note := fmt.Sprintf("%s: a human evicted the worker %s while it ran this task: %s. The task goes back to the queue.", a.Now().Format("2006-01-02"), a.Worker, reason)
+			a.Sisyphus(dir, "edit", m.Issue, "notes", "--append", "--", note)
+			if _, err := a.Sisyphus(dir, "update", m.Issue, "open"); err != nil {
+				fmt.Fprintf(a.Err, "Warning: %s could not release %s after its eviction: %v\n", a.Worker, m.Issue, err)
+			}
+		}
+		return result
+	}
 	if Notice(m) {
 		return a.noticeResult(tracker, m, result, err)
 	}

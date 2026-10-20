@@ -1,0 +1,30 @@
+# Unreleased: evict a looping worker
+
+- Date: 2026-10-20
+- Bookmark: samw/ai/evict-command
+- Components: hephaestus
+- Changelog: `hephaestus evict <worker> --force` is the break glass for a live worker that loops and never releases its lease: the queue drops its leases, and the worker's next keep-alive stops its task, releases its issue, and ends the worker. Without `--force`, evict only shows what it would do.
+
+## Summary
+
+`kick` refuses a task that a live worker holds, because a live worker is slow, not stuck — except
+when its model loops: the keep-alive goroutine renews the lease forever while the task makes no
+progress, and nothing could interrupt it. Evict completes the ladder: `doctor` looks, `kick`
+requeues the work of a worker that stopped, `evict --force` stops one that will not.
+
+## Changes
+
+- The queue answers `POST /evict`: it drops every lease of the worker, so its messages are
+  deliverable to another worker at once, and marks the worker evicted. The mark is in memory, as the
+  leases are, is consumed by the worker's next contact (a renewal, or a receive that is refused
+  once), and expires after one lease.
+- The keep-alive of a worker hears the eviction in its renewal (`Renewal.Evicted`, with the reason)
+  and stops the task: the task context ends, which stops the command with every program that it
+  started, as the time and token limits do.
+- The evicted worker releases its issue — open, the delegation stays, no `needs-human`, with the
+  eviction and its reason in the Notes — does not acknowledge the message, and ends instead of
+  taking more work. The result status is `evicted`.
+- `hephaestus evict <worker>` always needs `--force`: without it, it shows the worker's last
+  keep-alive and leases, and refuses with exit code 1. It never kills a process: a worker whose
+  keep-alive is dead cannot hear the eviction, and its leases end by themselves — that is kick's
+  case.
