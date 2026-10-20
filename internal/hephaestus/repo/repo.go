@@ -205,6 +205,20 @@ func (r Repo) Exists(rev string) bool {
 	return false
 }
 
+// HasBookmark reports whether name is a jj bookmark or a git branch of the repo. In jj, it asks jj,
+// so a bookmark that is not exported to git yet counts too.
+func (r Repo) HasBookmark(name string) bool {
+	switch r.VCS {
+	case JJ:
+		out, err := r.run("log", "--no-graph", "-r", fmt.Sprintf("bookmarks(exact:%q)", name), "-T", `commit_id ++ "\n"`)
+		return err == nil && len(lines(out)) > 0
+	case Git:
+		_, err := r.run("rev-parse", "--verify", "--quiet", "refs/heads/"+name)
+		return err == nil
+	}
+	return false
+}
+
 // SharedDir returns the directory of hephaestus that every workspace of the repo shares: hephaestus/
 // in the jj repo directory (.jj/repo, which each jj workspace points to) or in the git common
 // directory (which each git worktree points to). Without jj or git, it is .hephaestus/ in the root.

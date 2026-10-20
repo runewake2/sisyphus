@@ -15,19 +15,20 @@ import (
 	"github.com/runewake2/sisyphus/internal/hephaestus/watch"
 )
 
-// gitRepo answers the watcher from the git directory of the repo.
-type gitRepo struct {
-	gitDir, base string
-	baseID       string
+// vcsRepo answers the watcher from the repo: jj in a jj repo, git in a git repo.
+type vcsRepo struct {
+	r    repo.Repo
+	base string
 }
 
-func (g gitRepo) Head(bookmark string) (string, bool) {
-	head, err := revParse(g.gitDir, bookmark)
+func (v vcsRepo) Head(bookmark string) (string, bool) {
+	head, err := v.r.CommitOf(bookmark)
 	return head, err == nil && head != ""
 }
 
-func (g gitRepo) InBase(commit string) bool {
-	return g.baseID != "" && isAncestor(g.gitDir, commit, g.baseID)
+func (v vcsRepo) InBase(commit string) bool {
+	merged, err := v.r.IsAncestor(commit, v.base)
+	return err == nil && merged
 }
 
 func watchCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Command {
@@ -82,14 +83,6 @@ func watchCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comman
 
 // watchOnce compares the issues with the last state, broadcasts the events, and saves the new state.
 func watchOnce(cmd *cobra.Command, w workspace, r repo.Repo, client *mq.Client, onto string) error {
-	if err := exportJJ(r); err != nil {
-		return err
-	}
-	gitDir, err := r.GitDir()
-	if err != nil {
-		return err
-	}
-	baseID, _ := revParse(gitDir, onto)
 	issues, err := sisyphus.List(w.directory(), "--state", "all")
 	if err != nil {
 		return err
@@ -98,7 +91,7 @@ func watchOnce(cmd *cobra.Command, w workspace, r repo.Repo, client *mq.Client, 
 	if err != nil {
 		return err
 	}
-	next, events := watch.Plan(prev, issues, gitRepo{gitDir: gitDir, base: onto, baseID: baseID}, onto, time.Now())
+	next, events := watch.Plan(prev, issues, vcsRepo{r: r, base: onto}, onto, time.Now())
 	for _, e := range events {
 		if _, err := client.Send(e.Message("hephaestus-watch")); err != nil {
 			return fmt.Errorf("could not broadcast %s for %s: %v", e.Kind, e.Issue, err)

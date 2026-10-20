@@ -56,12 +56,9 @@ func statusCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.Comma
 				return err
 			}
 			if r.VCS != repo.None {
-				exportJJ(r)
-				if gitDir, err := r.GitDir(); err == nil {
-					in.Merged = func(commit, base string) bool {
-						baseID, err := revParse(gitDir, base)
-						return err == nil && isAncestor(gitDir, commit, baseID)
-					}
+				in.Merged = func(commit, base string) bool {
+					merged, err := r.IsAncestor(commit, base)
+					return err == nil && merged
 				}
 			}
 			report := status.Build(in)

@@ -32,7 +32,8 @@ func mergeQueueCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 		Use:   "merge-queue [<task>...]",
 		Short: "Make one linear history from the work of a set of tasks.",
 		Long: "Make one linear history from the work of a set of tasks: sisyphus issues, each with the bookmark of " +
-			"its work. In a scratch git worktree on --onto, it merges the commits of each bookmark in the order of " +
+			"its work. In a scratch working copy on --onto (a jj workspace in a jj repo, a git worktree in a git " +
+			"repo), it merges the commits of each bookmark in the order of " +
 			"merge-order, renumbers decision records that collide, gives the unreleased changelog entries of each " +
 			"bookmark their versions in a commit \"merge-queue: give versions to <bookmark>\", and runs --checks. A " +
 			"bookmark that conflicts, fails the checks, or comes after one that is left out is left out: its tasks " +
@@ -76,15 +77,6 @@ func mergeQueueCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 			if err != nil {
 				return err
 			}
-			if r.VCS == repo.JJ {
-				// The merge happens with git. jj exports its bookmarks to git by itself only in a
-				// colocated workspace, so export them first: the git branches must be the bookmarks.
-				exporter := exec.Command("jj", "git", "export")
-				exporter.Dir = r.Root
-				if out, err := exporter.CombinedOutput(); err != nil {
-					return fmt.Errorf("jj git export: %v: %s", err, strings.TrimSpace(string(out)))
-				}
-			}
 			if request.Name == "" {
 				if request.Name, err = freeName(r, "merge-queue/"+time.Now().Format("2006-01-02")); err != nil {
 					return err
@@ -101,11 +93,12 @@ func mergeQueueCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 			if err != nil {
 				return err
 			}
-			if r.VCS == repo.JJ {
-				// jj sees the new git branch as a bookmark.
-				importer := exec.Command("jj", "git", "import")
-				importer.Dir = r.Root
-				importer.Run()
+			if r.VCS == repo.JJ && report.Created {
+				// The merge happened with jj; git users of a colocated repo see the new bookmark
+				// only after an export.
+				exporter := exec.Command("jj", "git", "export")
+				exporter.Dir = r.Root
+				exporter.Run()
 			}
 			recordLeftOut(cmd, w, r, report, conflictsTo)
 			announce(cmd, r, report)
@@ -121,26 +114,21 @@ func mergeQueueCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 	}
 	cmd.Flags().StringVar(&onto, "onto", "main", "The base of the new line. It does not change.")
 	cmd.Flags().StringVar(&name, "name", "", "The bookmark of the result. Default: merge-queue/<date>, with -2, -3, ... when it exists.")
-	cmd.Flags().StringVar(&checks, "checks", "", "A command line that must succeed after each bookmark, in the scratch worktree, for example the tests.")
+	cmd.Flags().StringVar(&checks, "checks", "", "A command line that must succeed after each bookmark, in the scratch working copy, for example the tests.")
 	cmd.Flags().StringVar(&conflictsTo, "conflicts-to", "engineer", "The role that gets a message about each conflict, if the message queue runs.")
 	cmd.Flags().BoolVar(&fromMessage, "from-message", false, "Read the set of tasks from the message on standard input, as a tool agent gives it.")
 	cmd.Flags().BoolVar(&asJSON, "json", false, "Print the report as JSON.")
 	return cmd
 }
 
-// freeName returns prefix, or prefix-2, prefix-3, and so on: the first that is not a branch yet.
+// freeName returns prefix, or prefix-2, prefix-3, and so on: the first that is not a bookmark yet.
 func freeName(r repo.Repo, prefix string) (string, error) {
-	gitDir, err := r.GitDir()
-	if err != nil {
-		return "", err
-	}
 	for i := 1; ; i++ {
 		name := prefix
 		if i > 1 {
 			name = fmt.Sprintf("%s-%d", prefix, i)
 		}
-		check := exec.Command("git", "--git-dir="+gitDir, "rev-parse", "--verify", "--quiet", "refs/heads/"+name)
-		if check.Run() != nil {
+		if !r.HasBookmark(name) {
 			return name, nil
 		}
 	}

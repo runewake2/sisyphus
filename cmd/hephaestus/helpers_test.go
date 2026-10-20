@@ -58,6 +58,26 @@ func (r *testRepo) git(args ...string) string {
 	return string(out)
 }
 
+// jj runs jj in the repo, with a test identity. A test that uses it skips without jj (needJJ).
+func (r *testRepo) jj(args ...string) string {
+	r.t.Helper()
+	cmd := exec.Command("jj", append([]string{"--config", "user.name=test", "--config", "user.email=test@example.com"}, args...)...)
+	cmd.Dir = r.root
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		r.t.Fatalf("jj %v: %v\n%s", args, err, out)
+	}
+	return string(out)
+}
+
+// needJJ skips the test when jj is not installed.
+func needJJ(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("jj"); err != nil {
+		t.Skip("jj is not installed")
+	}
+}
+
 // commit commits every file of the working copy.
 func (r *testRepo) commit(message string) {
 	r.t.Helper()

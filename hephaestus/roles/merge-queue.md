@@ -44,7 +44,8 @@ does nothing else ([[agent-delegation#Merge queue]]).
 ## Tools
 
 - `hephaestus merge-queue`, which uses `merge-order`, `version assign`, and `decisions renumber`.
-- git, in a scratch worktree of the git directory of the repo (`jj git export` first in a jj repo).
+- jj, in a scratch workspace of the repo, in a jj repo; git, in a scratch worktree of the git
+  directory, in a git repo.
 - The checks of the repo: `gofmt`, `go vet`, the tests, and `sisyphus lint`.
 - `sisyphus` to read the tasks and to record the report.
 

@@ -206,35 +206,64 @@ func TestTheNameOfTheResultIsFree(t *testing.T) {
 }
 
 func TestTheMergeQueueInAJJRepo(t *testing.T) {
-	if _, err := exec.LookPath("jj"); err != nil {
-		t.Skip("jj is not installed")
-	}
+	needJJ(t)
 	r := newMergeRepo(t, "base-task-work", "top-task-work")
-	jj := func(args ...string) string {
-		t.Helper()
-		cmd := exec.Command("jj", append([]string{"--config", "user.name=test", "--config", "user.email=test@example.com"}, args...)...)
-		cmd.Dir = r.root
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Fatalf("jj %v: %v\n%s", args, err, out)
-		}
-		return string(out)
-	}
-	jj("git", "init", "--colocate")
-	jj("new", "main")
+	r.jj("git", "init", "--colocate")
+	r.jj("new", "main")
 	r.write("base.txt", "base\n")
-	jj("bookmark", "create", "ai/base", "-r", "@")
-	jj("new")
+	r.jj("bookmark", "create", "ai/base", "-r", "@")
+	r.jj("new")
 	r.write("top.txt", "top\n")
-	jj("bookmark", "create", "ai/top", "-r", "@")
-	jj("new", "main")
+	r.jj("bookmark", "create", "ai/top", "-r", "@")
+	r.jj("new", "main")
 	r.task("base-task-work", "ai/base")
 	r.task("top-task-work", "ai/top")
 
 	report := r.mergeQueue("top-task-work", "base-task-work", "--name", "mq/test")
 
 	equalStrings(t, []string{"ai/base", "ai/top"}, mergedBookmarks(report))
-	contains(t, jj("bookmark", "list"), "mq/test")
+	contains(t, r.jj("bookmark", "list"), "mq/test")
+	// The merge happened with jj: git sees the exported bookmark too.
+	equal(t, "top", r.gitOut("show", "mq/test:top.txt"))
+}
+
+func TestAConflictAndVersionsInAJJRepo(t *testing.T) {
+	needJJ(t)
+	r := newMergeRepo(t, "left-task-work", "right-task-work")
+	r.write("VERSION", "0.0.5\n")
+	r.write("CHANGELOG.md", "# Changelog\n\n## [[0.0.5]] - 2026-10-01\n- Older.\n")
+	r.write("changelog/0.0.5.md", "# 0.0.5\n")
+	r.commit("versions")
+	r.jj("git", "init", "--colocate")
+	r.jj("new", "main")
+	r.write("README.md", "# Left\n")
+	r.write("changelog/unreleased/unreleased-left.md", entry("The left change", "The left change.", "2026-10-09"))
+	r.jj("bookmark", "create", "ai/left", "-r", "@")
+	r.jj("new", "main")
+	r.write("README.md", "# Right\n")
+	r.jj("bookmark", "create", "ai/right", "-r", "@")
+	r.jj("new", "main")
+	r.task("left-task-work", "ai/left")
+	r.task("right-task-work", "ai/right")
+
+	report := r.mergeQueueExit(2, "left-task-work", "right-task-work", "--name", "mq/test")
+
+	equalStrings(t, []string{"ai/left"}, mergedBookmarks(report))
+	equal(t, 1, len(report.LeftOut))
+	equal(t, "conflict", report.LeftOut[0].Reason)
+	equalStrings(t, []string{"README.md"}, report.LeftOut[0].Files)
+	equal(t, "0.0.6", report.Merged[0].Versions[0].Version)
+	contains(t, r.jj("file", "show", "-r", "mq/test", "README.md"), "# Left")
+	contains(t, r.jj("file", "show", "-r", "mq/test", "VERSION"), "0.0.6")
+	contains(t, r.showIssue("right-task-work")["body"].(string), "the merge queue left the work of this task (ai/right) out of mq/test")
+	// The rollback left no trace of the conflict: the line is the left change and its version
+	// commit, and the scratch workspace of the run is gone.
+	commits := strings.Fields(r.jj("log", "--no-graph", "-r", `bookmarks(exact:"main")..bookmarks(exact:"mq/test")`, "-T", `commit_id ++ " "`))
+	equal(t, 2, len(commits))
+	contains(t, r.jj("workspace", "list"), "default")
+	if list := r.jj("workspace", "list"); strings.Count(list, "\n") != 1 {
+		t.Errorf("the scratch workspace is not forgotten:\n%s", list)
+	}
 }
 
 // buildHephaestusOnce builds this command once and puts it first on PATH, for a role whose command
@@ -277,26 +306,14 @@ func TestTheMergeQueueRunsAsAToolAgent(t *testing.T) {
 }
 
 func TestTheMergeQueueFromAJJWorkspaceThatIsNotColocated(t *testing.T) {
-	if _, err := exec.LookPath("jj"); err != nil {
-		t.Skip("jj is not installed")
-	}
+	needJJ(t)
 	r := newMergeRepo(t, "work-task-here")
-	jj := func(dir string, args ...string) string {
-		t.Helper()
-		cmd := exec.Command("jj", append([]string{"--config", "user.name=test", "--config", "user.email=test@example.com"}, args...)...)
-		cmd.Dir = dir
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			t.Fatalf("jj %v: %v\n%s", args, err, out)
-		}
-		return string(out)
-	}
-	jj(r.root, "git", "init", "--colocate")
+	r.jj("git", "init", "--colocate")
 	second := &testRepo{t: t, root: filepath.Join(t.TempDir(), "second")}
-	jj(r.root, "workspace", "add", "--name", "second", "-r", "main", second.root)
+	r.jj("workspace", "add", "--name", "second", "-r", "main", second.root)
 	second.write("work.txt", "work\n")
-	jj(second.root, "commit", "-m", "work in the second workspace")
-	jj(second.root, "bookmark", "create", "ai/work", "-r", "@-")
+	second.jj("commit", "-m", "work in the second workspace")
+	second.jj("bookmark", "create", "ai/work", "-r", "@-")
 	// The task of the work, in the tracker of the second workspace.
 	if out, err := exec.Command("sisyphus", "-C", second.root, "update", "work-task-here", "closed", "--bookmark", "ai/work").CombinedOutput(); err != nil {
 		t.Fatal(string(out))

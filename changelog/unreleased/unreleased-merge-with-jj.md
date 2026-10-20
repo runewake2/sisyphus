@@ -1,0 +1,29 @@
+# Unreleased: the merge queue merges with jj in a jj repo
+
+- Date: 2026-10-20
+- Bookmark: samw/ai/merge-with-jj
+- Components: hephaestus
+- Changelog: `hephaestus merge-queue` builds the line with the VCS of the repo: jj in a jj repo (a scratch workspace, `jj duplicate` for the picks), git in a git repo (a scratch worktree, cherry-pick). `status` and `watch` ask the VCS directly too, and no command writes to the git store of jj to read from it.
+
+## Summary
+
+The commands prefer jj in a jj repo and git in a git repo. The merge queue ran git in every repo: in
+a jj repo it exported the bookmarks to the git store, merged there, and imported the result. Now one
+`line` interface builds the new history with the VCS of the repo, and in a jj repo no git runs at
+all.
+
+## Changes
+
+- `hephaestus merge-queue` in a jj repo: a scratch jj workspace at the base;
+  `jj duplicate --insert-before @` picks each commit, so the new commit is always `@-` and the files
+  of the working copy follow the tip; a conflict is read from the commit, with its files from
+  `jj resolve --list`; a rollback is `jj abandon <head>..@`; the result is a jj bookmark. One
+  `jj git export` after a run that made a line lets the git side of a colocated repo see it
+  ([[0002-merge-with-jj-in-a-jj-repo]]).
+- In a git repo, the line works as before, in a scratch git worktree
+  ([[0001-merge-with-git-in-a-scratch-worktree]]).
+- `hephaestus status` and `hephaestus watch` answer "does the base have this commit" and "where is
+  this bookmark" through the repo package (jj in a jj repo, git in a git repo), instead of
+  `jj git export` plus git plumbing. `status` and `watch` change nothing again, as their help says.
+- `repo.HasBookmark` tells whether a name is a jj bookmark or a git branch; the merge queue uses it
+  for the free name of the result.
