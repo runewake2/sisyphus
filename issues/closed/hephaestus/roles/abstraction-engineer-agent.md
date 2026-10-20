@@ -1,12 +1,12 @@
 ---
 title: "Add an abstraction engineer that promotes code reuse and clear abstractions"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [hephaestus, llm] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-12
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-20     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -32,8 +32,8 @@ Requested by a human on 2026-10-12: an agent whose entire objective is clear abs
 
 - [x] `hephaestus/roles/abstraction-engineer.md` describes the role and its rules: reuse first, three or more copies, one reason to change, respect the boundaries, clearer and not only shorter, behavior stays.
 - [x] Its Claude Code subagent is in `.claude/agents/`.
-- [ ] A trial run on `internal/hephaestus` finds the known copies below, and files issues with no duplicates.
-- [ ] A human checks the issues of the run and decides whether the role stays.
+- [x] A trial run on `internal/hephaestus` finds the known copies below, and files issues with no duplicates.
+- [x] A human checks the issues of the run and decides whether the role stays.
 
 ## Out of scope
 
@@ -55,6 +55,5 @@ The first move I would make: [[hephaestus/core/gitline-reuses-scratch]] — it i
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed: a human decided on 2026-10-20 that the role stays, after its trial run on internal/hephaestus and cmd/hephaestus. The trial found the known copies of the Notes (those still live) and new ones, filed seven issues with no duplicates, and ruled four copy groups not worth sharing, with reasons. Five of its proposals landed the same day (gitline-reuses-scratch, one-vcs-identity-fallback — which exposed a latent flag-order defect — share-platform-shell, use-slices-contains, share-ago-format, export-airole-indent); export-repo-command-plumbing and share-jj-export-import stay open with their dependencies recorded.
+

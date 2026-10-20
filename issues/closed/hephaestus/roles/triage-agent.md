@@ -1,12 +1,12 @@
 ---
 title: "Add a triage agent that makes new issues ready for work"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [hephaestus, llm] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-12
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-20     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -31,8 +31,8 @@ Requested by a human on 2026-10-12: implement other agents that may be useful, f
 ## Acceptance criteria
 
 - [x] The role file describes the role, its hand-offs in Works with, and the points where it must ask a human.
-- [ ] A trial run on three new or vague issues makes each ready for work, with each change in the Notes and no duplicate closed.
-- [ ] A human checks the result of the trial run, and decides whether the role stays.
+- [x] A trial run on three new or vague issues makes each ready for work, with each change in the Notes and no duplicate closed.
+- [x] A human checks the result of the trial run, and decides whether the role stays.
 
 ## Out of scope
 
@@ -50,6 +50,5 @@ No duplicate found, and no issue closed, abandoned, or delegated. Every change i
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed: a human decided on 2026-10-20 that the role stays, after its trial run on five leaf issues. The trial checked each against the code of today, proposed a priority and a role for each in dated notes, caught two staleness points and one misfile (pin-github-actions moved to repo/), added one missing dependency, and closed, delegated, and prioritized nothing, as the role file limits it. The verdict table is in the Notes.
+

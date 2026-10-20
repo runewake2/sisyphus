@@ -1,12 +1,12 @@
 ---
 title: "Add a readability engineer that condenses sprawling changes"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: medium         # small | medium | large | x-large
 tags: [hephaestus, llm] # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-20
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-20     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -43,9 +43,9 @@ how useful each is.
   its options for condensing: move the helper next to its caller, group what changes together, split
   a file that mixes behaviors, join files that always change together, keep the boundaries.
 - [x] Its Claude Code subagent is in `.claude/agents/`.
-- [ ] A trial run on a recent bookmark reports its spread as numbers, and proposes at least one
+- [x] A trial run on a recent bookmark reports its spread as numbers, and proposes at least one
   option to condense, or says why the spread has a reason.
-- [ ] A human checks the findings of the run and decides whether the role stays.
+- [x] A human checks the findings of the run and decides whether the role stays.
 
 ## Out of scope
 
@@ -74,6 +74,5 @@ Filed: [[hephaestus/core/split-toolagent-review]] (one real finding). The first 
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Completed: a human decided on 2026-10-20 that the role stays, after its trial run on the five changes of the day. The trial reported the spread of each as numbers (directories, files, largest gap against a screen of about 40 lines), ranked them, ruled four spreads reasoned with the reason named, and filed one finding (split-toolagent-review), whose smallest option landed the same day. The ranking table is in the Notes.
+
