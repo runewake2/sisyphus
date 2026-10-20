@@ -53,6 +53,25 @@ how useful each is.
 
 ## Notes
 
+2026-10-20, trial run of the readability engineer, on the five changes that landed today. Measure: directories spanned, files touched, largest gap of unchanged lines between two edits in one file (from the @@ hunk headers; a screen is about 40 lines). Rank: directories above files, files above gaps.
+
+| Rank | Change | Description | Dirs | Files | Largest gap (file) |
+|---|---|---|---|---|---|
+| 1 | uvtlrzlq | share the code the abstraction engineer found repeated | 12 | 24 | 605 (toolagent/toolagent.go) |
+| 2 | xtqvxxsq | merge with jj in a scratch workspace | 7 | 15 | 48 (cmd/hephaestus/watch.go) |
+| 3 | olxlywlx | add evict | 7 | 13 | 95 (mq/server.go) |
+| 4 | nxkqtouq | add doctor and kick | 7 | 11 | 0 |
+| 5 | yyxnlklr | fix the three confirmed defects | 5 | 9 | 141 (mergequeue/line.go) |
+
+Judgments:
+- uvtlrzlq: the spread has reasons, taken per sub-change: each deduplication edits the shared home plus every user of a copy, and six issue files move open to closed. But the commit bundles six separate changes (six issues) and one drive-by (it deletes the leftover open copy of draw-graph-nodes-in-linear-time.md, whose closed copy its parent change made); per this role, edits with different reasons are separate changes to report. The 605-line gap in toolagent.go also shows that file mixes behaviors: filed as [[hephaestus/core/split-toolagent-review]].
+- xtqvxxsq: reasoned. A new interface (line) with two implementations, and a migration of every command from raw git to repo.Repo. It condenses more than it spreads: it removed isAncestor, which lived in referendum.go but served status.go and watch.go. Not a finding.
+- olxlywlx: mostly reasoned. The evict-specific code already lives in cmd/hephaestus/evict.go and mq/evict.go; the residual edits in mq/server.go (6 hunks over about 300 lines: field, constructor, route, two seam checks, the Renewal struct) each sit at the behavior they gate. toolagent.go took 6 hunks with a gap of 87 because the eviction threads Run, Handle, and handle; recorded as supporting evidence in [[hephaestus/core/split-toolagent-review]]. One data point for the server-verb pattern; no issue filed for it.
+- nxkqtouq: fully reasoned, and the model shape: the feature in its own new package (internal/hephaestus/doctor), its command, tests, docs, changelog, and issue. Largest gap 0.
+- yyxnlklr: reasoned. Three separate fixes bundled (separate changes to report), each condensed on its own: the kick fixes in kick.go plus test; the rollback fix threads an error through the Rollback contract and both implementations (the 141-line gap is the distance between jjLine.Rollback and gitLine.Rollback, a contract and its implementations), and through every leave call inside run(), where the gaps stay under 26. Not a finding.
+
+Filed: [[hephaestus/core/split-toolagent-review]] (one real finding). The first condensing move, if asked: option 1 of that issue, move Ballot, Review, and fileDiff to toolagent/review.go, same package, no behavior change. No code changed in this trial.
+
 ## Resolution
 
 <Complete this section when you close the issue.
