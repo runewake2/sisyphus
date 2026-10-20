@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmp"
+	"container/heap"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -157,28 +158,29 @@ func buildGraph(x *issueIndex, name string, full bool, shown []string) issueGrap
 
 	// The drawing places nodes in the order they are declared, so declare them in link order: each
 	// issue after every issue that links to it, by name among equals. Issues in a cycle go last.
+	// The edges are bucketed by their source and the ready issues are a heap, so that a large graph
+	// places in linear time instead of scanning every edge for every node.
 	waiting := map[string]int{}
+	after := map[string][]string{}
 	for _, edge := range graph.Edges {
 		waiting[edge.To]++
+		after[edge.From] = append(after[edge.From], edge.To)
 	}
-	var ready []string
+	ready := &nameHeap{}
 	for issue := range drawn {
 		if waiting[issue] == 0 {
-			ready = append(ready, issue)
+			*ready = append(*ready, issue)
 		}
 	}
+	heap.Init(ready)
 	placed := map[string]bool{}
-	for len(ready) > 0 {
-		slices.Sort(ready)
-		issue := ready[0]
-		ready = ready[1:]
+	for ready.Len() > 0 {
+		issue := heap.Pop(ready).(string)
 		placed[issue] = true
 		graph.Nodes = append(graph.Nodes, nodeFor(all, issue))
-		for _, edge := range graph.Edges {
-			if edge.From == issue {
-				if waiting[edge.To]--; waiting[edge.To] == 0 {
-					ready = append(ready, edge.To)
-				}
+		for _, to := range after[issue] {
+			if waiting[to]--; waiting[to] == 0 {
+				heap.Push(ready, to)
 			}
 		}
 	}
@@ -365,4 +367,19 @@ func filteredNote(graph issueGraph) string {
 		return "1 issue in another state is not drawn."
 	}
 	return fmt.Sprintf("%d issues in other states are not drawn.", graph.Filtered)
+}
+
+// nameHeap is a min-heap of issue names: the smallest ready name places next, as the sorted list
+// did, without a sort for every placed node.
+type nameHeap []string
+
+func (h nameHeap) Len() int           { return len(h) }
+func (h nameHeap) Less(i, j int) bool { return h[i] < h[j] }
+func (h nameHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *nameHeap) Push(x any)        { *h = append(*h, x.(string)) }
+func (h *nameHeap) Pop() any {
+	old := *h
+	x := old[len(old)-1]
+	*h = old[:len(old)-1]
+	return x
 }
