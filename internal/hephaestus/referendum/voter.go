@@ -14,6 +14,7 @@ import (
 
 	"github.com/runewake2/sisyphus/internal/hephaestus/roles"
 	"github.com/runewake2/sisyphus/internal/hephaestus/scratch"
+	"github.com/runewake2/sisyphus/internal/hephaestus/shell"
 	"github.com/runewake2/sisyphus/internal/hephaestus/toolagent"
 )
 
@@ -235,7 +236,7 @@ func (rv *RoleVoter) runModel(ctx context.Context, role roles.Role, dir string, 
 	defer cancel()
 	overBudget := false
 	meter := toolagent.NewMeter(role.MaxTokens, func() { overBudget = true; cancel() })
-	cmd := toolagent.Shell(ctx, line)
+	cmd := shell.Command(ctx, line)
 	cmd.Dir = dir
 	cmd.Stdin = strings.NewReader(prompt)
 	var output bytes.Buffer

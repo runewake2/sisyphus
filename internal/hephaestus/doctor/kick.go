@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 	"slices"
+
+	"github.com/runewake2/sisyphus/internal/hephaestus/mq"
 )
 
 // Kick is the plan that makes a stuck task run again. PlanKick makes it; the kick command acts on
@@ -50,7 +52,7 @@ func PlanKick(in Input, role string, force bool) (Kick, error) {
 			if !holdsTask(in, w) {
 				doing = fmt.Sprintf("may still finish the task of %s (it holds no message, but it works)", k.Issue)
 			}
-			return k, fmt.Errorf("The worker %s is live (last seen %s) and %s: the task runs, slow or not. Kick it anyway with --force.", in.Issue.Owner, ago(in.Now, w.LastSeen), doing)
+			return k, fmt.Errorf("The worker %s is live (last seen %s) and %s: the task runs, slow or not. Kick it anyway with --force.", in.Issue.Owner, mq.Ago(in.Now, w.LastSeen), doing)
 		}
 		for _, p := range pendingTasks(in) {
 			if holder := workerOf(in, p.LeasedBy); p.LeasedBy != "" && alive(in, holder) {

@@ -162,23 +162,6 @@ func liveRole(in Input, role string) bool {
 	return false
 }
 
-// ago writes how long ago t was, or that it never happened.
-func ago(now, t time.Time) string {
-	if t.IsZero() {
-		return "never since the queue started"
-	}
-	d := now.Sub(t).Round(time.Second)
-	switch {
-	case d < time.Minute:
-		return fmt.Sprintf("%ds ago", int(d.Seconds()))
-	case d < time.Hour:
-		return fmt.Sprintf("%dm ago", int(d.Minutes()))
-	case d < 48*time.Hour:
-		return fmt.Sprintf("%dh ago", int(d.Hours()))
-	}
-	return fmt.Sprintf("%dd ago", int(d.Hours()/24))
-}
-
 // Diagnose reads the task of the issue and reports what it sees: the facts, and a finding with its
 // fix for each problem.
 func Diagnose(in Input) Report {
@@ -213,7 +196,7 @@ func Diagnose(in Input) Report {
 	tasks := taskMessages(in)
 	if len(tasks) > 0 {
 		last := tasks[len(tasks)-1]
-		r.Facts = append(r.Facts, fmt.Sprintf("The last task message is %s, from %s to %s, sent %s.", last.ID, last.From, last.To.String(), ago(in.Now, last.Time)))
+		r.Facts = append(r.Facts, fmt.Sprintf("The last task message is %s, from %s to %s, sent %s.", last.ID, last.From, last.To.String(), mq.Ago(in.Now, last.Time)))
 	} else {
 		r.Facts = append(r.Facts, "The log has no task message for the issue.")
 	}
@@ -278,14 +261,14 @@ func diagnoseInProgress(in Input, r *Report, waits []mq.Pending, queueKnown bool
 		})
 	case !alive(in, w):
 		r.Findings = append(r.Findings, Finding{
-			Problem: fmt.Sprintf("The owner %s stopped: last seen %s. The task does not run, and its message will not come back by itself, because the worker acknowledged it.", r.Owner, ago(in.Now, w.LastSeen)),
+			Problem: fmt.Sprintf("The owner %s stopped: last seen %s. The task does not run, and its message will not come back by itself, because the worker acknowledged it.", r.Owner, mq.Ago(in.Now, w.LastSeen)),
 			Fix:     kick,
 		})
 	case holdsTask(in, w):
-		r.Facts = append(r.Facts, fmt.Sprintf("The worker %s works on the task: last seen %s, and it holds the lease of the task message.", r.Owner, ago(in.Now, w.LastSeen)))
+		r.Facts = append(r.Facts, fmt.Sprintf("The worker %s works on the task: last seen %s, and it holds the lease of the task message.", r.Owner, mq.Ago(in.Now, w.LastSeen)))
 	default:
 		r.Findings = append(r.Findings, Finding{
-			Problem: fmt.Sprintf("The owner %s is live (last seen %s), but holds no message of this task: it acknowledged the task and left the issue in progress.", r.Owner, ago(in.Now, w.LastSeen)),
+			Problem: fmt.Sprintf("The owner %s is live (last seen %s), but holds no message of this task: it acknowledged the task and left the issue in progress.", r.Owner, mq.Ago(in.Now, w.LastSeen)),
 			Fix:     kick + " --force (the worker is live)",
 		})
 	}

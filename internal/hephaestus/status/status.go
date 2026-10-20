@@ -252,21 +252,7 @@ func lastLine(in Input) *Line {
 // Text writes the report for a person.
 func (r Report) Text(now time.Time) string {
 	var b strings.Builder
-	ago := func(t time.Time) string {
-		if t.IsZero() {
-			return "never since the queue started"
-		}
-		d := now.Sub(t).Round(time.Second)
-		switch {
-		case d < time.Minute:
-			return fmt.Sprintf("%ds ago", int(d.Seconds()))
-		case d < time.Hour:
-			return fmt.Sprintf("%dm ago", int(d.Minutes()))
-		case d < 48*time.Hour:
-			return fmt.Sprintf("%dh ago", int(d.Hours()))
-		}
-		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
-	}
+	ago := func(t time.Time) string { return mq.Ago(now, t) }
 
 	fmt.Fprintf(&b, "Issues that wait for a human (%d)\n", len(r.NeedsHuman))
 	for _, i := range r.NeedsHuman {

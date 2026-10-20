@@ -54,7 +54,7 @@ func GatePrompt(r *Referendum, reviewer Reviewer, role roles.Role, v Version, m 
 		fmt.Fprintf(&b, "- The modified implementation: commit %s. Your working directory is a scratch copy at it. See the modification with: git diff %s %s\n", m.Commit, v.Commit, m.Commit)
 	}
 	if m.Edit != nil {
-		fmt.Fprintf(&b, "- The new text of the issue section %q:\n\n%s\n", m.Edit.Section, indent(m.Edit.Text))
+		fmt.Fprintf(&b, "- The new text of the issue section %q:\n\n%s\n", m.Edit.Section, airole.Indent(m.Edit.Text))
 	}
 	b.WriteString(`
 ## What to do
@@ -79,7 +79,7 @@ func contents(b *strings.Builder, r *Referendum, v Version) {
 	if len(v.IssueEdits) > 0 {
 		b.WriteString("- The issue text of this version has these sections changed; they replace what sisyphus shows:\n")
 		for _, edit := range v.IssueEdits {
-			fmt.Fprintf(b, "\n  ### %s\n\n%s\n", edit.Section, indent(edit.Text))
+			fmt.Fprintf(b, "\n  ### %s\n\n%s\n", edit.Section, airole.Indent(edit.Text))
 		}
 	}
 	if len(r.Versions) > 1 {
@@ -96,11 +96,4 @@ func contents(b *strings.Builder, r *Referendum, v Version) {
 		}
 	}
 	b.WriteString("\n")
-}
-
-func indent(text string) string {
-	if strings.TrimSpace(text) == "" {
-		return "    (no text)"
-	}
-	return "    " + strings.ReplaceAll(strings.TrimRight(text, "\n"), "\n", "\n    ")
 }

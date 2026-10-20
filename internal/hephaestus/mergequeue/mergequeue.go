@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path"
 	"slices"
 	"strings"
@@ -27,6 +26,7 @@ import (
 	"github.com/runewake2/sisyphus/internal/hephaestus/mergeorder"
 	"github.com/runewake2/sisyphus/internal/hephaestus/release"
 	"github.com/runewake2/sisyphus/internal/hephaestus/repo"
+	"github.com/runewake2/sisyphus/internal/hephaestus/shell"
 )
 
 // Options are the input of a run.
@@ -281,12 +281,10 @@ func run(ctx context.Context, o Options, l line, report Report) (Report, error) 
 	return report, nil
 }
 
-// runChecks runs the checks in dir, and returns their output and whether they passed.
+// runChecks runs the checks in dir, and returns their output and whether they passed. A stopped run
+// stops the checks with every program that they started.
 func runChecks(ctx context.Context, dir, checks string, out io.Writer) (string, bool) {
-	cmd := exec.CommandContext(ctx, "sh", "-c", checks)
-	if isWindows() {
-		cmd = exec.CommandContext(ctx, "cmd", "/C", checks)
-	}
+	cmd := shell.Command(ctx, checks)
 	cmd.Dir = dir
 	var output bytes.Buffer
 	cmd.Stdout = io.MultiWriter(&output, out)
@@ -294,8 +292,6 @@ func runChecks(ctx context.Context, dir, checks string, out io.Writer) (string, 
 	err := cmd.Run()
 	return output.String(), err == nil
 }
-
-func isWindows() bool { return os.PathSeparator == '\\' }
 
 func tail(text string, n int) string {
 	all := strings.Split(strings.TrimRight(text, "\n"), "\n")

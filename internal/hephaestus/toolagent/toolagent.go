@@ -16,7 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"runtime"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -26,6 +26,7 @@ import (
 	"github.com/runewake2/sisyphus/internal/hephaestus/repo"
 	"github.com/runewake2/sisyphus/internal/hephaestus/roles"
 	"github.com/runewake2/sisyphus/internal/hephaestus/scratch"
+	"github.com/runewake2/sisyphus/internal/hephaestus/shell"
 	"github.com/runewake2/sisyphus/internal/hephaestus/taskspace"
 	"github.com/runewake2/sisyphus/internal/hephaestus/watch"
 )
@@ -637,7 +638,7 @@ func (a *Agent) command(ctx context.Context, dir string, m mq.Message, result *R
 		}
 		input = []byte(airole.TaskPrompt(a.Role, a.Worker, m, dir, bookmark))
 	}
-	cmd := Shell(ctx, a.commandLine())
+	cmd := shell.Command(ctx, a.commandLine())
 	cmd.Dir = dir
 	cmd.Stdin = bytes.NewReader(input)
 	var output bytes.Buffer
@@ -701,21 +702,6 @@ func (a *Agent) issueState(dir, issue string) string {
 	return shown.State
 }
 
-// Shell returns the command that runs a command line in the shell of the platform. When ctx ends,
-// it stops the whole command, also the programs that the shell started, for example a model runner,
-// so that a stopped task spends no more tokens or CPU.
-func Shell(ctx context.Context, line string) *exec.Cmd {
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.CommandContext(ctx, "cmd", "/C", line)
-	} else {
-		cmd = exec.CommandContext(ctx, "sh", "-c", line)
-	}
-	stopTree(cmd)
-	cmd.WaitDelay = 5 * time.Second
-	return cmd
-}
-
 func tail(text string, n int) string {
 	lines := strings.Split(strings.TrimRight(text, "\n"), "\n")
 	if len(lines) > n {
@@ -754,7 +740,7 @@ func Review(ctx context.Context, role roles.Role, dir, base string, out io.Write
 	if err != nil {
 		return Ballot{}, err
 	}
-	cmd := Shell(ctx, role.Command)
+	cmd := shell.Command(ctx, role.Command)
 	cmd.Dir = dir
 	var output bytes.Buffer
 	cmd.Stdout = io.MultiWriter(&output, out)
@@ -786,20 +772,11 @@ func Review(ctx context.Context, role roles.Role, dir, base string, out io.Write
 	ballot.Diff = after
 	beforeFiles := repo.DiffFiles(before)
 	for _, file := range repo.DiffFiles(after) {
-		if !contains(beforeFiles, file) || fileDiff(before, file) != fileDiff(after, file) {
+		if !slices.Contains(beforeFiles, file) || fileDiff(before, file) != fileDiff(after, file) {
 			ballot.Files = append(ballot.Files, file)
 		}
 	}
 	return ballot, nil
-}
-
-func contains(items []string, item string) bool {
-	for _, i := range items {
-		if i == item {
-			return true
-		}
-	}
-	return false
 }
 
 // fileDiff returns the part of a git diff for one file.

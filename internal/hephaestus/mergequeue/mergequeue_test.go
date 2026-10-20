@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -60,6 +61,19 @@ func gitRepo(t *testing.T) repo.Repo {
 		t.Fatal(err)
 	}
 	return r
+}
+
+func TestJJIdentityFallsBackInPairOrder(t *testing.T) {
+	if _, err := exec.LookPath("jj"); err != nil {
+		t.Skip("jj is not installed")
+	}
+	t.Setenv("JJ_CONFIG", os.DevNull) // hide the identity of the machine
+	args := jjIdentity(t.TempDir())
+	want := []string{"--config", "user.email=hephaestus@localhost", "--config", "user.name=hephaestus merge queue"}
+	if !slices.Equal(args, want) {
+		// A sorted flat list would put the two --config flags first and break jj.
+		t.Fatalf("the fallback is %v, want %v", args, want)
+	}
 }
 
 func TestAnErrorRollsTheLineBack(t *testing.T) {

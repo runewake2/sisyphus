@@ -105,7 +105,7 @@ func Git(gitDir, dir string, args ...string) (string, error) {
 	if dir != "" {
 		full = []string{"-C", dir}
 	}
-	full = append(full, Identity()...)
+	full = append(full, Identity(dir, "hephaestus")...)
 	cmd := exec.Command("git", append(full, args...)...)
 	var out, errOut bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errOut
@@ -115,13 +115,20 @@ func Git(gitDir, dir string, args ...string) (string, error) {
 	return strings.TrimSpace(out.String()), nil
 }
 
-// Identity gives git a committer when the user has none, so that a commit never fails for it. A
-// configured name and email win.
-func Identity() []string {
+// Identity gives git a committer when the repo of dir has none, so that a commit never fails for
+// it: a configured name and email win. It reads the config in dir (empty: the directory of the
+// process), name is the fallback user.name, and hephaestus@localhost the fallback email. The one
+// git identity fallback of hephaestus; jj has its own, because it builds jj flags with a jj
+// command. The pairs keep a fixed order: a sort of the flat list would put the two -c flags first
+// and break them on a machine with no configured identity.
+func Identity(dir, name string) []string {
+	fallbacks := [][2]string{{"user.email", "hephaestus@localhost"}, {"user.name", name}}
 	var args []string
-	for key, fallback := range map[string]string{"user.name": "hephaestus", "user.email": "hephaestus@localhost"} {
-		if out, err := exec.Command("git", "config", key).Output(); err != nil || strings.TrimSpace(string(out)) == "" {
-			args = append(args, "-c", key+"="+fallback)
+	for _, fallback := range fallbacks {
+		cmd := exec.Command("git", "config", fallback[0])
+		cmd.Dir = dir
+		if out, err := cmd.Output(); err != nil || strings.TrimSpace(string(out)) == "" {
+			args = append(args, "-c", fallback[0]+"="+fallback[1])
 		}
 	}
 	return args

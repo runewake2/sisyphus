@@ -70,7 +70,7 @@ func ClaudeAgent(role roles.Role) string {
 func TaskPrompt(role roles.Role, worker string, m mq.Message, workspace, bookmark string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "You are %s, a worker of the hephaestus role %s. Your owner name is %s.\n\n", worker, role.Name, worker)
-	fmt.Fprintf(&b, "## Your task\n\nA message from %s, of the kind %s:\n\n%s\n", m.From, m.Kind, indent(m.Body))
+	fmt.Fprintf(&b, "## Your task\n\nA message from %s, of the kind %s:\n\n%s\n", m.From, m.Kind, Indent(m.Body))
 	if len(m.Data) > 0 {
 		var data any
 		if json.Unmarshal(m.Data, &data) == nil {
@@ -92,7 +92,8 @@ func TaskPrompt(role roles.Role, worker string, m mq.Message, workspace, bookmar
 	return b.String()
 }
 
-func indent(text string) string {
+// Indent indents a quoted text by four spaces, for the prompt of a task or a ballot.
+func Indent(text string) string {
 	if strings.TrimSpace(text) == "" {
 		return "    (no text)"
 	}

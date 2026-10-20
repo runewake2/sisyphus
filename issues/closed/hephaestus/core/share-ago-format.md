@@ -1,12 +1,12 @@
 ---
 title: "One ago() formats how long ago a time was, for the doctor and the status"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: low          # critical | high | medium | low
 effort: small          # small | medium | large | x-large
 tags: [hephaestus]     # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-20
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-20     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -55,6 +55,5 @@ Link to design docs and other issues with wikilinks, for example `[[widget-sched
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Done: mq.Ago is the one human-facing ago format; the doctor and the status report use it. The text is unchanged.
+

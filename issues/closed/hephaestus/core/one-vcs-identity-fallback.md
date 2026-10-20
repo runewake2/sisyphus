@@ -1,12 +1,12 @@
 ---
 title: "One identity fallback for the commits of hephaestus"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: small          # small | medium | large | x-large
 tags: [hephaestus]     # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-20
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-20     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -56,6 +56,5 @@ Link to design docs and other issues with wikilinks, for example `[[widget-sched
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Done: scratch.Identity(dir, name) is the one git identity fallback, dir-scoped, with tests (configured identity wins; the fallback comes in pair order). jjIdentity stays in line.go with a comment that names scratch.Identity and why jj has its own. The move also fixed a latent defect in both copies: they sorted the flat flag list, which put the two -c (or --config) flags first and would break every fallback commit on a machine with no configured identity; the shared function keeps the pairs in a fixed order, and the tests pin it.
+

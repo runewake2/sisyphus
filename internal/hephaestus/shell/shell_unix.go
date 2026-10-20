@@ -1,6 +1,6 @@
 //go:build !windows
 
-package toolagent
+package shell
 
 import (
 	"os/exec"

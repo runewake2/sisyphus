@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/runewake2/sisyphus/internal/hephaestus/repo"
+	"github.com/runewake2/sisyphus/internal/hephaestus/scratch"
 )
 
 // A line is the new history that a run builds, in a scratch working copy of its own: a jj workspace
@@ -99,17 +100,19 @@ func (l *jjLine) jjIn(dir string, args ...string) (string, error) {
 }
 
 // jjIdentity gives jj an author when the user has none, so that a run never fails for it. A
-// configured name and email win.
+// configured name and email win. The jj twin of scratch.Identity: two tools are two functions,
+// because this one builds jj flags with a jj command. The pairs keep a fixed order: a sort of the
+// flat list would put the two --config flags first and break them.
 func jjIdentity(dir string) []string {
+	fallbacks := [][2]string{{"user.email", "hephaestus@localhost"}, {"user.name", "hephaestus merge queue"}}
 	var args []string
-	for key, fallback := range map[string]string{"user.name": "hephaestus merge queue", "user.email": "hephaestus@localhost"} {
-		cmd := exec.Command("jj", "config", "get", key)
+	for _, fallback := range fallbacks {
+		cmd := exec.Command("jj", "config", "get", fallback[0])
 		cmd.Dir = dir
 		if out, err := cmd.Output(); err != nil || strings.TrimSpace(string(out)) == "" {
-			args = append(args, "--config", key+"="+fallback)
+			args = append(args, "--config", fallback[0]+"="+fallback[1])
 		}
 	}
-	slices.Sort(args)
 	return args
 }
 
@@ -209,10 +212,10 @@ func (l *jjLine) Close() {
 }
 
 // gitLine builds the line with git, in a scratch worktree of the git directory of the repo,
-// detached at the base: HEAD is the tip.
+// detached at the base: HEAD is the tip. The worktree comes from package scratch, whose lock per
+// git directory keeps a merge-queue run and a referendum reviewer from pruning each other.
 type gitLine struct {
-	gitDir   string
-	dir      string
+	worktree *scratch.Worktree
 	baseID   string
 	identity []string
 }
@@ -222,26 +225,20 @@ func newGitLine(r repo.Repo, baseID string) (line, error) {
 	if err != nil {
 		return nil, err
 	}
-	dir, err := os.MkdirTemp("", "hephaestus-merge-queue-")
+	w, err := scratch.New(gitDir, baseID, "hephaestus-merge-queue-")
 	if err != nil {
 		return nil, err
 	}
-	os.Remove(dir) // git worktree add makes it
-	l := &gitLine{gitDir: gitDir, dir: dir, baseID: baseID}
-	if _, err := l.gitDirCmd("worktree", "add", "--detach", "--quiet", dir, baseID); err != nil {
-		return nil, err
-	}
-	l.identity = identity(dir)
-	return l, nil
+	return &gitLine{worktree: w, baseID: baseID, identity: scratch.Identity(w.Dir, "hephaestus merge queue")}, nil
 }
 
-func (l *gitLine) Dir() string     { return l.dir }
-func (l *gitLine) Repo() repo.Repo { return repo.Repo{Root: l.dir, VCS: repo.Git} }
+func (l *gitLine) Dir() string     { return l.worktree.Dir }
+func (l *gitLine) Repo() repo.Repo { return repo.Repo{Root: l.worktree.Dir, VCS: repo.Git} }
 
 // git runs git in the worktree, and returns its stdout.
 func (l *gitLine) git(args ...string) (string, error) {
 	cmd := exec.Command("git", append(slices.Clone(l.identity), args...)...)
-	cmd.Dir = l.dir
+	cmd.Dir = l.worktree.Dir
 	out, errOut := &strings.Builder{}, &strings.Builder{}
 	cmd.Stdout, cmd.Stderr = out, errOut
 	if err := cmd.Run(); err != nil {
@@ -252,28 +249,13 @@ func (l *gitLine) git(args ...string) (string, error) {
 
 // gitDirCmd runs git on the git directory, outside the worktree.
 func (l *gitLine) gitDirCmd(args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"--git-dir=" + l.gitDir}, args...)...)
+	cmd := exec.Command("git", append([]string{"--git-dir=" + l.worktree.GitDir}, args...)...)
 	out, errOut := &strings.Builder{}, &strings.Builder{}
 	cmd.Stdout, cmd.Stderr = out, errOut
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("git %s: %v: %s", strings.Join(args, " "), err, strings.TrimSpace(errOut.String()))
 	}
 	return strings.TrimSpace(out.String()), nil
-}
-
-// identity gives git a committer when the repo has none, so that a run never fails for it. A
-// configured name and email win.
-func identity(dir string) []string {
-	var args []string
-	for key, fallback := range map[string]string{"user.name": "hephaestus merge queue", "user.email": "hephaestus@localhost"} {
-		cmd := exec.Command("git", "config", key)
-		cmd.Dir = dir
-		if out, err := cmd.Output(); err != nil || strings.TrimSpace(string(out)) == "" {
-			args = append(args, "-c", key+"="+fallback)
-		}
-	}
-	slices.Sort(args)
-	return args
 }
 
 // newCommits is the rev-list arguments of the commits of bookmark that the line does not have yet.
@@ -336,7 +318,6 @@ func (l *gitLine) Bookmark(name, commit string) error {
 }
 
 func (l *gitLine) Close() {
-	l.gitDirCmd("worktree", "remove", "--force", l.dir)
-	os.RemoveAll(l.dir)
-	l.gitDirCmd("worktree", "prune")
+	l.worktree.Remove()
+	os.RemoveAll(l.worktree.Dir)
 }
