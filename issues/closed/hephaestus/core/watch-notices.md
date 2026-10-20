@@ -45,5 +45,5 @@ A review of hephaestus on 2026-10-12 found that bookmark-ready (16 roles listen)
 
 ## Resolution
 
-Completed: hephaestus watch broadcasts bookmark-ready and issue-closed from the state of the issues, once each. See [[unreleased-watch-notices]] and [[0007-the-watcher-sends-the-notices-of-a-close]].
+Completed: hephaestus watch broadcasts bookmark-ready and issue-closed from the state of the issues, once each. See [[0.0.133]] and [[0007-the-watcher-sends-the-notices-of-a-close]].
 

@@ -1,5 +1,92 @@
 # Changelog
 
+## [[0.0.146]] - 2026-10-20
+- The referendum review of a tool role (Ballot, Review) moved from toolagent.go to review.go in the same package: the task lifecycle and the voting are two behaviors, and each now edits from one place.
+
+## [[0.0.145]] - 2026-10-20
+- The documented short names of the two commands are `sis` (sisyphus) and `forge` (hephaestus): symlinks, with one completion line per alias, as the Aliases section of the README shows. The docs and the role files keep the full names.
+
+## [[0.0.144]] - 2026-10-20
+- The merge queue takes its scratch worktree from package scratch (under the lock that ends the prune race with referendum reviewers), one `scratch.Identity` is the git identity fallback (fixing a latent flag-order defect that broke fallback commits on machines with no configured identity), and one `shell.Command` stops every command with its whole process tree, also the checks of the merge queue.
+
+## [[0.0.143]] - 2026-10-20
+- The merge queue rolls its line back on every failure, so an error in a jj repo no longer leaves the picked commits as visible heads, and `kick` refuses every live owner without `--force` and refuses to plan blind when the message queue does not answer.
+
+## [[0.0.142]] - 2026-10-20
+- repo.Run and repo.Lines are the one command runner and line splitter of hephaestus (six copies gone, with the ToSlash fix one copy missed), and repo.ExportBookmarks/ImportBookmarks are the one place that syncs jj bookmarks with git (three copies gone, one of which dropped the error).
+
+## [[0.0.141]] - 2026-10-20
+- The AI role `readability-engineer` measures the spread of each change — the distance in lines between its related edits, its files, and its directories — ranks the sprawling changes, and proposes options for condensing the code under them, so that one behavior can be edited from a single screen.
+
+## [[0.0.140]] - 2026-10-20
+- The GitHub Actions of ci.yml are pinned to the full commit SHAs of their releases (checkout v4.4.0, setup-go v5.6.0), with the version in a comment, so the workflow cannot run code that a moved tag points at.
+
+## [[0.0.139]] - 2026-10-20
+- `hephaestus merge-queue` builds the line with the VCS of the repo: jj in a jj repo (a scratch workspace, `jj duplicate` for the picks), git in a git repo (a scratch worktree, cherry-pick). `status` and `watch` ask the VCS directly too, and no command writes to the git store of jj to read from it.
+
+## [[0.0.138]] - 2026-10-20
+- `sisyphus graph --full` places its nodes in linear time: the edges are bucketed by their source and the ready issues are a heap, instead of a scan of every edge for every node. At 20,000 issues the command drops from 1.4 s to 0.3 s, the same cost as a non-full graph.
+
+## [[0.0.137]] - 2026-10-20
+- `hephaestus evict <worker> --force` is the break glass for a live worker that loops and never releases its lease: the queue drops its leases, and the worker's next keep-alive stops its task, releases its issue, and ends the worker. Without `--force`, evict only shows what it would do.
+
+## [[0.0.136]] - 2026-10-20
+- `hephaestus doctor <issue>` diagnoses the task of one issue — whether a worker works on it, lost it, or stopped on it — and `hephaestus kick <issue>` makes a stuck task run again: it reopens the issue, removes `needs-human`, and sends the task back to its role.
+
+## [[0.0.135]] - 2026-10-20
+- hephaestus moves into the root Go module: its command is `cmd/hephaestus`, beside `cmd/sisyphus` and `cmd/sisyphus-mcp`, and `go test ./...` at the root tests both tools.
+
+## [[0.0.134]] - 2026-10-20
+- Bookmarks at one commit no longer stop the merge queue, `merge-queue` exits 2 when it leaves work out, duplicate role names are errors, and `hephaestus agent trial` tries a role on one issue in a scratch copy and records its cost.
+
+## [[0.0.133]] - 2026-10-20
+- `hephaestus watch` broadcasts `bookmark-ready` and `issue-closed` from the state of the issues and their bookmarks, once each, so the reviewers and the docs start without a model that remembers to send them.
+
+## [[0.0.132]] - 2026-10-20
+- `hephaestus messages send --role <family>` without `--all` warns that the message reaches no worker, and names the roles of the family.
+
+## [[0.0.131]] - 2026-10-20
+- Each task of an AI role runs in a jj workspace or git worktree of its own, with its own bookmark, which hephaestus makes and removes; a notice about a bookmark runs in a scratch copy of it.
+
+## [[0.0.130]] - 2026-10-20
+- Each task of a hephaestus worker stops at a time limit (1 hour by default) and, for an AI role, at a token limit; the tokens, cost, and time of each model run go into the Notes of its issue.
+
+## [[0.0.129]] - 2026-10-20
+- `hephaestus status` shows in one view what needs a human: issues, referendums, workers, waiting messages, and the last line of the merge queue with the recommendation of the release manager.
+
+## [[0.0.128]] - 2026-10-20
+- hephaestus runs referendums: role agents vote on the implementation of an issue in rounds, with required and non-required reviewers and a modification gate, and the result is recorded in the issue and in `referendums/`.
+
+## [[0.0.127]] - 2026-10-20
+- `hephaestus referendum call --timeout` (1 hour by default): a referendum that times out or is stopped fails, its reviewers stop, and the issue stays open; a referendum that crashed is recorded as failed after its deadline.
+
+## [[0.0.126]] - 2026-10-20
+- The hephaestus message queue accepts roles of families (`formatter/golang`), delivers a broadcast once to each listening role as a notice that does not claim its issue, and workers renew their leases while they work, so that no task runs twice.
+
+## [[0.0.125]] - 2026-10-20
+- `sisyphus links` and `sisyphus lint` report a wikilink with an alias in a Markdown table row (`alias-in-table`), because Markdown reads its `|` as the end of the cell.
+
+## [[0.0.124]] - 2026-10-20
+- New hephaestus roles: `implementer` does delegated issues, `code-reviewer` and `test-engineer` review a bookmark, and the formatter family (`formatter/golang`, `csharp`, `yaml`, `json`, `markdown`) formats the changed files of each language; roles of a family live in `roles/<family>/<variant>/`.
+
+## [[0.0.123]] - 2026-10-20
+- Seven more hephaestus roles to try (triage, compatibility-reviewer, dependency-check, release-manager, performance-engineer, operations-auditor, model-eval), a `Works with` section that each role file uses to tell its hand-offs, and a `merge-queue-done` broadcast.
+
+## [[0.0.122]] - 2026-10-20
+- Three economist roles analyze cost against a budget: `economist/tokens` for AI agent tokens, `economist/cloud` for cloud services such as AWS, and `economist/compute` for CPU, RAM, GPU, and storage.
+
+## [[0.0.121]] - 2026-10-20
+- `dependency-check` is a family of tool roles, one for each ecosystem: `golang`, `javascript`, `dotnet`, `java`, `docker`, and `github-actions`.
+
+## [[0.0.120]] - 2026-10-20
+- Three database roles optimize how the repo uses its databases: `dba/sqlite`, `dba/postgres`, and `dba/meilisearch` check keys, indexes, query patterns, data consistency, and migrations, with evidence before and after.
+
+## [[0.0.119]] - 2026-10-20
+- The AI role `technical-docs/comments` reviews the code comments and commit messages of a change with no knowledge of the solution, and makes them brief, concise, and correct; the implementer and the engineer run it in a review loop.
+
+## [[0.0.118]] - 2026-10-20
+- The AI role `abstraction-engineer` reviews changes for code that the repo already has, and proposes clear abstractions for code that repeats, where the boundary makes sense.
+
 ## [[0.0.117]] - 2026-10-12
 - Run the AI roles as Claude Code subagents and as workers with a runner, and add the roles security-researcher and privacy-reviewer.
 

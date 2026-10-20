@@ -43,5 +43,5 @@ Requested by a human on 2026-10-12, after [[queue-roles-broadcasts-keepalive]]: 
 
 ## Resolution
 
-Completed: messages send warns when --role names a family of roles without --all, with the roles of the family and how to reach them. See [[unreleased-warn-family-role-message]].
+Completed: messages send warns when --role names a family of roles without --all, with the roles of the family and how to reach them. See [[0.0.132]].
 

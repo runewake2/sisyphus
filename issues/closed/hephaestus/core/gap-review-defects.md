@@ -48,5 +48,5 @@ The gap review of [[delegate-issues-to-agents]] found these problems:
 
 ## Resolution
 
-Completed. Bookmarks at one commit merge as one; merge-queue exits 2 when it leaves work out; hephaestus roles reports duplicate role names and flat names; hephaestus agent trial and agent trials try a role on one issue in a scratch copy and record the result and cost. See [[unreleased-gap-review-defects]].
+Completed. Bookmarks at one commit merge as one; merge-queue exits 2 when it leaves work out; hephaestus roles reports duplicate role names and flat names; hephaestus agent trial and agent trials try a role on one issue in a scratch copy and record the result and cost. See [[0.0.134]].
 

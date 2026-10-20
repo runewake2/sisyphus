@@ -45,5 +45,5 @@ Requested by a human on 2026-10-13: hephaestus and sisyphus have different cmd d
 
 ## Resolution
 
-Completed: the hephaestus command is cmd/hephaestus beside the sisyphus commands, in the one Go module, with its packages in internal/hephaestus/; a test keeps the tools from sharing code. See [[unreleased-one-go-module]] and [[0003-one-go-module-with-the-commands-side-by-side]].
+Completed: the hephaestus command is cmd/hephaestus beside the sisyphus commands, in the one Go module, with its packages in internal/hephaestus/; a test keeps the tools from sharing code. See [[0.0.135]] and [[0003-one-go-module-with-the-commands-side-by-side]].
 

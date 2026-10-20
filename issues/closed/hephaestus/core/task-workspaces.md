@@ -46,5 +46,5 @@ A review of hephaestus on 2026-10-12 found that an AI worker ran in its own dire
 
 ## Resolution
 
-Completed: each task of a task role runs in a workspace and on a bookmark of its own, which hephaestus makes and removes, and a notice about a bookmark runs in a scratch copy of it. See [[unreleased-task-workspaces]] and [[0008-each-task-has-a-workspace-of-its-own]].
+Completed: each task of a task role runs in a workspace and on a bookmark of its own, which hephaestus makes and removes, and a notice about a bookmark runs in a scratch copy of it. See [[0.0.131]] and [[0008-each-task-has-a-workspace-of-its-own]].
 

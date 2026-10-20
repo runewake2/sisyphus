@@ -46,5 +46,5 @@ Requested by a human on 2026-10-12, from a review of hephaestus: there was no si
 
 ## Resolution
 
-Completed: hephaestus status shows what needs a human in one view. See [[unreleased-status-command]].
+Completed: hephaestus status shows what needs a human in one view. See [[0.0.129]].
 

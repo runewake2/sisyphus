@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-13
-- Version: [[unreleased-one-go-module]]
+- Version: [[0.0.135]]
 
 ## Context
 

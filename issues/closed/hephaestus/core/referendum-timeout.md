@@ -45,5 +45,5 @@ A review of hephaestus on 2026-10-12 found that a referendum that is stopped (Ct
 
 ## Resolution
 
-Completed: a referendum that times out or is stopped fails, its reviewers stop with their child programs, and the issue stays open; a deadline in the metadata lets the next call record a crashed referendum as failed. See [[unreleased-referendum-timeout]].
+Completed: a referendum that times out or is stopped fails, its reviewers stop with their child programs, and the issue stays open; a deadline in the metadata lets the next call record a crashed referendum as failed. See [[0.0.127]].
 

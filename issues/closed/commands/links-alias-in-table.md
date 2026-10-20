@@ -45,5 +45,5 @@ Requested by a human on 2026-10-12. Prettier, which formatter/markdown runs, spl
 
 ## Resolution
 
-Completed: sisyphus links and lint report a wikilink with an alias in a table row (alias-in-table), and the tables of the repo have no alias. See [[unreleased-links-alias-in-table]].
+Completed: sisyphus links and lint report a wikilink with an alias in a table row (alias-in-table), and the tables of the repo have no alias. See [[0.0.125]].
 

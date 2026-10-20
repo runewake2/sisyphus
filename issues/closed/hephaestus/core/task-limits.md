@@ -46,5 +46,5 @@ A review of hephaestus on 2026-10-12 found that agent run had no time limit for 
 
 ## Resolution
 
-Completed: each task has a time limit and, for an AI role, a token limit, and each model run records its usage. See [[unreleased-task-limits]] and [[0006-a-task-has-a-time-limit-and-a-token-limit]].
+Completed: each task has a time limit and, for an AI role, a token limit, and each model run records its usage. See [[0.0.130]] and [[0006-a-task-has-a-time-limit-and-a-token-limit]].
 

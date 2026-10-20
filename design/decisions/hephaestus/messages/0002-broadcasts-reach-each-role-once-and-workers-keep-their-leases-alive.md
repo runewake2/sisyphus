@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-12
-- Version: [[unreleased-queue-roles-broadcasts-keepalive]]
+- Version: [[0.0.126]]
 
 ## Context
 

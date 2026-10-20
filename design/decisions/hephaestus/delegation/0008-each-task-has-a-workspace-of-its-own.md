@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-12
-- Version: [[unreleased-task-workspaces]]
+- Version: [[0.0.131]]
 
 ## Context
 

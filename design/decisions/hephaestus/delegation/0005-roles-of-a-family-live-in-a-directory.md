@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-12
-- Version: [[unreleased-implementer-and-review-roles]]
+- Version: [[0.0.124]]
 
 ## Context
 

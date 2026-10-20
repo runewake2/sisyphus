@@ -47,5 +47,5 @@ A review of hephaestus on 2026-10-12 found three defects of the message queue, e
 
 ## Resolution
 
-Completed: roles of families in messages, broadcasts once to each listening role as notices that do not claim their issue, the implementer broadcasts before it closes, and workers keep their leases alive. See [[unreleased-queue-roles-broadcasts-keepalive]] and [[0002-broadcasts-reach-each-role-once-and-workers-keep-their-leases-alive]].
+Completed: roles of families in messages, broadcasts once to each listening role as notices that do not claim their issue, the implementer broadcasts before it closes, and workers keep their leases alive. See [[0.0.126]] and [[0002-broadcasts-reach-each-role-once-and-workers-keep-their-leases-alive]].
 
