@@ -157,6 +157,32 @@ func TestPlanKickOfAStoppedOwner(t *testing.T) {
 	}
 }
 
+func TestPlanKickRefusesALiveOwnerWithoutTheTask(t *testing.T) {
+	// The doctor sends this case to kick --force; a plain kick must refuse it, as its help says.
+	in := base()
+	in.Workers[0].Holds = nil
+	if _, err := PlanKick(in, "", false); err == nil || !strings.Contains(err.Error(), "--force") {
+		t.Fatalf("a live owner without the task is not refused: %v", err)
+	}
+	if _, err := PlanKick(in, "", true); err != nil {
+		t.Fatalf("--force does not kick it: %v", err)
+	}
+}
+
+func TestPlanKickRefusesWhenTheQueueDoesNotAnswer(t *testing.T) {
+	// Without the workers and pending deliveries, the kick cannot tell a stuck task from a running
+	// one: empty lists must not make the guards pass.
+	in := base()
+	in.QueueErr = "connection refused"
+	in.Workers, in.Pending = nil, nil
+	if _, err := PlanKick(in, "", false); err == nil || !strings.Contains(err.Error(), "does not answer") {
+		t.Fatalf("a queue that does not answer is not refused: %v", err)
+	}
+	if _, err := PlanKick(in, "", true); err == nil {
+		t.Fatal("--force kicks blind although the queue does not answer")
+	}
+}
+
 func TestPlanKickRefusesALiveWorker(t *testing.T) {
 	if _, err := PlanKick(base(), "", false); err == nil || !strings.Contains(err.Error(), "--force") {
 		t.Fatalf("a live worker that holds the task is not refused: %v", err)

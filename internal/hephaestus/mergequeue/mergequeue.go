@@ -122,6 +122,21 @@ func Run(ctx context.Context, o Options) (Report, error) {
 		return report, err
 	}
 	defer l.Close()
+	return run(ctx, o, l, report)
+}
+
+// run merges the tasks onto the line l, which starts at the base of the report.
+func run(ctx context.Context, o Options, l line, report Report) (Report, error) {
+	baseID := report.BaseID
+	head := baseID
+	done := false
+	// An error must stop the run and change nothing outside the scratch working copy: without the
+	// rollback, the commits picked since the last good head would stay, in jj as visible heads.
+	defer func() {
+		if !done {
+			l.Rollback(head)
+		}
+	}()
 
 	plan, err := mergeorder.Compute(l.Repo(), o.Tasks, baseID)
 	if err != nil {
@@ -132,7 +147,6 @@ func Run(ctx context.Context, o Options) (Report, error) {
 		report.LeftOut = append(report.LeftOut, LeftOut{Bookmark: skipped.Bookmark, Tasks: skipped.Tasks, Reason: "nothing", Detail: skipped.Why})
 	}
 
-	head := baseID
 	var mergedBookmarks []string
 	leftOut := map[string]bool{}
 	for _, place := range plan.Order {
@@ -140,11 +154,11 @@ func Run(ctx context.Context, o Options) (Report, error) {
 			return report, ctx.Err()
 		}
 		fmt.Fprintf(o.Out, "merge-queue: %d. %s (%s)\n", place.Place, place.Bookmark, strings.Join(place.Tasks, ", "))
-		leave := func(reason, detail string, files []string) {
+		leave := func(reason, detail string, files []string) error {
 			leftOut[place.Bookmark] = true
 			report.LeftOut = append(report.LeftOut, LeftOut{Bookmark: place.Bookmark, Tasks: place.Tasks, Reason: reason, Detail: detail, Files: files})
-			l.Rollback(head)
 			fmt.Fprintf(o.Out, "merge-queue: left out %s: %s\n", place.Bookmark, detail)
+			return l.Rollback(head)
 		}
 		var missing []string
 		for _, before := range place.After {
@@ -153,7 +167,9 @@ func Run(ctx context.Context, o Options) (Report, error) {
 			}
 		}
 		if len(missing) > 0 {
-			leave("dependency", fmt.Sprintf("it must come after %s, which is left out", strings.Join(missing, ", ")), nil)
+			if err := leave("dependency", fmt.Sprintf("it must come after %s, which is left out", strings.Join(missing, ", ")), nil); err != nil {
+				return report, err
+			}
 			continue
 		}
 		// The commits of the bookmark that the line does not have yet: not in the base, and not in a
@@ -165,7 +181,9 @@ func Run(ctx context.Context, o Options) (Report, error) {
 		if merges, err := l.HasMerges(place.Bookmark, mergedBookmarks); err != nil {
 			return report, err
 		} else if merges {
-			leave("merges", "its history has merge commits; the merge queue makes a linear history", nil)
+			if err := leave("merges", "its history has merge commits; the merge queue makes a linear history", nil); err != nil {
+				return report, err
+			}
 			continue
 		}
 		conflict := false
@@ -175,7 +193,9 @@ func Run(ctx context.Context, o Options) (Report, error) {
 				return report, err
 			}
 			if !ok {
-				leave("conflict", fmt.Sprintf("its change %.12s conflicts with the line", commit), files)
+				if err := leave("conflict", fmt.Sprintf("its change %.12s conflicts with the line", commit), files); err != nil {
+					return report, err
+				}
 				conflict = true
 				break
 			}
@@ -208,7 +228,9 @@ func Run(ctx context.Context, o Options) (Report, error) {
 		if len(entries) > 0 {
 			assign, err := release.PlanAssign(l.Repo(), entries, o.Now())
 			if err != nil {
-				leave("versions", "its unreleased entries cannot get versions: "+err.Error(), nil)
+				if err := leave("versions", "its unreleased entries cannot get versions: "+err.Error(), nil); err != nil {
+					return report, err
+				}
 				continue
 			}
 			if err := release.Apply(l.Repo(), assign); err != nil {
@@ -234,7 +256,9 @@ func Run(ctx context.Context, o Options) (Report, error) {
 		if o.Checks != "" {
 			fmt.Fprintf(o.Out, "merge-queue: checks of %s: %s\n", place.Bookmark, o.Checks)
 			if output, ok := runChecks(ctx, l.Dir(), o.Checks, o.Out); !ok {
-				leave("checks", "the checks failed after it merged:\n"+tail(output, 30), nil)
+				if err := leave("checks", "the checks failed after it merged:\n"+tail(output, 30), nil); err != nil {
+					return report, err
+				}
 				continue
 			}
 		}
@@ -253,6 +277,7 @@ func Run(ctx context.Context, o Options) (Report, error) {
 		}
 		report.Created = true
 	}
+	done = true
 	return report, nil
 }
 

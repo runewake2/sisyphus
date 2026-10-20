@@ -39,9 +39,18 @@ func PlanKick(in Input, role string, force bool) (Kick, error) {
 	if k.Role == "" {
 		return k, fmt.Errorf("No role owns the task of %s: the issue has no delegate metadata, and no task message names one. Give the role with --role, or delegate it: hephaestus delegate %s <role>", k.Issue, k.Issue)
 	}
+	if in.QueueErr != "" {
+		// Without the workers and pending deliveries, the kick cannot tell a stuck task from a
+		// running one, and its message would not reach the queue.
+		return k, fmt.Errorf("The message queue does not answer (%s): the kick cannot tell whether the task of %s runs. Make the queue answer first: hephaestus messages serve", in.QueueErr, k.Issue)
+	}
 	if !force {
-		if w := workerOf(in, in.Issue.Owner); in.Issue.State == "in-progress" && alive(in, w) && holdsTask(in, w) {
-			return k, fmt.Errorf("The worker %s is live (last seen %s) and holds the task of %s: the task runs, slow or not. Kick it anyway with --force.", in.Issue.Owner, ago(in.Now, w.LastSeen), k.Issue)
+		if w := workerOf(in, in.Issue.Owner); in.Issue.State == "in-progress" && alive(in, w) {
+			doing := "holds the task of " + k.Issue
+			if !holdsTask(in, w) {
+				doing = fmt.Sprintf("may still finish the task of %s (it holds no message, but it works)", k.Issue)
+			}
+			return k, fmt.Errorf("The worker %s is live (last seen %s) and %s: the task runs, slow or not. Kick it anyway with --force.", in.Issue.Owner, ago(in.Now, w.LastSeen), doing)
 		}
 		for _, p := range pendingTasks(in) {
 			if holder := workerOf(in, p.LeasedBy); p.LeasedBy != "" && alive(in, holder) {

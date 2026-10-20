@@ -36,7 +36,8 @@ type line interface {
 	// Head returns the commit at the tip of the line.
 	Head() (string, error)
 	// Rollback puts the line and its working copy back at the commit to, and drops what came after.
-	Rollback(to string)
+	// A rollback that fails is an error: what came after would leak into the repo or the line.
+	Rollback(to string) error
 	// Bookmark makes the bookmark name at the commit.
 	Bookmark(name, commit string) error
 	// Close removes the scratch working copy.
@@ -184,9 +185,11 @@ func (l *jjLine) Head() (string, error) {
 }
 
 // Rollback abandons the commits above to, also the working-copy commit: jj makes a new empty one on
-// to, which drops what the checks left in the working copy, and the files follow.
-func (l *jjLine) Rollback(to string) {
-	l.jj("abandon", "-r", to+"..@")
+// to, which drops what the checks left in the working copy, and the files follow. A failed abandon
+// is an error: the abandoned commits would stay as visible heads of the repo.
+func (l *jjLine) Rollback(to string) error {
+	_, err := l.jj("abandon", "-r", to+"..@")
+	return err
 }
 
 func (l *jjLine) Bookmark(name, commit string) error {
@@ -318,10 +321,13 @@ func (l *gitLine) Head() (string, error) {
 	return strings.TrimSpace(head), err
 }
 
-func (l *gitLine) Rollback(to string) {
-	l.git("cherry-pick", "--abort")
-	l.git("reset", "--quiet", "--hard", to)
-	l.git("clean", "-fdq")
+func (l *gitLine) Rollback(to string) error {
+	l.git("cherry-pick", "--abort") // there may be no cherry-pick to abort
+	if _, err := l.git("reset", "--quiet", "--hard", to); err != nil {
+		return err
+	}
+	_, err := l.git("clean", "-fdq")
+	return err
 }
 
 func (l *gitLine) Bookmark(name, commit string) error {

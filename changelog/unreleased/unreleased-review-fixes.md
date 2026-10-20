@@ -1,0 +1,29 @@
+# Unreleased: fixes of the review of the government
+
+- Date: 2026-10-20
+- Bookmark: samw/ai/review-fixes
+- Components: hephaestus
+- Changelog: The merge queue rolls its line back on every failure, so an error in a jj repo no longer leaves the picked commits as visible heads, and `kick` refuses every live owner without `--force` and refuses to plan blind when the message queue does not answer.
+
+## Summary
+
+The government reviewed its own repo (code-reviewer, operations-auditor, performance-engineer,
+abstraction-engineer, then the engineer to order the work). The code reviewer confirmed three
+defects in the changes of the day; all three are fixed, with tests.
+
+## Changes
+
+- `mergequeue.Run` rolls the line back to the last good head on every return that is not success:
+  before, an error between picks left the duplicated commits in a jj repo as visible anonymous
+  heads, against the promise that an error changes nothing outside the scratch working copy. A
+  rollback that fails is now an error of the run, not silence ([[jj-error-leaves-visible-commits]]).
+- `kick` refuses every live owner of an in-progress issue without `--force`, also one that holds no
+  task message — the exact case its doctor sends to `--force` ([[kick-live-owner-needs-force]]).
+- `kick` refuses to plan when the message queue does not answer: empty worker and pending lists no
+  longer pass its guards, and a transient queue fault no longer causes a second task message
+  ([[kick-ignores-queue-error]]).
+
+## Issues
+
+- Closed [[jj-error-leaves-visible-commits]], [[kick-live-owner-needs-force]], and
+  [[kick-ignores-queue-error]], all filed and confirmed by the code-reviewer role.
