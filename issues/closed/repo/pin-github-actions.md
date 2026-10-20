@@ -1,12 +1,12 @@
 ---
 title: "Pin the GitHub Actions of the CI workflow to commit SHAs"
-state: open            # open | in-progress | closed. Must match the directory of the file.
-resolution:            # completed | abandoned. Set this only when state is closed.
+state: closed          # open | in-progress | closed. Must match the directory of the file.
+resolution: completed  # completed | abandoned. Set this only when state is closed.
 priority: medium       # critical | high | medium | low
 effort: small          # small | medium | large | x-large
 tags: [ci, security]   # The components that the work touches, for example [widget-scheduler, plan]
 created: 2026-10-12
-closed:                # YYYY-MM-DD. Set this only when state is closed.
+closed: 2026-10-20     # YYYY-MM-DD. Set this only when state is closed.
 owner:                 # The person or agent working on the issue. Cleared when the issue returns to open.
 approver:              # The person or agent who accepts the issue when it closes.
 bookmark:              # samw/ai/<workspace-name> of the agent that does the work. Set this when work starts.
@@ -30,10 +30,10 @@ Found on 2026-10-12 by the first run of dependency-check/github-actions ([[depen
 
 ## Acceptance criteria
 
-- [ ] actions/checkout and actions/setup-go are pinned to the commit SHAs of their releases, with the version in a comment.
-- [ ] hephaestus agent review dependency-check/github-actions passes on the repo.
+- [x] actions/checkout and actions/setup-go are pinned to the commit SHAs of their releases, with the version in a comment.
+- [x] hephaestus agent review dependency-check/github-actions passes on the repo.
 
-- [ ] (proposed by triage) Each pinned SHA is verified against the published release of the action, so that the pin points at reviewed code.
+- [x] (proposed by triage) Each pinned SHA is verified against the published release of the action, so that the pin points at reviewed code.
 
 ## Out of scope
 
@@ -45,6 +45,5 @@ Found on 2026-10-12 by the first run of dependency-check/github-actions ([[depen
 
 ## Resolution
 
-<Complete this section when you close the issue.
-- Completed: tell what was done. Link to the changelog version and the decision records, for example `[[0.0.5]]`.
-- Abandoned: tell why the work stopped. Link to the issue or decision that replaces it, if one exists.>
+Done: actions/checkout is pinned to 11d5960a326750d5838078e36cf38b85af677262 (v4.4.0) and actions/setup-go to 40f1582b2485089dde7abd97c1529aa768e1baff (v5.6.0), each with the version in a comment. Both SHAs were verified against the published tags with git ls-remote on github.com: the floating v4 and v5 tags point at exactly the v4.4.0 and v5.6.0 release commits. hephaestus agent review dependency-check/github-actions votes yes (exit code 0; zizmor not installed, noted as information only).
+
