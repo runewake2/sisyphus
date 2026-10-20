@@ -29,6 +29,10 @@ All agent-specific work is in hephaestus. The only sisyphus work that hephaestus
 generic issue data that any client can use, for example a filter on a `metadata` key. See
 [[0029-sisyphus-does-not-manage-agents]].
 
+The short names of the two commands are `forge` (hephaestus, the god of the forge) and `sis`
+(sisyphus): symlinks, as the Aliases section of the [repo README](../README.md) shows. The docs and
+the role files keep the full names.
+
 ## Commands
 
 Install it with `go install github.com/runewake2/sisyphus/cmd/hephaestus@latest`, or build it with

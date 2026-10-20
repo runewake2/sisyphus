@@ -90,6 +90,25 @@ source <(sisyphus completion bash)
 
 See [docs/sisyphus-completion.md](docs/sisyphus-completion.md) for the other shells.
 
+## Aliases
+
+The short names of the two commands are `sis` and `forge`. A symlink works everywhere a shell alias
+does not (scripts, CI, agent runners), because neither command cares about the name it is called by:
+
+```bash
+ln -s "$(command -v sisyphus)" ~/.local/bin/sis
+ln -s "$(command -v hephaestus)" ~/.local/bin/forge
+```
+
+Completion registers per name, so give each alias one line beside the `source` line above:
+
+```bash
+complete -o default -F __start_sisyphus sis
+complete -o default -F __start_hephaestus forge
+```
+
+The docs and the role files keep the full names, so that transcripts stay greppable.
+
 ## Obsidian
 
 sisyphus issues are plain Markdown with YAML frontmatter, so a repo that uses sisyphus also works
