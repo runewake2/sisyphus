@@ -75,6 +75,8 @@ Suggested design:
 
 2026-10-11: moved out of [[issue-manager-gaps]] by a human, so that the epic can close. No schema change needs a migration yet.
 
+2026-10-20, triage: checked the repo; no migrate command exists in cmd/sisyphus, so the issue is not stale, and sisyphus-mcp exists, so the MCP-tool criterion is actionable. The issue is clear, in the right directory (commands/), not a duplicate, and its acceptance criteria are checkable as written. Question for a human: the open question in the Context (a per-issue sisyphus-version stamp in metadata, or one stamp for the whole repo) needs a decision before the version-stamp part; the rest of the work does not wait on it. Proposal: priority low (the Notes of 2026-10-11 say no schema change needs a migration yet, so there is no urgency), role implementer.
+
 ## Resolution
 
 <Complete this section when you close the issue.

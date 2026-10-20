@@ -14,7 +14,7 @@ workspaces: []         # jj workspaces where local work on the issue has happene
 metadata: {}           # Optional. Arbitrary key-value notes, for example an AI agent session id to resume work with context: {session-id: "abc123"}.
 deferred-from: "[[agents/spike-ollama-local-models]]" # Optional. The issue (as a quoted wikilink) or bookmark that deferred this work.
 parent:                # Optional. The parent issue (as a quoted wikilink), if this issue is a sub-issue.
-depends-on: []           # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example `["[[faster-startup]]"]`.
+depends-on: ["[[mcp/small-model-friendly-mcp]]"] # Optional. Issues (as quoted wikilinks) that must close before this one can start, for example `["[[faster-startup]]"]`.
 remote:                # Optional. A URL: the GitHub issue or Jira ticket that tracks this issue outside the repo.
 ---
 
@@ -41,6 +41,8 @@ The guide must tell how to: install Ollama, pull the model, connect an MCP clien
 - Support for model runners other than Ollama.
 
 ## Notes
+
+2026-10-20, triage: checked the claims against [[ollama-local-models]]; the numbers (qwen3.5:9b, 100% at 3.3 s; qwen3:14b 39% to 86%) are correct. Added depends-on [[small-model-friendly-mcp]], as the Context asks ('Write it after'): its remaining harness rerun can change the recommended settings for the small models. One part of the Context is overtaken: the dir argument is now hidden by default ([[0026-hide-the-dir-argument-by-default]]), so the guide must not tell the reader to hide it. Note: docs/sisyphus-mcp.md already links to this issue as the planned guide, so that page is a natural place to link the new page from, beside README. Not a duplicate; directory agents/ (agent guides) is correct. Proposal: priority medium (keep), role technical-docs.
 
 ## Resolution
 

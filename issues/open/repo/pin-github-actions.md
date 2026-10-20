@@ -33,13 +33,15 @@ Found on 2026-10-12 by the first run of dependency-check/github-actions ([[depen
 - [ ] actions/checkout and actions/setup-go are pinned to the commit SHAs of their releases, with the version in a comment.
 - [ ] hephaestus agent review dependency-check/github-actions passes on the repo.
 
+- [ ] (proposed by triage) Each pinned SHA is verified against the published release of the action, so that the pin points at reviewed code.
+
 ## Out of scope
 
 <List related work that this issue does not include. Create a separate issue for each item that someone must do later.>
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-20, triage: checked .github/workflows/ci.yml; lines 13 and 15 still use actions/checkout@v4 and actions/setup-go@v5, so the issue is valid and not stale. Moved it from issue-files/ to repo/: issue-files/ is about the issue file format, and this issue is about the CI of the repo itself, like the closed repo/one-go-module. Not a duplicate; [[dependency-check-roles]] is the source of the finding, and [[github-intake-workflow]] is about another workflow. The criteria are checkable as written. Proposed extra criterion: the pinned SHAs are verified against the published releases of each action (compare with the tag on github.com), so that the pin does not point at unreviewed code. Proposal: priority medium (keep; security), role implementer.
 
 ## Resolution
 

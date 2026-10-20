@@ -51,6 +51,8 @@ The harness in `design/ollama-local-models/harness/` can measure each change. Ru
 
 2026-10-11: all sub-issues are closed ([[0.0.94]] to [[0.0.101]]). The rerun of the spike harness on qwen3:8b and qwen3:4b is the remaining criterion. It loads the CPU heavily, so run it when the workstation is free.
 
+2026-10-20, triage: checked the issue against the repo. All five sub-issues are closed, and the five tool changes are in main. The only open criterion is the rerun of the spike harness on qwen3:8b and qwen3:4b, config A, with the new results recorded in [[ollama-local-models]]. The results in design/ollama-local-models/results/ are from the spike, before the tool changes, so the criterion is still checkable against them. Not a duplicate; directory mcp/ is correct. Proposal: priority medium (the code work is done; only the measurement remains), role model-eval (its charter is this task suite). Constraint for the runner: the harness loads the CPU heavily; run one model at a time, with at most 20 threads, when the workstation is free.
+
 ## Resolution
 
 <Complete this section when you close the issue.

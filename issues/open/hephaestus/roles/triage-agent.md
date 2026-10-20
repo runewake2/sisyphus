@@ -40,7 +40,13 @@ Requested by a human on 2026-10-12: implement other agents that may be useful, f
 
 ## Notes
 
-<Record progress, findings, and open questions here while the work continues.>
+2026-10-20, triage trial run on five leaf issues. One-line verdicts:
+- [[small-model-friendly-mcp]]: ready; all sub-issues closed, only the harness rerun remains; proposed priority medium, role model-eval.
+- [[ollama-task-manager-guide]]: ready but blocked; added depends-on [[small-model-friendly-mcp]], noted that the dir argument is now hidden by default; proposed priority medium, role technical-docs.
+- [[migrate-command]]: ready; not stale (no migrate command exists); one design question for a human (per-issue or per-repo version stamp); proposed priority low, role implementer.
+- [[compare-cloud-claude-models]]: ready but needs a human first (API key without rate limit, approval of 30 to 50 USD); proposed priority low, role model-eval, whose role file covers only local models today.
+- [[pin-github-actions]]: ready; still valid (ci.yml unpinned); moved from issue-files/ to repo/; added one proposed criterion (verify each SHA against the release); proposed priority medium, role implementer.
+No duplicate found, and no issue closed, abandoned, or delegated. Every change is recorded in a dated note of its issue.
 
 ## Resolution
 
