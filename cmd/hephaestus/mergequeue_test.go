@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -428,6 +429,181 @@ func TestABookmarkThatMovesDuringTheRunStopsItInAJJRepo(t *testing.T) {
 	isTrue(t, before != r.jj("log", "--no-graph", "-r", "ai/busy", "-T", "commit_id"), "the check moved the bookmark")
 	isTrue(t, !strings.Contains(r.jj("bookmark", "list"), "mq/test"), "no line")
 	equal(t, "", strings.TrimSpace(r.jj("log", "--no-graph", "-r", `description(substring:"ai/busy") ~ ai/busy`, "-T", `commit_id`)))
+}
+
+// countingChecks returns checks that fail on the file bad.txt, and a function that counts their runs.
+func countingChecks(t *testing.T) (string, func() int) {
+	t.Helper()
+	file := filepath.Join(t.TempDir(), "runs")
+	return "echo run >> '" + file + "' && test ! -e bad.txt", func() int {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return 0
+		}
+		return strings.Count(string(data), "run")
+	}
+}
+
+func TestABatchRunsTheChecksOnce(t *testing.T) {
+	r := newMergeRepo(t, "one-task-work", "two-task-work", "three-task-work", "four-task-work", "five-task-work")
+	names := []string{"one", "two", "three", "four", "five"}
+	for i, name := range names {
+		r.branch("ai/"+name, "main", fmt.Sprintf("2026-10-%02dT10:00:00", i+1), map[string]string{name + ".txt": name + "\n"})
+	}
+	for _, name := range names {
+		r.task(name+"-task-work", "ai/"+name)
+	}
+	checks, runs := countingChecks(t)
+
+	report := r.mergeQueue("one-task-work", "two-task-work", "three-task-work", "four-task-work", "five-task-work", "--name", "mq/test", "--checks", checks, "--batch", "2")
+
+	equalStrings(t, []string{"ai/one", "ai/two", "ai/three", "ai/four", "ai/five"}, mergedBookmarks(report))
+	equal(t, 3, runs()) // two batches of two, and one of one
+	equal(t, 3, report.CheckRuns)
+	equal(t, "", r.gitOut("log", "--format=%s", "mq/test..ai/one"))
+	equal(t, "", r.gitOut("log", "--format=%s", "mq/test..ai/five"))
+}
+
+func TestAFailedBatchFindsTheBookmarkThatFails(t *testing.T) {
+	r := newMergeRepo(t, "one-task-work", "two-task-work", "bad-task-work", "four-task-work")
+	r.write("VERSION", "0.0.5\n")
+	r.write("CHANGELOG.md", "# Changelog\n\n## [[0.0.5]] - 2026-10-01\n- Older.\n")
+	r.write("changelog/0.0.5.md", "# 0.0.5\n")
+	r.commit("versions")
+	work := func(name, date, file string) {
+		r.branch("ai/"+name, "main", date, map[string]string{
+			file: name + "\n",
+			"changelog/unreleased/unreleased-" + name + ".md": entry(name, name+".", "2026-10-09"),
+		})
+	}
+	work("one", "2026-10-01T10:00:00", "one.txt")
+	work("two", "2026-10-02T10:00:00", "two.txt")
+	work("bad", "2026-10-03T10:00:00", "bad.txt")
+	work("four", "2026-10-04T10:00:00", "four.txt")
+	for _, name := range []string{"one", "two", "bad", "four"} {
+		r.task(name+"-task-work", "ai/"+name)
+	}
+	badBefore := r.gitOut("rev-parse", "ai/bad")
+	checks, runs := countingChecks(t)
+
+	report := r.mergeQueueExit(2, "one-task-work", "two-task-work", "bad-task-work", "four-task-work", "--name", "mq/test", "--checks", checks, "--batch", "4")
+
+	equalStrings(t, []string{"ai/one", "ai/two", "ai/four"}, mergedBookmarks(report))
+	equal(t, 1, len(report.LeftOut))
+	equal(t, "ai/bad", report.LeftOut[0].Bookmark)
+	equal(t, "checks", report.LeftOut[0].Reason)
+	// All four fail; one and two pass; bad and four are the tree that failed, so no run; bad alone
+	// fails; four passes.
+	equal(t, 4, runs())
+	equal(t, badBefore, r.gitOut("rev-parse", "ai/bad"))
+	// The versions have no gap from the batch that went back.
+	equal(t, "0.0.6", report.Merged[0].Versions[0].Version)
+	equal(t, "0.0.7", report.Merged[1].Versions[0].Version)
+	equal(t, "0.0.8", report.Merged[2].Versions[0].Version)
+	equal(t, "0.0.8", r.gitOut("show", "mq/test:VERSION"))
+	isTrue(t, !strings.Contains(r.gitOut("ls-tree", "-r", "--name-only", "mq/test"), "bad.txt"), "the failed work is not in the line")
+}
+
+func TestAFailedPairDoesNotRunTheSameTreeAgain(t *testing.T) {
+	r := newMergeRepo(t, "good-task-work", "bad-task-work")
+	r.branch("ai/good", "main", "2026-10-01T10:00:00", map[string]string{"good.txt": "good\n"})
+	r.branch("ai/bad", "main", "2026-10-02T10:00:00", map[string]string{"bad.txt": "bad\n"})
+	r.task("good-task-work", "ai/good")
+	r.task("bad-task-work", "ai/bad")
+	checks, runs := countingChecks(t)
+
+	report := r.mergeQueueExit(2, "good-task-work", "bad-task-work", "--name", "mq/test", "--checks", checks, "--batch", "2")
+
+	equalStrings(t, []string{"ai/good"}, mergedBookmarks(report))
+	equal(t, "ai/bad", report.LeftOut[0].Bookmark)
+	equal(t, 2, runs()) // the pair, and good alone: good and bad together is the tree that failed
+}
+
+func TestAConflictWithFailedWorkInABatchIsTriedAgain(t *testing.T) {
+	r := newMergeRepo(t, "bad-task-work", "other-task-work")
+	r.branch("ai/bad", "main", "2026-10-01T10:00:00", map[string]string{"README.md": "# Bad\n", "bad.txt": "bad\n"})
+	r.branch("ai/other", "main", "2026-10-02T10:00:00", map[string]string{"README.md": "# Other\n"})
+	r.task("bad-task-work", "ai/bad")
+	r.task("other-task-work", "ai/other")
+	checks, _ := countingChecks(t)
+
+	report := r.mergeQueueExit(2, "bad-task-work", "other-task-work", "--name", "mq/test", "--checks", checks, "--batch", "2")
+
+	// ai/other conflicts only with ai/bad, which fails: it must not stay out for a conflict.
+	equalStrings(t, []string{"ai/other"}, mergedBookmarks(report))
+	equal(t, 1, len(report.LeftOut))
+	equal(t, "ai/bad", report.LeftOut[0].Bookmark)
+	equal(t, "checks", report.LeftOut[0].Reason)
+	equal(t, "# Other", r.gitOut("show", "mq/test:README.md"))
+}
+
+func TestADependentInAFailedBatchIsLeftOut(t *testing.T) {
+	r := newMergeRepo(t, "bad-task-work", "after-bad-work", "good-task-work")
+	r.branch("ai/bad", "main", "2026-10-01T10:00:00", map[string]string{"bad.txt": "bad\n"})
+	r.branch("ai/after", "main", "2026-10-02T10:00:00", map[string]string{"after.txt": "after\n"})
+	r.branch("ai/good", "main", "2026-10-03T10:00:00", map[string]string{"good.txt": "good\n"})
+	r.task("bad-task-work", "ai/bad")
+	r.task("after-bad-work", "ai/after", "bad-task-work")
+	r.task("good-task-work", "ai/good")
+	checks, _ := countingChecks(t)
+
+	report := r.mergeQueueExit(2, "bad-task-work", "after-bad-work", "good-task-work", "--name", "mq/test", "--checks", checks, "--batch", "3")
+
+	equalStrings(t, []string{"ai/good"}, mergedBookmarks(report))
+	reasons := map[string]string{}
+	for _, left := range report.LeftOut {
+		reasons[left.Bookmark] = left.Reason
+	}
+	equal(t, "checks", reasons["ai/bad"])
+	equal(t, "dependency", reasons["ai/after"])
+}
+
+func TestAFailedBatchInAJJRepo(t *testing.T) {
+	needJJ(t)
+	r := newMergeRepo(t, "base-task-work", "top-task-work", "bad-task-work", "last-task-work")
+	r.jj("git", "init", "--colocate")
+	work := func(bookmark, base, file string) {
+		r.jj("new", base, "-m", bookmark)
+		r.write(file, "work\n")
+		r.jj("bookmark", "create", bookmark, "-r", "@")
+	}
+	work("ai/base", "main", "base.txt")
+	work("ai/top", "ai/base", "top.txt")
+	work("ai/bad", "main", "bad.txt")
+	work("ai/last", "main", "last.txt")
+	r.jj("new", "main")
+	for _, name := range []string{"base", "top", "bad", "last"} {
+		r.task(name+"-task-work", "ai/"+name)
+	}
+	badBefore := r.jj("log", "--no-graph", "-r", "ai/bad", "-T", "commit_id")
+	checks, _ := countingChecks(t)
+
+	report := r.mergeQueueExit(2, "base-task-work", "top-task-work", "bad-task-work", "last-task-work", "--name", "mq/test", "--checks", checks, "--batch", "4")
+
+	equal(t, 3, len(report.Merged))
+	equal(t, "ai/bad", report.LeftOut[0].Bookmark)
+	equal(t, badBefore, r.jj("log", "--no-graph", "-r", "ai/bad", "-T", "commit_id"))
+	// The line has the commits of the bookmarks once, and the batches that went back left no copy.
+	subjects := strings.Fields(r.jj("log", "--no-graph", "-r", "all()", "-T", `description.first_line() ++ "\n"`))
+	for _, want := range []string{"ai/base", "ai/top", "ai/bad", "ai/last"} {
+		count := 0
+		for _, subject := range subjects {
+			if subject == want {
+				count++
+			}
+		}
+		equal(t, 1, count)
+	}
+	for _, bookmark := range []string{"ai/base", "ai/top", "ai/last"} {
+		equal(t, "", strings.TrimSpace(r.jj("log", "--no-graph", "-r", bookmark+" ~ ::mq/test", "-T", "commit_id")))
+	}
+}
+
+func TestABatchMustBePositive(t *testing.T) {
+	r := newMergeRepo(t, "one-task-work")
+	res := r.run("merge-queue", "one-task-work", "--batch", "0")
+	equal(t, 1, res.exit)
+	contains(t, res.errors, "The batch must be 1 or more")
 }
 
 // buildHephaestusOnce builds this command once and puts it first on PATH, for a role whose command

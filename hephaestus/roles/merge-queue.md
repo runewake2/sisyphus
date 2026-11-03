@@ -21,7 +21,7 @@ does nothing else ([[agent-delegation#Merge queue]]).
 
 - A task message whose data has the set of tasks: sisyphus issues, each with the bookmark of its
   work, for example `{"tasks": ["fix-login-bug", "add-dark-mode"]}`, and optionally `onto`,
-  `name`, and `checks`.
+  `name`, `checks`, and `batch`.
 - The base of the merge, normally `main`.
 
 ## Outputs

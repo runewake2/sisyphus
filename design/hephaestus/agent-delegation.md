@@ -232,7 +232,8 @@ mechanical conflicts, check, and go on:
   to the `engineer` role or a human, and goes on with the bookmarks that do not depend on it. A tool
   does not resolve a conflict that needs judgment.
 - After each rebase: the checks of the repo must pass, for example `gofmt`, `go vet`, the tests,
-  and `sisyphus lint`.
+  and `sisyphus lint`. With `--batch`, the checks run once for a batch of bookmarks, and a batch
+  that fails splits ([[0004-run-the-checks-once-for-a-batch]]).
 
 **Output:** a linear history: a bookmark `merge-queue/<date>` with all merged changes in one line
 on `main`, each merged bookmark rebased onto it ([[0003-rebase-the-bookmarks-of-the-tasks]]), and a report in the issues of the tasks: the order, what was renumbered, and what was
