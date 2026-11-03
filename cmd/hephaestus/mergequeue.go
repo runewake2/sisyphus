@@ -36,8 +36,10 @@ func mergeQueueCommand(w workspace, findRepo func() (repo.Repo, error)) *cobra.C
 			"merge-order, renumbers decision records that collide, gives the unreleased changelog entries of each " +
 			"bookmark their versions in a commit \"merge-queue: give versions to <bookmark>\", and runs --checks. A " +
 			"bookmark that conflicts, fails the checks, or comes after one that is left out is left out: its tasks " +
-			"get a note, and a conflict a message to --conflicts-to. The result is the bookmark --name (default " +
-			"merge-queue/<date>). It never moves --onto, and never pushes. With --from-message, the set of tasks " +
+			"get a note, and a conflict a message to --conflicts-to, and its bookmark does not change. The result is " +
+			"the bookmark --name (default merge-queue/<date>), and each merged bookmark is rebased onto it, so that " +
+			"it is in the history of --onto when a human moves --onto to the line. It never moves --onto, and never " +
+			"pushes. With --from-message, the set of tasks " +
 			"comes from the data of the message on standard input, as a tool agent gives it: " +
 			`{"tasks": [...], "onto": ..., "name": ..., "checks": ...}.\n\n` +
 			"Exit codes: 0 when the work of every bookmark is in the line, or was in --onto already; 2 when the run " +
@@ -238,6 +240,9 @@ func printReport(out, errOut io.Writer, report mergequeue.Report) {
 		if len(left.Files) > 0 {
 			fmt.Fprintf(out, "    files: %s\n", strings.Join(left.Files, ", "))
 		}
+	}
+	if report.Created && report.Undo != "" {
+		fmt.Fprintf(out, "To put the bookmarks back, for a line that you reject: %s\n", report.Undo)
 	}
 	for _, warning := range report.Warnings {
 		fmt.Fprintf(errOut, "Warning: %s.\n", warning)

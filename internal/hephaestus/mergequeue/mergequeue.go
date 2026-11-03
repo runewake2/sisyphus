@@ -2,13 +2,13 @@
 // It merges the bookmark of each task, one at a time, in the order of package mergeorder, onto a new
 // line based on the base, gives the unreleased changelog entries of each bookmark their versions,
 // renumbers decision records that collide, and runs the checks of the repo after each bookmark. A
-// bookmark that conflicts or fails the checks is left out. The result is a new bookmark; the base,
-// the bookmarks of the tasks, and the working copies of the users do not change. It never moves the
-// base and never pushes.
+// bookmark that conflicts or fails the checks is left out, and does not change. The result is a new
+// bookmark, and each merged bookmark moves onto it, so that it is in the history of the base when a
+// human moves the base to the line. It never moves the base and never pushes.
 //
 // The merge happens in a scratch working copy of the repo: a jj workspace in a jj repo, where jj
-// duplicate puts the commits onto the line, or a git worktree of the git directory in a git repo,
-// where git cherry-pick does.
+// duplicate tries the commits on a line of copies and jj rebase then moves the commits themselves, or
+// a git worktree of the git directory in a git repo, where git cherry-pick does the rebase.
 package mergequeue
 
 import (
@@ -69,7 +69,7 @@ type Merged struct {
 type LeftOut struct {
 	Bookmark string   `json:"bookmark"`
 	Tasks    []string `json:"tasks"`
-	// Reason is conflict, checks, dependency, merges, or nothing.
+	// Reason is conflict, checks, dependency, merges, immutable, versions, or nothing.
 	Reason string `json:"reason"`
 	Detail string `json:"detail"`
 	// Files are the files of a conflict.
@@ -86,6 +86,26 @@ type Report struct {
 	Merged   []Merged  `json:"merged"`
 	LeftOut  []LeftOut `json:"left-out"`
 	Warnings []string  `json:"warnings"`
+	// Undo is the command that puts the merged bookmarks back. Empty when no bookmark moved.
+	Undo string `json:"undo,omitempty"`
+}
+
+// A move is one merged bookmark, for the rebase at the end of a run.
+type move struct {
+	Bookmark string
+	// From is the commit of the bookmark when the run tried it.
+	From string
+	// To is the copy of From on the line.
+	To string
+	// Version is the version commit of the bookmark on the line. Empty: it has none.
+	Version string
+}
+
+// landed is the result of the rebase at the end of a run.
+type landed struct {
+	Head     string
+	Undo     string
+	Warnings []string
 }
 
 // Run merges the tasks. A task that cannot merge is left out, with the reason in the report; an
@@ -138,6 +158,8 @@ func run(ctx context.Context, o Options, l line, report Report) (Report, error) 
 	}
 
 	var mergedBookmarks []string
+	var moves []move
+	copies := map[string]string{}
 	leftOut := map[string]bool{}
 	for _, place := range plan.Order {
 		if ctx.Err() != nil {
@@ -176,6 +198,18 @@ func run(ctx context.Context, o Options, l line, report Report) (Report, error) 
 			}
 			continue
 		}
+		if immutable, err := l.Immutable(place.Bookmark, mergedBookmarks); err != nil {
+			return report, err
+		} else if immutable {
+			if err := leave("immutable", "its history has immutable commits, which the merge queue cannot rebase", nil); err != nil {
+				return report, err
+			}
+			continue
+		}
+		from, err := l.Repo().CommitOf(place.Bookmark)
+		if err != nil {
+			return report, err
+		}
 		conflict := false
 		for _, commit := range commits {
 			files, ok, err := l.Pick(commit)
@@ -188,6 +222,9 @@ func run(ctx context.Context, o Options, l line, report Report) (Report, error) 
 				}
 				conflict = true
 				break
+			}
+			if copies[commit], err = l.Head(); err != nil {
+				return report, err
 			}
 		}
 		if conflict {
@@ -230,7 +267,8 @@ func run(ctx context.Context, o Options, l line, report Report) (Report, error) 
 				merged.Versions = append(merged.Versions, Version{Entry: a.Entry.Name, Version: a.Version})
 			}
 		}
-		if len(entries) > 0 || len(renumber.Renumberings) > 0 {
+		versioned := len(entries) > 0 || len(renumber.Renumberings) > 0
+		if versioned {
 			var body []string
 			for _, v := range merged.Versions {
 				body = append(body, fmt.Sprintf("- %s is %s", v.Entry, v.Version))
@@ -258,10 +296,25 @@ func run(ctx context.Context, o Options, l line, report Report) (Report, error) 
 		}
 		head = newHead
 		mergedBookmarks = append(mergedBookmarks, place.Bookmark)
+		if to := copies[from]; to != "" {
+			m := move{Bookmark: place.Bookmark, From: from, To: to}
+			if versioned {
+				m.Version = newHead
+			}
+			moves = append(moves, m)
+		}
 		report.Merged = append(report.Merged, merged)
 	}
 	report.Head = head
 	if head != baseID {
+		result, err := l.Land(moves, head)
+		report.Undo = result.Undo
+		report.Warnings = append(report.Warnings, result.Warnings...)
+		if err != nil {
+			head = baseID // drop every copy
+			return report, err
+		}
+		head, report.Head = result.Head, result.Head
 		if err := l.Bookmark(o.Name, head); err != nil {
 			return report, err
 		}

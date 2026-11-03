@@ -235,7 +235,7 @@ mechanical conflicts, check, and go on:
   and `sisyphus lint`.
 
 **Output:** a linear history: a bookmark `merge-queue/<date>` with all merged changes in one line
-on `main`, and a report in the issues of the tasks: the order, what was renumbered, and what was
+on `main`, each merged bookmark rebased onto it ([[0003-rebase-the-bookmarks-of-the-tasks]]), and a report in the issues of the tasks: the order, what was renumbered, and what was
 stopped and why. What happens to the bookmark next is not the merge queue's job: a human checks it
 and moves `main`.
 

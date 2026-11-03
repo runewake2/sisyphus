@@ -28,6 +28,7 @@ does nothing else ([[agent-delegation#Merge queue]]).
 
 - A bookmark `merge-queue/<date>` with the merged work of every task that it could merge, in one
   line.
+- Each merged bookmark, rebased onto that line. A bookmark that the run leaves out does not change.
 - The versions of the unreleased changelog entries (`hephaestus version assign`), and decision
   records with unique numbers (`hephaestus decisions renumber`).
 - A report in the `Notes` of each task: its place in the order, what was renumbered, or why its
@@ -55,3 +56,4 @@ does nothing else ([[agent-delegation#Merge queue]]).
   out, record the conflict in its tasks, and send a `conflict` message to the `engineer` role.
 - A check that fails after a rebase: leave the task out, with the output in its `Notes`.
 - A cycle of dependencies between the tasks.
+- A bookmark with immutable commits: leave it out, because the merge queue cannot rebase it.

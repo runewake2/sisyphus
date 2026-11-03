@@ -26,6 +26,8 @@ type line interface {
 	Commits(bookmark string, done []string) ([]string, error)
 	// HasMerges reports whether one of those commits is a merge commit.
 	HasMerges(bookmark string, done []string) (bool, error)
+	// Immutable reports whether the VCS refuses to rewrite one of those commits.
+	Immutable(bookmark string, done []string) (bool, error)
 	// Pick puts one commit onto the line. A conflict gives ok false, with the files of the conflict.
 	Pick(commit string) (files []string, ok bool, err error)
 	// CommitFiles commits the changed files of the working copy, with the message.
@@ -38,6 +40,8 @@ type line interface {
 	// Rollback puts the line and its working copy back at the commit to, and drops what came after.
 	// A rollback that fails is an error: what came after would leak into the repo or the line.
 	Rollback(to string) error
+	// Land moves the merged bookmarks onto the line, whose tip is head, and returns the final tip.
+	Land(moves []move, head string) (landed, error)
 	// Bookmark makes the bookmark name at the commit.
 	Bookmark(name, commit string) error
 	// Close removes the scratch working copy.
@@ -57,12 +61,14 @@ func newLine(r repo.Repo, baseID string) (line, error) {
 
 // jjLine builds the line with jj, in a scratch workspace of the repo. Its working-copy commit rides
 // the tip: jj duplicate --insert-before @ puts the copy of a commit under it, so the duplicate is
-// always @-, and the files of the working copy follow.
+// always @-, and the files of the working copy follow. The copies are a trial: a bookmark that fails
+// must not change. Land rebases the commits of the bookmarks that passed, and drops the copies.
 type jjLine struct {
 	root     string // the workspace of the user, where the scratch workspace was added
 	dir      string
 	name     string
 	baseID   string
+	startOp  string // the jj operation before the run
 	identity []string
 }
 
@@ -73,6 +79,9 @@ func newJJLine(r repo.Repo, baseID string) (line, error) {
 	}
 	os.Remove(dir) // jj workspace add makes it
 	l := &jjLine{root: r.Root, dir: dir, name: filepath.Base(dir), baseID: baseID, identity: jjIdentity(r.Root)}
+	if l.startOp, err = l.jjIn(r.Root, "--ignore-working-copy", "op", "log", "--no-graph", "--limit", "1", "-T", "id.short(12)"); err != nil {
+		return nil, err
+	}
 	if _, err := l.jjIn(r.Root, "workspace", "add", "--name", l.name, "-r", baseID, dir); err != nil {
 		return nil, err
 	}
@@ -124,6 +133,11 @@ func (l *jjLine) Commits(bookmark string, done []string) ([]string, error) {
 
 func (l *jjLine) HasMerges(bookmark string, done []string) (bool, error) {
 	out, err := l.jj("log", "--no-graph", "-r", "("+l.newCommits(bookmark, done)+") & merges()", "-T", `commit_id ++ "\n"`)
+	return len(repo.Lines(out)) > 0, err
+}
+
+func (l *jjLine) Immutable(bookmark string, done []string) (bool, error) {
+	out, err := l.jj("log", "--no-graph", "-r", "("+l.newCommits(bookmark, done)+") & immutable()", "-T", `commit_id ++ "\n"`)
 	return len(repo.Lines(out)) > 0, err
 }
 
@@ -187,16 +201,84 @@ func (l *jjLine) Rollback(to string) error {
 	return err
 }
 
+// Land rebases the commits of each bookmark onto the line, in order, with what is on top of them,
+// and puts the version commit of the bookmark directly above them. The trees are those of the copies,
+// which passed the checks; a difference is an error. An error part of the way leaves some bookmarks
+// moved, and its message tells how to undo the run: jj has no transaction over several commands.
+func (l *jjLine) Land(moves []move, head string) (landed, error) {
+	result := landed{Undo: "jj op restore " + l.startOp}
+	versions := map[string]string{}
+	for _, m := range moves {
+		rev := bookmarkRev(m.Bookmark)
+		if now, err := l.jj("log", "--no-graph", "-r", rev, "-T", "commit_id"); err != nil {
+			return landed{}, err
+		} else if now != m.From {
+			return landed{}, fmt.Errorf("The bookmark %s moved while the run tried it. No bookmark moved. Run the merge queue again.", m.Bookmark)
+		}
+		if m.Version != "" {
+			// A commit id changes when a commit below it moves; a change id does not.
+			id, err := l.jj("log", "--no-graph", "-r", m.Version, "-T", "change_id")
+			if err != nil {
+				return landed{}, err
+			}
+			versions[m.Bookmark] = id
+		}
+	}
+	fail := func(err error) (landed, error) {
+		return result, fmt.Errorf("The rebase of the bookmarks stopped: %v. Run %s to undo the run; it also undoes what others did in the repo since.", err, result.Undo)
+	}
+	tip := l.baseID
+	for _, m := range moves {
+		rev := bookmarkRev(m.Bookmark)
+		first, err := l.jj("log", "--no-graph", "-r", fmt.Sprintf("roots(::%s ~ ::%s)", rev, tip), "-T", "commit_id")
+		if err != nil {
+			return fail(err)
+		}
+		if first == "" {
+			continue // a bookmark below moved it onto the line already
+		}
+		if _, err := l.jj("rebase", "-s", first, "-d", tip); err != nil {
+			return fail(err)
+		}
+		top := rev
+		if version := versions[m.Bookmark]; version != "" {
+			if _, err := l.jj("rebase", "-r", version, "--insert-after", rev); err != nil {
+				return fail(err)
+			}
+			top = version
+		}
+		if tip, err = l.jj("log", "--no-graph", "-r", top, "-T", "commit_id"); err != nil {
+			return fail(err)
+		}
+	}
+	if diff, err := l.jj("diff", "--from", head, "--to", tip, "--summary"); err != nil {
+		return fail(err)
+	} else if diff != "" {
+		return fail(fmt.Errorf("the rebased line differs from the line that passed the checks:\n%s", diff))
+	}
+	if err := l.Rollback(l.baseID); err != nil {
+		return fail(err)
+	}
+	result.Head = tip
+	return result, nil
+}
+
+// bookmarkRev is the revset of one bookmark.
+func bookmarkRev(bookmark string) string {
+	return fmt.Sprintf("bookmarks(exact:%s)", strconv.Quote(bookmark))
+}
+
 func (l *jjLine) Bookmark(name, commit string) error {
 	_, err := l.jj("bookmark", "create", name, "-r", commit)
 	return err
 }
 
 // Close forgets the scratch workspace and abandons its working-copy commit, so that the repo keeps
-// no trace of the run but the result.
+// no trace of the run but the result. Land can make the workspace of the user stale, and jj refuses
+// to read a stale working copy.
 func (l *jjLine) Close() {
 	wc, err := l.jj("log", "--no-graph", "-r", "@", "-T", "commit_id")
-	l.jjIn(l.root, "workspace", "forget", l.name)
+	l.jjIn(l.root, "--ignore-working-copy", "workspace", "forget", l.name)
 	if err == nil {
 		l.jjIn(l.root, "--ignore-working-copy", "abandon", "-r", wc)
 	}
@@ -256,6 +338,8 @@ func (l *gitLine) HasMerges(bookmark string, done []string) (bool, error) {
 	return len(repo.Lines(out)) > 0, err
 }
 
+func (l *gitLine) Immutable(string, []string) (bool, error) { return false, nil }
+
 func (l *gitLine) Pick(commit string) ([]string, bool, error) {
 	if _, err := l.git("cherry-pick", "--allow-empty", "--keep-redundant-commits", commit); err != nil {
 		files, _ := l.git("diff", "--name-only", "--diff-filter=U")
@@ -288,6 +372,27 @@ func (l *gitLine) Rollback(to string) error {
 	}
 	_, err := l.git("clean", "-fdq")
 	return err
+}
+
+// Land points each branch at the copy of its commit on the line: the cherry-picks are the rebase, so
+// the line does not change. A branch that cannot move stays, with a warning: the line has its work.
+func (l *gitLine) Land(moves []move, head string) (landed, error) {
+	result := landed{Head: head}
+	var undo []string
+	for _, m := range moves {
+		if now, _ := l.git("rev-parse", "--verify", "--quiet", "refs/heads/"+m.Bookmark); now != m.From {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("The bookmark %s does not move: it moved while the run tried it", m.Bookmark))
+			continue
+		}
+		// git branch -f refuses a branch that a worktree has checked out.
+		if _, err := l.gitDirCmd("branch", "-f", m.Bookmark, m.To); err != nil {
+			result.Warnings = append(result.Warnings, fmt.Sprintf("The bookmark %s does not move: %v", m.Bookmark, err))
+			continue
+		}
+		undo = append(undo, fmt.Sprintf("git branch -f %s %s", m.Bookmark, m.From))
+	}
+	result.Undo = strings.Join(undo, " && ")
+	return result, nil
 }
 
 func (l *gitLine) Bookmark(name, commit string) error {

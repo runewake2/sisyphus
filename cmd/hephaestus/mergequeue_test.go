@@ -60,7 +60,7 @@ func TestTheMergeQueueMakesALinearHistory(t *testing.T) {
 	r.task("first-task-work", "ai/first")
 	r.task("second-task-work", "ai/second", "first-task-work")
 	r.task("third-task-work", "ai/third")
-	mainBefore, secondBefore := r.gitOut("rev-parse", "main"), r.gitOut("rev-parse", "ai/second")
+	mainBefore := r.gitOut("rev-parse", "main")
 
 	report := r.mergeQueue("first-task-work", "second-task-work", "third-task-work", "--name", "mq/test")
 
@@ -70,8 +70,35 @@ func TestTheMergeQueueMakesALinearHistory(t *testing.T) {
 	equal(t, "", r.gitOut("rev-list", "--merges", "main..mq/test"))
 	equal(t, "ai/third\nai/second\nai/first", r.gitOut("log", "--format=%s", "main..mq/test"))
 	equal(t, mainBefore, r.gitOut("rev-parse", "main"))
-	equal(t, secondBefore, r.gitOut("rev-parse", "ai/second"))
+	// The bookmarks moved onto the line: none of them stays beside it.
+	equal(t, "ai/second", r.gitOut("log", "-1", "--format=%s", "ai/second"))
+	equal(t, "ai/first", r.gitOut("log", "--format=%s", "main..ai/first"))
+	equal(t, "ai/second\nai/first", r.gitOut("log", "--format=%s", "main..ai/second"))
+	equal(t, "", r.gitOut("log", "--format=%s", "mq/test..ai/third"))
 	isTrue(t, !strings.Contains(r.gitOut("worktree", "list"), "hephaestus-merge-queue"), "the scratch worktree is gone")
+}
+
+func TestABookmarkThatStaysOutOfTheLineDoesNotMoveInGit(t *testing.T) {
+	r := newMergeRepo(t, "good-task-work", "bad-task-work", "open-task-work")
+	r.branch("ai/good", "main", "2026-10-09T10:00:00", map[string]string{"good.txt": "ok\n"})
+	r.branch("ai/bad", "main", "2026-10-10T10:00:00", map[string]string{"bad.txt": "broken\n"})
+	r.branch("ai/open", "main", "2026-10-11T10:00:00", map[string]string{"open.txt": "ok\n"})
+	r.task("good-task-work", "ai/good")
+	r.task("bad-task-work", "ai/bad")
+	r.task("open-task-work", "ai/open")
+	badBefore, openBefore := r.gitOut("rev-parse", "ai/bad"), r.gitOut("rev-parse", "ai/open")
+	// A worktree has ai/open: git must not move a branch from under it.
+	r.git("worktree", "add", "-q", filepath.Join(t.TempDir(), "open"), "ai/open")
+
+	report := r.mergeQueueExit(2, "good-task-work", "bad-task-work", "open-task-work", "--name", "mq/test", "--checks", `test ! -e bad.txt`)
+
+	equalStrings(t, []string{"ai/good", "ai/open"}, mergedBookmarks(report))
+	equal(t, badBefore, r.gitOut("rev-parse", "ai/bad"))
+	equal(t, openBefore, r.gitOut("rev-parse", "ai/open"))
+	equal(t, 1, len(report.Warnings))
+	contains(t, report.Warnings[0], "The bookmark ai/open does not move")
+	equal(t, "ok", r.gitOut("show", "mq/test:open.txt"))
+	contains(t, report.Undo, "git branch -f ai/good ")
 }
 
 func TestVersionsAreGivenInTheOrderOfTheMerge(t *testing.T) {
@@ -264,6 +291,143 @@ func TestAConflictAndVersionsInAJJRepo(t *testing.T) {
 	if list := r.jj("workspace", "list"); strings.Count(list, "\n") != 1 {
 		t.Errorf("the scratch workspace is not forgotten:\n%s", list)
 	}
+}
+
+func TestTheMergeQueueRebasesTheBookmarksInAJJRepo(t *testing.T) {
+	needJJ(t)
+	r := newMergeRepo(t, "first-task-work", "base-task-work", "top-task-work", "left-task-work")
+	r.write("VERSION", "0.0.5\n")
+	r.write("CHANGELOG.md", "# Changelog\n\n## [[0.0.5]] - 2026-10-01\n- Older.\n")
+	r.write("changelog/0.0.5.md", "# 0.0.5\n")
+	r.commit("versions")
+	r.jj("git", "init", "--colocate")
+	work := func(bookmark, base, file, content string, more ...string) {
+		r.jj("new", base, "-m", bookmark)
+		r.write(file, content)
+		for i := 0; i < len(more); i += 2 {
+			r.write(more[i], more[i+1])
+		}
+		r.jj("bookmark", "create", bookmark, "-r", "@")
+	}
+	work("ai/first", "main", "first.txt", "first\n", "changelog/unreleased/unreleased-first.md", entry("First", "First.", "2026-10-09"))
+	work("ai/base", "main", "base.txt", "base\n", "changelog/unreleased/unreleased-base.md", entry("Base", "Base.", "2026-10-10"))
+	work("ai/top", "ai/base", "top.txt", "top\n")
+	// A worker has a working copy on top of the stack: it follows the rebase.
+	worker := &testRepo{t: t, root: filepath.Join(t.TempDir(), "worker")}
+	r.jj("workspace", "add", "--name", "worker", "-r", "ai/top", worker.root)
+	work("ai/left", "main", "README.md", "# Left\n")
+	r.jj("new", "main")
+	r.task("first-task-work", "ai/first")
+	r.task("base-task-work", "ai/base", "first-task-work")
+	r.task("top-task-work", "ai/top")
+	r.task("left-task-work", "ai/left")
+	change := func(rev string) string {
+		return r.jj("log", "--no-graph", "-r", rev, "-T", "change_id")
+	}
+	commit := func(rev string) string {
+		return r.jj("log", "--no-graph", "-r", rev, "-T", "commit_id")
+	}
+	topChange, leftCommit, topCommit := change("ai/top"), commit("ai/left"), commit("ai/top")
+
+	report := r.mergeQueueExit(2, "first-task-work", "base-task-work", "top-task-work", "left-task-work", "--name", "mq/test", "--checks", `test ! -e README.md || ! grep -q Left README.md`)
+
+	equalStrings(t, []string{"ai/first", "ai/base", "ai/top"}, mergedBookmarks(report))
+	// The line is the commits of the bookmarks and the version commits, with no copy of a commit.
+	subjects := r.jj("log", "--no-graph", "--reversed", "-r", `main..mq/test`, "-T", `description.first_line() ++ "\n"`)
+	equal(t, "ai/first\nmerge-queue: give versions to ai/first\nai/base\nmerge-queue: give versions to ai/base\nai/top", strings.TrimSpace(subjects))
+	equal(t, "", strings.TrimSpace(r.jj("log", "--no-graph", "-r", `(ai/first | ai/base | ai/top) ~ ::mq/test`, "-T", `commit_id`)))
+	equal(t, commit("mq/test"), commit("ai/top"))
+	equal(t, topChange, change("ai/top"))
+	equal(t, "0.0.7", strings.TrimSpace(r.jj("file", "show", "-r", "mq/test", "VERSION")))
+	// The copies are gone: each commit of a merged bookmark exists once.
+	all := strings.Split(r.jj("log", "--no-graph", "-r", "all()", "-T", `description.first_line() ++ "\n"`), "\n")
+	for _, subject := range []string{"ai/first", "ai/base", "ai/top", "merge-queue: give versions to ai/first"} {
+		count := 0
+		for _, line := range all {
+			if line == subject {
+				count++
+			}
+		}
+		equal(t, 1, count)
+	}
+	// A bookmark that stays out does not change.
+	equal(t, leftCommit, commit("ai/left"))
+	equal(t, 1, len(report.LeftOut))
+	equal(t, "checks", report.LeftOut[0].Reason)
+	// The working copy of the worker is on the rebased stack.
+	worker.jj("workspace", "update-stale")
+	equal(t, commit("ai/top"), worker.jj("log", "--no-graph", "-r", "@-", "-T", "commit_id"))
+	if list := r.jj("workspace", "list"); strings.Contains(list, "hephaestus-merge-queue") {
+		t.Errorf("the scratch workspace is not forgotten:\n%s", list)
+	}
+
+	// The undo of the report puts every bookmark back, for a line that the human rejects.
+	contains(t, report.Undo, "jj op restore ")
+	r.jj(strings.Fields(strings.TrimPrefix(report.Undo, "jj "))...)
+	equal(t, topCommit, commit("ai/top"))
+	isTrue(t, !strings.Contains(r.jj("bookmark", "list"), "mq/test"), "the undo removes the line")
+}
+
+func TestTheMergeQueueInAStaleJJWorkspace(t *testing.T) {
+	needJJ(t)
+	r := newMergeRepo(t, "one-task-work", "two-task-work")
+	r.jj("git", "init", "--colocate")
+	r.jj("new", "main", "-m", "ai/one")
+	r.write("one.txt", "one\n")
+	r.jj("bookmark", "create", "ai/one", "-r", "@")
+	r.jj("new", "main", "-m", "ai/two")
+	r.write("two.txt", "two\n")
+	r.jj("bookmark", "create", "ai/two", "-r", "@")
+	// The working copy of the user is the commit of ai/two: the rebase makes it stale.
+	r.task("one-task-work", "ai/one")
+	r.task("two-task-work", "ai/two")
+
+	report := r.mergeQueue("one-task-work", "two-task-work", "--name", "mq/test")
+
+	equalStrings(t, []string{"ai/one", "ai/two"}, mergedBookmarks(report))
+	r.jj("workspace", "update-stale")
+	if list := r.jj("workspace", "list"); strings.Count(list, "\n") != 1 {
+		t.Errorf("the scratch workspace is not forgotten:\n%s", list)
+	}
+}
+
+func TestImmutableCommitsLeaveABookmarkOutInAJJRepo(t *testing.T) {
+	needJJ(t)
+	r := newMergeRepo(t, "fixed-task-work")
+	r.jj("git", "init", "--colocate")
+	r.jj("new", "main", "-m", "ai/fixed")
+	r.write("fixed.txt", "fixed\n")
+	r.jj("bookmark", "create", "ai/fixed", "-r", "@")
+	r.jj("new", "main")
+	r.jj("config", "set", "--repo", `revset-aliases."immutable_heads()"`, "ai/fixed | main")
+	r.task("fixed-task-work", "ai/fixed")
+
+	report := r.mergeQueueExit(2, "fixed-task-work", "--name", "mq/test")
+
+	equal(t, 1, len(report.LeftOut))
+	equal(t, "immutable", report.LeftOut[0].Reason)
+	isTrue(t, !report.Created, "no line")
+}
+
+func TestABookmarkThatMovesDuringTheRunStopsItInAJJRepo(t *testing.T) {
+	needJJ(t)
+	r := newMergeRepo(t, "busy-task-work")
+	r.jj("git", "init", "--colocate")
+	r.jj("new", "main", "-m", "ai/busy")
+	r.write("busy.txt", "busy\n")
+	r.jj("bookmark", "create", "ai/busy", "-r", "@")
+	r.jj("new", "main")
+	r.task("busy-task-work", "ai/busy")
+	before := r.jj("log", "--no-graph", "-r", "ai/busy", "-T", "commit_id")
+
+	// The checks move the bookmark, as a worker can in a long run.
+	res := r.run("merge-queue", "busy-task-work", "--name", "mq/test", "--checks", `jj --ignore-working-copy describe -r ai/busy -m "ai/busy again"`)
+
+	equal(t, 1, res.exit)
+	contains(t, res.errors, "The bookmark ai/busy moved while the run tried it")
+	isTrue(t, before != r.jj("log", "--no-graph", "-r", "ai/busy", "-T", "commit_id"), "the check moved the bookmark")
+	isTrue(t, !strings.Contains(r.jj("bookmark", "list"), "mq/test"), "no line")
+	equal(t, "", strings.TrimSpace(r.jj("log", "--no-graph", "-r", `description(substring:"ai/busy") ~ ai/busy`, "-T", `commit_id`)))
 }
 
 // buildHephaestusOnce builds this command once and puts it first on PATH, for a role whose command

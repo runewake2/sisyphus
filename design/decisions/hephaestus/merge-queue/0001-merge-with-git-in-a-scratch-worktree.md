@@ -1,7 +1,8 @@
 # 0001: Merge with git in a scratch worktree
 
 - Status: Accepted, amended by [[0002-merge-with-jj-in-a-jj-repo]]: in a jj repo, the merge happens
-  with jj in a scratch workspace; this record stays the design of a git repo.
+  with jj in a scratch workspace; this record stays the design of a git repo. Also amended by
+  [[0003-rebase-the-bookmarks-of-the-tasks]]: the bookmarks of the tasks now move onto the line.
 - Date: 2026-10-12
 - Version: [[0.0.114]]
 

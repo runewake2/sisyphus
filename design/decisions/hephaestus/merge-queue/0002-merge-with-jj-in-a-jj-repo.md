@@ -1,6 +1,7 @@
 # 0002: Merge with jj in a jj repo
 
-- Status: Accepted
+- Status: Accepted, amended by [[0003-rebase-the-bookmarks-of-the-tasks]]: the bookmarks of the tasks
+  now move onto the line.
 - Date: 2026-10-20
 - Amends: [[0001-merge-with-git-in-a-scratch-worktree]]
 
